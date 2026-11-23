@@ -337,7 +337,7 @@ delete).
 |---|---|---|---|
 | `papers` | state | — | `[{printer, owner, description}]`, the product's printers in declared order |
 | `paper <owner>` | stream, since reset | — | `{continuesStroke, marks: [..], lines: [{text, x, y}], reach: [from, to]}`; a reset says the paper was emptied |
-| `paper-copies` | stream, no history | — | `{owner, outcome: "copied" \| "text-only" \| "failed", reason}` |
+| `paper-copies` | stream, no history | — | `{owner, outcome: "copied" \| "text-only" \| "failed", reason, text}` (text: what the paper panel shows, "Copied to clipboard" or "Copy failed") |
 | `paper.copy` | command | `{owner?}` | — |
 | `paper.cut` | command | `{owner?, copy}` | — |
 | `paper.text` | request | `{owner?}` | `{lines: [..]}` |

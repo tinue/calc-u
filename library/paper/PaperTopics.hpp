@@ -79,9 +79,14 @@ struct CopyOutcome final : sessions::PayloadOf<CopyOutcome> {
     Kind outcome = Kind::Copied;
     std::string reason;
     bool same(const CopyOutcome& o) const { return owner == o.owner && outcome == o.outcome && reason == o.reason; }
-    // {owner, outcome: "copied" | "text-only" | "failed", reason}
+    // {owner, outcome: "copied" | "text-only" | "failed", reason, text}
+    // (text: copyOutcomeText)
     sessions::Value toValue() const override;
 };
+
+// What the paper panel shows for a Copy's outcome: "Copied to clipboard"
+// (with the picture or the text alone) or "Copy failed".
+const char* copyOutcomeText(CopyOutcome::Kind);
 
 // The reply of paper.text and paper.marks: {lines: [...]}.
 sessions::PayloadPtr linesPayload(const std::vector<std::string>&);

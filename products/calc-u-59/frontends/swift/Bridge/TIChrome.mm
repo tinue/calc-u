@@ -12,14 +12,10 @@ static TIChromeColour ti(const calcu::shell::Colour& c) {
 @implementation TIChrome
 + (TIChromeColour)window { return ti(colours().window); }
 + (TIChromeColour)text { return ti(colours().text); }
-+ (TIChromeColour)textDim { return ti(colours().textDim); }
 + (TIChromeColour)header { return ti(colours().header); }
 + (TIChromeColour)headerText { return ti(colours().headerText); }
 + (TIChromeColour)buttonBar { return ti(colours().buttonBar); }
 + (TIChromeColour)pill { return ti(colours().pill); }
-+ (TIChromeColour)pillHover { return ti(colours().pillHover); }
-+ (TIChromeColour)pillPressed { return ti(colours().pillPressed); }
-+ (TIChromeColour)pillOff { return ti(colours().pillOff); }
 + (TIChromeColour)pillText { return ti(colours().pillText); }
 + (TIChromeColour)output { return ti(colours().output); }
 + (TIChromeColour)outputText { return ti(colours().outputText); }

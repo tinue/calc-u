@@ -1,6 +1,7 @@
 #include "qt6/PaperPanel.hpp"
 #include "qt6/ChromeStyle.hpp"
 #include "qt6/PaperPainter.hpp"
+#include "shell/BarModel.hpp"
 #include <QApplication>
 #include <QFontDatabase>
 #include <QGridLayout>
@@ -268,7 +269,7 @@ void PaperPanel::deliver(const sessions::Message& m) {
     if (sm->topic == paper::kPaperCopiesTopic) {
         for (const auto& item : sm->appended)
             if (const auto* o = sessions::payloadAs<CopyOutcome>(item); o && o->owner == ownerName())
-                toast(o->outcome == CopyOutcome::Kind::Failed ? tr("Copy failed") : tr("Copied to clipboard"));
+                toast(QString::fromUtf8(paper::copyOutcomeText(o->outcome)));
         return;
     }
     const std::string& topic = sm->topic.value;
@@ -541,7 +542,7 @@ void PaperView::paintEvent(QPaintEvent*) {
     if (!paper_) {   // no printer: a hint where the paper would start
         p.setPen(palette().color(QPalette::PlaceholderText));
         p.drawText(viewport()->rect().adjusted(8, 12, -8, 0), Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap,
-                   tr("No printer attached."));
+                   QString::fromUtf8(shell::kNoPrinterAttached));
         return;
     }
     if (paper_->description.width <= 0) return;

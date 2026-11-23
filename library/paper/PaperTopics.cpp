@@ -74,8 +74,10 @@ Value PaperAppended::toValue() const {
 
 Value CopyOutcome::toValue() const {
     const char* o = outcome == Kind::Copied ? "copied" : outcome == Kind::TextOnly ? "text-only" : "failed";
-    return Value::object({{"owner", owner}, {"outcome", o}, {"reason", reason}});
+    return Value::object({{"owner", owner}, {"outcome", o}, {"reason", reason}, {"text", copyOutcomeText(outcome)}});
 }
+
+const char* copyOutcomeText(CopyOutcome::Kind k) { return k == CopyOutcome::Kind::Failed ? "Copy failed" : "Copied to clipboard"; }
 
 sessions::PayloadPtr linesPayload(const std::vector<std::string>& lines) {
     Value::Array a;

@@ -7,7 +7,7 @@
 //
 //   <ShellPanelArea shell={s} panels={{paper: Component?}}>{product panels}</ShellPanelArea>
 //
-// A component of `panels` gets {shell: s.shell, owner, ownerPlace, places,
+// A component of `panels` gets {shell: s.shell, owner, ownerPlace, hint, places,
 // onChoose} (places: the place controls on the paper, s.choose for them).
 
 function ShellPanelArea({ shell, panels, children }) {
@@ -18,7 +18,7 @@ function ShellPanelArea({ shell, panels, children }) {
       {s.panels.map((p) => {
         const Panel = given[p.kind] || (p.kind === "paper" && typeof CalcuPaperPanel !== "undefined" ? CalcuPaperPanel : null);
         if (!Panel) return null;
-        return <Panel key={p.kind} shell={s.shell} owner={p.owner || null} ownerPlace={p.ownerPlace || null}
+        return <Panel key={p.kind} shell={s.shell} owner={p.owner || null} ownerPlace={p.ownerPlace || null} hint={p.hint}
           places={p.places} onChoose={s.choose} />;
       })}
       {children}

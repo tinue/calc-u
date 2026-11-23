@@ -89,8 +89,9 @@ typedef struct {
 /// A file of the save folder was written (the coordinated write succeeded).
 - (void)cardWritten;
 @optional
-/// The outcome of a Copy of the paper: 0 copied, 1 text only, 2 failed.
-- (void)paperCopied:(NSInteger)outcome NS_SWIFT_NAME(paperCopied(_:));
+/// The outcome of a Copy of the paper, as the panel shows it
+/// (paper::copyOutcomeText).
+- (void)paperCopied:(NSString *)text NS_SWIFT_NAME(paperCopied(_:));
 @end
 
 /// An entry of a media place's picker (the library's `media` topic), in the

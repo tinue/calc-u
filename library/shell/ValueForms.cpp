@@ -144,7 +144,7 @@ Value toValue(const std::vector<Panel>& panels) {
         Value::Array places;
         for (const auto& c : p.places) places.push_back(control(c));
         out.push_back(Value::object({{"kind", p.kind}, {"owner", p.owner}, {"ownerPlace", p.ownerPlace},
-                                     {"places", Value(std::move(places))}}));
+                                     {"hint", p.hint}, {"places", Value(std::move(places))}}));
     }
     return Value(std::move(out));
 }

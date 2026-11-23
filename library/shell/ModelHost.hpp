@@ -1,5 +1,6 @@
 #pragma once
 #include "sessions/Messages.hpp"
+#include "sessions/TopicMirror.hpp"
 #include "sessions/Value.hpp"
 #include "shell/Inputs.hpp"
 #include "shell/MenuModel.hpp"
@@ -25,8 +26,9 @@ public:
     explicit ModelHost(InputNames = {});
 
     // The product, its dialog and the traits of the page: until they come,
-    // value() is null.
-    void set(ModelSetup);
+    // value() is null. The topics the product's items follow are taken from
+    // `states` as they are now: they may have come before the page's traits.
+    void set(ModelSetup, const sessions::TopicMirror& states);
 
     // A message the session sent; true when it changed an input of the models
     // (the shell's topics and, once set(), those the product's items follow).

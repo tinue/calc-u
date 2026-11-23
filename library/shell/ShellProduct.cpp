@@ -43,6 +43,10 @@ std::vector<sessions::TopicName> productTopics(const ShellProduct& p) {
     return out;
 }
 
+void followProductTopics(ShellInputs& in, const ShellProduct& p) {
+    for (const auto& t : productTopics(p)) in.productTopics.try_emplace(t.value);
+}
+
 std::vector<std::string> checkShellProduct(const ShellProduct& p, const sessions::Value& cs) {
     std::vector<std::string> problems;
     if (p.name.empty()) problems.push_back("The product has no name.");

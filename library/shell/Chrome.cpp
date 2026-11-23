@@ -17,7 +17,7 @@ std::string css(const Colour& c) {
 std::vector<std::string_view> shellColourNames() {
     using namespace colour;
     return {kMenu, kMenuText, kMenuBorder, kMenuHover, kMenuHoverText, kScrim, kShadow, kAlert, kBanner, kBannerText,
-            kPaper, kPaperText};
+            kBannerBorder, kPaper, kPaperText};
 }
 
 const Colour* ChromeColours::find(std::string_view name) const {

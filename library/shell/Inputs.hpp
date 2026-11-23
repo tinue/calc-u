@@ -23,7 +23,8 @@ struct ShellInputs {
     sessions::Value romsMissing;    // roms' `roms-missing`: {text}
     sessions::Value settings;       // the shell's `settings` (SettingsPart)
     sessions::Value media;          // media's `media`: {kinds, places}
-    // The topics the product's items follow (shell::productTopics), by name.
+    // The topics the product's items follow (shell::followProductTopics), by
+    // name: an entry for each, so takeState knows which to keep.
     std::map<std::string, sessions::Value> productTopics;
     // A control state came. None comes when the product could not start:
     // then no control bar and no Machine menu, only the ROM message.
@@ -36,6 +37,11 @@ struct InputNames {
         romsMissing{"roms-missing"}, settings{"settings"}, media{"media"};
     sessions::RequestName presetList{"preset-list"};
 };
+
+// A state the session sent, into the inputs: a topic of `names` or one of
+// `in.productTopics`. True when it changed an input; any other topic changes
+// nothing.
+bool takeState(ShellInputs& in, const InputNames& names, const sessions::StateMessage&);
 
 // The command names the shell sends: machine control and startup, presets,
 // debugger, typing, media, sessions, the shell's SettingsPart.

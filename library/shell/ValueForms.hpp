@@ -35,7 +35,7 @@ sessions::Value toValue(const Rect&);
 // label, items}; a bar group {group: "AfterModel" | "Slots" | "Places" |
 // "Media" | "End", controls, pushed}, a control {kind: "model" | "slot" |
 // "button" | "picker" | "media" | "more", id, label, icon, shown, shortShown,
-// plugged, choices, entry, mediumKind}; a panel {kind, owner, ownerPlace,
+// plugged, choices, entry, mediumKind}; a panel {kind, owner, ownerPlace, hint,
 // places}; a dialog section {title, rows: [{row, value, shown, choices:
 // [[value, label]], resettable, min, max}]} (min, max null when unset).
 sessions::Value toValue(const MenuItem&);

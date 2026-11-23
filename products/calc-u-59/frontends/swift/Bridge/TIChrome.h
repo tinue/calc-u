@@ -21,14 +21,10 @@ typedef struct {
 // ── Colours (calcu::shell::ChromeColours; dark only) ───────────────────
 @property (class, readonly) TIChromeColour window;
 @property (class, readonly) TIChromeColour text;
-@property (class, readonly) TIChromeColour textDim;
 @property (class, readonly) TIChromeColour header;
 @property (class, readonly) TIChromeColour headerText;
 @property (class, readonly) TIChromeColour buttonBar;
 @property (class, readonly) TIChromeColour pill;
-@property (class, readonly) TIChromeColour pillHover;
-@property (class, readonly) TIChromeColour pillPressed;
-@property (class, readonly) TIChromeColour pillOff;
 @property (class, readonly) TIChromeColour pillText;
 @property (class, readonly) TIChromeColour output;
 @property (class, readonly) TIChromeColour outputText;
@@ -55,7 +51,6 @@ typedef struct {
 /// the compact row's (TIViewRules.paperRowCompact).
 @property (class, readonly) CGFloat paperRowGap;
 @property (class, readonly) CGFloat paperRowCompactGap;
-/// The bar's and the panels' text scale for a faceplate this wide.
 @end
 
 NS_ASSUME_NONNULL_END

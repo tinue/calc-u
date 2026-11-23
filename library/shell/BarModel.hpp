@@ -64,12 +64,18 @@ struct BarFit {
 BarFit barFit(double faceplate, double withoutLabels, double withLabels,
               double room = std::numeric_limits<double>::infinity());
 
+// What the paper panel shows where the paper would start while no printer
+// is attached.
+inline constexpr const char* kNoPrinterAttached = "No printer attached.";
+
 // The panels the control state lists (the paper panel always),
 // each with its owner's peripheral ID or none.
 struct Panel {
     std::string kind;    // "paper"
     std::string owner;   // the peripheral ID; empty: none
     std::string ownerPlace;
+    std::string hint;    // the paper panel without an owner: kNoPrinterAttached
+
     // The paper panel: the controls of the product's placesOnPaper, as the
     // bar would have them (a place button or picker).
     std::vector<BarControl> places;

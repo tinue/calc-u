@@ -476,6 +476,7 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
         _shell = [[TIShell alloc] initWithSession:self];
+        calcu::shell::followProductTopics(_inputs, [TIShell product]);
         auto libraryParts = std::make_shared<calcu::parts::LibraryParts*>(nullptr);
         _libraryParts = libraryParts;
         _thread = std::make_unique<calcu::shell::SessionThread>(
@@ -572,7 +573,7 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
                 for (const auto& p : s->appended)
                     if (const auto* o = cs::payloadAs<calcu::paper::CopyOutcome>(p);
                         o && [d respondsToSelector:@selector(paperCopied:)])
-                        [d paperCopied:static_cast<NSInteger>(o->outcome)];
+                        [d paperCopied:ns(calcu::paper::copyOutcomeText(o->outcome))];
                 continue;
             }
             if (s->topic == cs::kNoticesTopic) {   // the shell's queue, each in turn
@@ -617,39 +618,21 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     if (changes) [d changed:changes];
 }
 
-// The shell's inputs: the last Value of each topic it draws from. YES: a
-// topic the product's items follow changed (the shell's models draw anew).
+// The shell's inputs: the last Value of each topic it draws from. YES: an
+// input changed (the shell's models draw anew).
 - (BOOL)takeInput:(const cs::StateMessage&)st {
     static const calcu::shell::InputNames n;
-    const cs::Value v = st.state ? st.state->toValue() : cs::Value();
+    if (!calcu::shell::takeState(_inputs, n, st)) return NO;
     if (st.topic == n.controlState) {
-        _inputs.controlState = v;
-        const std::string model = calcu::shell::read::text(v, "model");
+        const std::string model = calcu::shell::read::text(_inputs.controlState, "model");
         if (model != _model) {
             if (!_model.empty()) [_shell modelChanged];
             _model = model;
         }
     } else if (st.topic == n.busy) {
-        _inputs.busy = v;
         [_shell busyChanged];
-    } else if (st.topic == n.runState) {
-        _inputs.runState = v;
-    } else if (st.topic == n.romsMissing) {
-        _inputs.romsMissing = v;
-    } else if (st.topic == n.settings) {
-        _inputs.settings = v;
-    } else if (st.topic == n.media) {
-        _inputs.media = v;
-    } else {
-        for (const auto& t : [TIShell productTopics])
-            if (st.topic == t) {
-                cs::Value& kept = _inputs.productTopics[t.value];
-                if (kept == v) return NO;
-                kept = v;
-                return YES;
-            }
     }
-    return NO;
+    return YES;
 }
 
 - (const calcu::shell::ShellInputs&)shellInputs { return _inputs; }

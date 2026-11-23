@@ -12,7 +12,6 @@ struct PrinterView: View {
     @Environment(EmulatorViewModel.self) var viewModel
     @State private var dotMode = true
     @State private var showCopiedToast = false
-    @State private var toastText = "Copied to clipboard"
     var portraitTopInset: CGFloat = 0
 
     var body: some View {
@@ -33,7 +32,7 @@ struct PrinterView: View {
         }
         .overlay(alignment: .bottom) {
             if showCopiedToast {
-                Text(toastText)
+                Text(viewModel.paperCopyMessage)
                     .font(.caption.bold())
                     .foregroundStyle(Chrome.text)
                     .padding(.horizontal, 14)
@@ -46,7 +45,6 @@ struct PrinterView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: showCopiedToast)
         .onChange(of: viewModel.paperCopySerial) {
-            toastText = viewModel.paperCopyMessage ?? "Copied to clipboard"
             showCopiedToast = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { showCopiedToast = false }
         }
@@ -93,7 +91,7 @@ struct PrinterView: View {
     private var paperStrip: some View {
         ScrollView {
             if viewModel.paperOwner.isEmpty {   // no printer: a hint where the paper would start
-                Text("No printer attached.")
+                Text(viewModel.paperHint)
                     .foregroundStyle(.secondary)
                     .padding(.top, 12)
                     .accessibilityIdentifier("paper-hint")
@@ -166,12 +164,12 @@ struct PrinterView: View {
                                 Text(label)
                                 ChromeDot(on: c.on)
                             }
-                            .printerButtonChrome(compact: compact)
+                            .chromePill()
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("paper-control-\(c.controlID)")
                     } else {
-                        printerButton(label, compact: compact) {
+                        printerButton(label) {
                             viewModel.setPrinterControl(c.controlID, on: true)
                         } onRelease: {
                             viewModel.setPrinterControl(c.controlID, on: false)
@@ -215,12 +213,11 @@ struct PrinterView: View {
     @ViewBuilder
     private func printerButton(
         _ label: String,
-        compact: Bool,
         onPress: @escaping () -> Void,
         onRelease: @escaping () -> Void
     ) -> some View {
         Text(label)
-            .printerButtonChrome(compact: compact)
+            .chromePill()
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in onPress() }
@@ -272,12 +269,4 @@ struct PaperBand: View {
     return PrinterView()
         .environment(vm)
         .frame(width: 220, height: 400)
-}
-
-private extension View {
-    /// The printer bar's button look: a pill, narrower on the narrow tape
-    /// (`compact`).
-    func printerButtonChrome(compact: Bool) -> some View {
-        chromePill(minWidth: compact ? 30 : 36)
-    }
 }

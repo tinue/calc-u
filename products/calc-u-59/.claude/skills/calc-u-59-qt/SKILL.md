@@ -20,7 +20,7 @@ in Calc-U-1600.
 that `EmulatorController` makes, with Calc-U-59's data from
 `app/TIShellProduct` (`cu59::shellProduct`, `cu59::settingsSpec(ShellFrontend::Qt6, …)`,
 `cu59::faceplateHitMap`). The shell draws the menus (File, Machine, Help; no
-Edit), the control bar (the model picker, the library's `MediaPicker` for `slot-1`,
+Edit), the control bar (the model picker, the shell's `SlotPicker` for `slot-1`,
 the "PC-100C" button, the product's `CardControls` by `registerMediaControls("magnetic-card", …)`),
 the settings dialog, About, Help, notices, "Loading…" and "ROMs missing",
 all from the control state and the library's commands. **A new menu item
@@ -117,7 +117,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
 | `MainWindow` | `CalculatorView` (layout, menus, presets, drag and drop: every file to the library's `open` through the library's `library/qt6/FileOpening` (`calcu::qt6::openFile(window, …)`, which raises the window but for the start, `dragEnter`, `dragMove`, `drop` (accepted, opened after the drop), `startFile`, the macOS `FileOpenFilter` in `main.cpp`); Arm Fresh Card's replace question through `calcu::qt6::sendAsking`) |
 | `EmulatorController` | `EmulatorViewModel` |
 | `CalculatorPanel` (the faceplate, the shell's control bar and "ROMs missing") | `CalculatorView` calculator column |
-| the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls`; `CalculatorPanel::fitBar` (the library's `barFit`, the text scale `ChromeStyle::fontScale`, app/'s `TIChrome`) | `CalculatorView` bar (`TIBarFit`) and card buttons |
+| the shell's control bar (`calcu::qt6::Shell::controlBar()`), `CardControls` (its labels shown by the bar's `BarLabels`); `CalculatorPanel::fitBar` (the text scale `ChromeStyle::fontScale` of app/'s `TIChrome`; the width and the labels by `Shell::fitBar`, the library's `barFit` through `ShellControlBar::fitBelow`) | `CalculatorView` bar (`TIBarFit`) and card buttons |
 | `KeyboardWidget` (the faceplate: art, LED, cue card, pressed key from `held-keys`, host keys through `calcu::qt6::HostKeys`) | `KeyboardView` |
 | `LedRenderer` | `LEDDisplayView` |
 | `CueCardRenderer` | `CueCardView` |

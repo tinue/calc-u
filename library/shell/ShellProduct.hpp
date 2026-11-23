@@ -1,6 +1,7 @@
 #pragma once
 #include "sessions/Messages.hpp"
 #include "sessions/Value.hpp"
+#include "shell/Inputs.hpp"
 #include <functional>
 #include <map>
 #include <optional>
@@ -118,6 +119,9 @@ AboutModel about(const ShellProduct&);
 // The state topics the product's items follow (their checkedBy), each once:
 // a frontend keeps their last values in ShellInputs::productTopics.
 std::vector<sessions::TopicName> productTopics(const ShellProduct&);
+// An entry in `in.productTopics` for each of them, Null until its state
+// comes; takeState keeps the topics that have one.
+void followProductTopics(ShellInputs& in, const ShellProduct&);
 
 // The problems of a product's shell data, for its tests: a model or
 // peripheral with variants in `catalogueControlState` and no label, an empty

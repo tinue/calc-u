@@ -153,5 +153,5 @@ TEST(copy_outcome_on_paper_copies) {
     CHECK(o[0]->owner == "TD-20" && o[0]->outcome == CopyOutcome::Kind::Copied);
     CHECK(o[1]->outcome == CopyOutcome::Kind::TextOnly);
     CHECK(o[2]->outcome == CopyOutcome::Kind::Failed && o[2]->reason == "The browser took nothing.");
-    CHECK_EQ(toText(o[1]->toValue()), std::string("{\"owner\":\"TD-20\",\"outcome\":\"text-only\",\"reason\":\"\"}"));
+    CHECK_EQ(toText(o[1]->toValue()), std::string("{\"owner\":\"TD-20\",\"outcome\":\"text-only\",\"reason\":\"\",\"text\":\"Copied to clipboard\"}"));
 }

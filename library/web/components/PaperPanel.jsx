@@ -3,12 +3,13 @@
 // area for panels.
 //
 //   <CalcuPaperPanel shell={shell} owner={peripheralId | null} ownerPlace={place | null}
-//                    controls={[{id, form: "key" | "switch", on, label?, shortLabel?}]?}
+//                    hint={text} controls={[{id, form: "key" | "switch", on, label?, shortLabel?}]?}
 //                    send={fn?} places={[bar control]} onChoose={fn} />
 //
 // owner, ownerPlace: the printer plugged in and its place, from the control
-// state's panel; controls: that printer's controls, by default the control
-// state's of the owner on its place; places: the shell's place controls on the paper
+// state's panel; hint: what shows where the paper would start while there is
+// none (the panel model's); controls: that printer's controls, by default the
+// control state's of the owner on its place; places: the shell's place controls on the paper
 // (the panel model's), first in the header, onChoose(item) carrying out
 // their choice (the shell's choose); send(command, args) defaults to
 // shell.send. The header holds the places left, the owner's name centred
@@ -25,7 +26,7 @@
 
 const CALCU_PAPER_FOLLOW = 64;      // points from the end within which the view follows
 const CALCU_PAPER_BLANK = 8;        // blank above and below the paper
-const CALCU_PAPER_TOAST_MS = 1800;  // how long "Copied to clipboard" shows
+const CALCU_PAPER_TOAST_MS = 1800;  // how long a Copy's outcome shows
 
 function useCalcuPaper(shell) {
   const store = calcuPaperStore(shell);
@@ -95,7 +96,7 @@ function CalcuPaperControl({ control, compact, onSet }) {
 
 const CALCU_PAPER_NO_CONTROLS = [];
 
-function CalcuPaperPanel({ shell, owner, ownerPlace, controls: given, send, places, onChoose }) {
+function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send, places, onChoose }) {
   const state = useCalcuPaper(shell);
   const all = useTopic(shell, "control-state", (cs) => (cs && cs.controls) || CALCU_PAPER_NO_CONTROLS);
   const controls = given || all.filter((c) => c.peripheral === owner && c.place === ownerPlace);
@@ -195,7 +196,7 @@ function CalcuPaperPanel({ shell, owner, ownerPlace, controls: given, send, plac
   const copy = state.copy;
   React.useEffect(() => {
     if (!copy || !name || copy.owner !== name) return undefined;
-    setToast(copy.outcome === "failed" ? "Copy failed" : "Copied to clipboard");
+    setToast(copy.text);
     const t = setTimeout(() => setToast(null), CALCU_PAPER_TOAST_MS);
     return () => clearTimeout(t);
   }, [copy && copy.seq]);
@@ -231,7 +232,7 @@ function CalcuPaperPanel({ shell, owner, ownerPlace, controls: given, send, plac
         <pre className="calcu-paper-text" data-calcu="paper-text">{paper.lines.map((l) => l.text).join("\n")}</pre>
       ) : (
         <div className="calcu-paper-scroll" data-calcu="paper-scroll" ref={scrollRef} onScroll={onScroll}>
-          {!owner && <p className="calcu-paper-hint" data-calcu="paper-hint">No printer attached.</p>}
+          {!owner && <p className="calcu-paper-hint" data-calcu="paper-hint">{hint}</p>}
           <div className="calcu-paper-sheet" style={{ height: contentHeight }}>
             <canvas className="calcu-paper-canvas" data-calcu="paper-canvas" ref={canvasRef}
               style={{ top: scrollTop, width: size.width, height: size.height }} />

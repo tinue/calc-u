@@ -10,13 +10,13 @@
 // Copy and Cut are the panel's: the session's paper.copy / paper.cut through
 // the page's clipboard service.
 
-// `paper`: the shell's paper panel ({owner, ownerPlace, places}); `onChoose`:
-// the shell's choose, for the place controls on the paper.
+// `paper`: the shell's paper panel ({owner, ownerPlace, hint, places});
+// `onChoose`: the shell's choose, for the place controls on the paper.
 function PaperPane({ shell, paper, onChoose }) {
   return (
     <div className="calcu-printer" data-panel="paper">
       <CalcuPaperPanel shell={shell} owner={paper.owner || null} ownerPlace={paper.ownerPlace || null}
-        places={paper.places || []} onChoose={onChoose} />
+        hint={paper.hint} places={paper.places || []} onChoose={onChoose} />
     </div>
   );
 }

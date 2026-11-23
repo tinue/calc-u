@@ -126,7 +126,7 @@ Task<OperationResult> DapSession::runRequest(OperationContext& op, Value request
         const Value* configured = attachConfig_.find("program");
         if (ok && (args.find("bin") || (configured && configured->members()))) {
             const Value program = args.find("bin") ? args : *configured;
-            ok = co_await buildAndLoad(op, program, /*inSetup=*/false, &body, &error);
+            ok = co_await buildAndLoad(op, program, /*startCommand=*/nullptr, &body, &error);
         } else if (ok) {
             // No program (a ROM project): the set-up again, then as at
             // configurationDone.
@@ -209,16 +209,21 @@ Task<bool> DapSession::setUp(OperationContext& op, Value config, std::string* er
             output(b.name + ": " + std::to_string(b.mismatched) + " of " + std::to_string(b.checked) +
                        " lines don't match memory -- not used for source",
                    "important");
-    // Build & Load of the program, else the command typed.
+    // Build & Load of the program, else the command.
+    std::string startCommand = command;
     if (hasProgram) {
         const Value program = *programPtr;
-        const bool loaded = co_await buildAndLoad(op, program, /*inSetup=*/true, nullptr, error);
+        startCommand.clear();
+        const bool loaded = co_await buildAndLoad(op, program, &startCommand, nullptr, error);
         if (!loaded) co_return false;
-    } else if (!command.empty()) {
-        typeCommand(command);   // typed when the machine runs
     }
-    // The session goes on with a paused machine.
+    // The session goes on with a paused machine. The command is typed only
+    // once it is paused: typed before, its first key would go down in the
+    // run to the pause, and a paused machine lets a hold pass in host time,
+    // so a client slow to send configurationDone would see that key come up
+    // unread.
     co_await pauseNow(op);
+    if (!startCommand.empty()) typeCommand(startCommand);   // typed when the machine runs
     co_return true;
 }
 
@@ -295,7 +300,8 @@ Task<bool> DapSession::cleanStart(OperationContext& op, std::string* how, std::s
     co_return true;
 }
 
-Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, bool inSetup, Body* body, std::string* error) {
+Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, std::string* startCommand, Body* body,
+                                    std::string* error) {
     if (!checkAttach(d, debug::attach::kProgramKeys, error)) co_return false;
     if (d.find("slot")) {
         *error = "Bad \"slot\": not a key of \"program\": the loader places code by the machine's MODE, the program area TITLE "
@@ -364,11 +370,17 @@ Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, bool inSetup,
         } else {
             if (after == "stopOnEntry") breakpoints_.setEntry(req.thread, r.entry);
             applyBreakpoints();
-            typeCommand(r.callCommand);   // typed and entered as the machine runs
             // In the set-up the program runs from configurationDone, once
             // the client's breakpoints are set, so that a breakpoint near the
-            // entry is not missed; else at the end of this operation.
-            if (!inSetup) resumeAtEnd_ = true;
+            // entry is not missed: the set-up types the command once the
+            // machine is paused. Else it is typed now and runs at the end of
+            // this operation.
+            if (startCommand) {
+                *startCommand = r.callCommand;
+            } else {
+                typeCommand(r.callCommand);   // typed and entered as the machine runs
+                resumeAtEnd_ = true;
+            }
         }
     }
     for (const std::string& w : r.warnings) output(w, "important");

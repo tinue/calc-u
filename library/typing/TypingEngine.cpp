@@ -304,6 +304,11 @@ void TypingEngine::run(Ticks now) {
 }
 
 void TypingEngine::runOnce(Ticks now) {
+    // The pause as the session has it now, not as the last host call told
+    // it: a caller that pauses the machine and types in the same call (a
+    // debugger's set-up) must not see a press go down on the paused machine,
+    // whose hold would then pass in host time, unread by the ROM.
+    if (ms_ && machine_ && ms_->paused() != paused_) notePaused(ms_->paused());
     if (paused_) {
         for (std::size_t i = 0; i < down_.size();) {
             const Down& d = down_[i];
@@ -559,12 +564,16 @@ void TypingEngine::drop() {
 void TypingEngine::setPaused(bool p, pacing::WallTime now) {
     wall_ = now;
     if (p == paused_) return;
+    notePaused(p);
+    if (current()) run(this->now());
+}
+
+void TypingEngine::notePaused(bool p) {
     paused_ = p;
     for (Down& d : down_) {
         d.wallDue.reset();
         if (p && d.releaseAsked) requestRelease(d);
     }
-    if (current()) run(this->now());
 }
 
 void TypingEngine::hostCall(pacing::WallTime now) {

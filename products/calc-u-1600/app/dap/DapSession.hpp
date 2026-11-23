@@ -131,8 +131,10 @@ private:
     // The set-up with `config`; false with `error`.
     calcu::sessions::Task<bool> setUp(calcu::sessions::OperationContext&, Value config, std::string* error);
     // Build & Load of `program`; the reply's body into `body` (may be null).
-    calcu::sessions::Task<bool> buildAndLoad(calcu::sessions::OperationContext&, Value program, bool inSetup, Body* body,
-                                             std::string* error);
+    // In the set-up the starting command goes into `startCommand` for the
+    // set-up to type; without it (null) it is typed at once.
+    calcu::sessions::Task<bool> buildAndLoad(calcu::sessions::OperationContext&, Value program, std::string* startCommand,
+                                             Body* body, std::string* error);
     // Build & Load's clean start: from the configuration's preset, else the
     // model's startup preset, else a Cold boot to key readiness.
     calcu::sessions::Task<bool> cleanStart(calcu::sessions::OperationContext&, std::string* how, std::string* error);

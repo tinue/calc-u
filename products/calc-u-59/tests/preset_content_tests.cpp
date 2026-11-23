@@ -445,7 +445,7 @@ TEST(names_short_described_once_unique_per_model) {
         CHECK(!e.description.empty());
         CHECK(seen.insert(e.model.value + "/" + e.name).second);
     }
-    CHECK_EQ(list.size(), std::size_t{13});   // three startup presets and ten examples
+    CHECK_EQ(list.size(), std::size_t{14});   // three startup presets and eleven examples
 }
 
 TEST(trace_quirk_keeps_extension_and_model) {
@@ -472,6 +472,7 @@ TEST(bundle_lists_three_startup_and_todays_examples_in_groups) {
         "startup startup/default-ti59.ti59", "startup startup/default-ti58.ti58", "startup startup/default-ti58c.ti58c",
         "Diagnostics diag.ti59", "Diagnostics diag.ti58", "Diagnostics ram_test.ti59",
         "Programs sum.ti59", "Programs characters.ti59", "Programs fastmode-sst.ti59",
+        "Programs life.ti59",
         "Printer pictures printer-interrupt.ti59", "Printer pictures picard.ti59", "Printer pictures switzerland.ti59",
         "Printer pictures globe-print.ti59"};
     CHECK(got == want);

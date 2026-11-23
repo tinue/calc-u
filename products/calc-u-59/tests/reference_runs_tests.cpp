@@ -11,8 +11,7 @@
 // cards`, the banks of the media part's store, by the picker's names) and
 // the cards written (`--- cards written`, the sides of the run's save
 // folder's `.magnetcard.yaml`), and the paper (`paper text`, `paper
-// marks`). Not compared: tick counts, the log. `historic/life.ti59` never
-// stops: it is only loaded without a failure. A difference is a finding
+// marks`). Not compared: tick counts, the log. A difference is a finding
 // (CLAUDE.md: never a new reference).
 //
 // Longer (`CalcU59Tests --group longer`).
@@ -45,8 +44,6 @@
 namespace fs = std::filesystem;
 
 namespace {
-
-const std::string kNeverStops = "historic/life.ti59";
 
 std::string hexNibbles(const cu59::RegisterNibbles& n) {
     static const char* d = "0123456789abcdef";
@@ -141,7 +138,7 @@ Run run(const fs::path& file) {
         server->finish();
         return out;
     }
-    if (file.generic_string().find(kNeverStops) == std::string::npos) server->line("wait");
+    server->line("wait");
     calcu::machine::Machine* m = server->host().session().context().machine();
     // The in-file cards (every name the preset gives with `mem:`), and the
     // cards written (the save folder's card files).
@@ -221,7 +218,6 @@ TEST_IN(longer, reference_runs_of_the_examples) {
         if (draft) {
             if (!r.failure.empty()) std::printf("  %s: the preset: %s\n", rel.c_str(), r.failure.c_str());
             CHECK(r.failure.empty());
-            if (rel == kNeverStops) continue;
             std::ofstream(fs::path(draft) / (base + ".reference"), std::ios::binary) << toReference(rel, r.record);
             if (!r.paperText.empty()) std::ofstream(fs::path(draft) / (base + ".paper-text"), std::ios::binary) << r.paperText;
             if (!r.paperMarks.empty())
@@ -230,7 +226,7 @@ TEST_IN(longer, reference_runs_of_the_examples) {
         }
         std::vector<std::string> diffs;
         if (!r.failure.empty()) diffs.push_back("the preset: " + r.failure);
-        if (rel != kNeverStops && r.failure.empty()) {
+        if (r.failure.empty()) {
             const auto file = testroms::readFile((refDir / (base + ".reference")).string());
             if (!file) diffs.push_back("no reference");
             const Record want = fromReference(file.value_or(""));

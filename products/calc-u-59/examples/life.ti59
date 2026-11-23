@@ -21,6 +21,7 @@
 # The article gives no start pattern. This preset enters a glider heading for
 # an eater in the opposite corner and presses C. The eater has eaten the glider
 # in generation 14; once that field is printed, the preset presses R/S.
+# The run's emulated time goes to the debug log.
 #
 # The article: a full field takes 5 min 57 s to compute and 2 min 20 s to print;
 # an empty field 27 s and 8 s.
@@ -42,6 +43,8 @@
 
 format-version: 2
 model: TI-59
+preset-name: Life
+description: Game of Life, a glider and an eater
 slot-1: { name: ML }
 printer: PC-100C
 
@@ -624,8 +627,10 @@ keys:
   - key: 1 0 A  # row 10
   - key: 9 B  # column 9
   - key: 1 0 B  # column 10
+  - elapsed-time: start
   - key: C  # run
   - skip-wait:
   - wait: 4860s  # generation 14, the eater alone, has been printed
   - skip-wait:
   - key: R/S  # stop
+  - elapsed-time: report  # the run, into the debug log

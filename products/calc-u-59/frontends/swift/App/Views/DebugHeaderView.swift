@@ -18,9 +18,12 @@ struct DebugHeaderView: View {
     var body: some View {
         let narrow = TIViewRules.debugHeaderNarrow(baseFontSize)
         HStack(spacing: 8) {
+            // One line each: where the header is short of room the title
+            // gives way (truncated), never a button's label (no break mid-word).
             Text(TIViewRules.debugHeaderTitle(cpu, narrow: narrow))
                 .font(.caption.bold())
                 .foregroundStyle(.white.opacity(0.6))
+                .lineLimit(1)
             Spacer()
             ForEach(TIViewRules.debugHeaderButtons(cpu), id: \.buttonID) { b in
                 let use = buttons[b.buttonID] ?? Use(enabled: false, action: {})
@@ -30,6 +33,8 @@ struct DebugHeaderView: View {
                     // Tap to single-step; hold to auto-step.
                     HoldRepeatButton(title: narrow ? b.narrowLabel : b.label, color: colour,
                                      baseFontSize: baseFontSize, enabled: use.enabled, action: use.action)
+                        .lineLimit(1)
+                        .fixedSize()
                         .accessibilityIdentifier(id)
                 } else {
                     Button(narrow ? b.narrowLabel : b.label, action: use.action)
@@ -37,6 +42,8 @@ struct DebugHeaderView: View {
                         .foregroundStyle(colour)
                         .opacity(use.enabled ? 1 : 0.4)
                         .disabled(!use.enabled)
+                        .lineLimit(1)
+                        .fixedSize()
                         .accessibilityIdentifier(id == "btn-armed" ? "btn-freeze-armed" : id)
                 }
             }

@@ -51,6 +51,10 @@ typedef struct {
 @property (class, readonly) CGFloat printerMinWidth;
 @property (class, readonly) CGFloat printerMaxWidth;
 @property (class, readonly) CGFloat debuggerMinWidth;
+/// The paper panel's row: the gap between its buttons and at its ends, and
+/// the compact row's (TIViewRules.paperRowCompact).
+@property (class, readonly) CGFloat paperRowGap;
+@property (class, readonly) CGFloat paperRowCompactGap;
 /// The bar's and the panels' text scale for a faceplate this wide.
 @end
 

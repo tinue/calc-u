@@ -187,6 +187,16 @@ test("bar_fit_labels_and_width", () => {
   assert.equal(m.calcuShellBarFit(200, 250, 380, 220).width, 220);
 });
 
+// The paper panel's control row (paperRowCompact, chrome_tests.cpp); the
+// library's chrome compacts below 280.
+test("chrome_paper_row_compact", () => {
+  const s = { paperRowCompactWidth: 280 };
+  assert.equal(m.calcuShellPaperRowCompact(s, 279), true);
+  assert.equal(m.calcuShellPaperRowCompact(s, 280), false);
+  assert.equal(m.calcuShellPaperRowCompact(s, 400), false);
+  assert.equal(m.calcuShellPaperRowCompact({ paperRowCompactWidth: 0 }, 100), false);
+});
+
 
 // The view rule (shell/View, library/shell/tests/view_tests.cpp): the
 // TI-59's tall faceplate with its column's margins and bar, the PC-1500's

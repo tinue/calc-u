@@ -126,6 +126,8 @@ Value ControlState::toValue() const {
         add(e, "id", c.control.id.value);
         add(e, "form", c.control.form == machine::ControlForm::Key ? "key" : "switch");
         add(e, "on", c.control.on);
+        add(e, "label", c.control.label);
+        add(e, "shortLabel", c.control.shortLabel);
         cs.push_back(Value(std::move(e)));
     }
     add(o, "controls", Value(std::move(cs)));

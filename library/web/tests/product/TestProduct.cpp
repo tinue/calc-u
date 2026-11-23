@@ -362,7 +362,9 @@ private:
                 for (const auto& ci : calcu::peripherals::controlsOf(*m, cm::PeripheralOwner{p.peripheral, p.place}))
                     controls.push_back(s::Value::object({{"id", ci.id.value},
                                                          {"form", ci.form == cm::ControlForm::Key ? "key" : "switch"},
-                                                         {"on", ci.on}}));
+                                                         {"on", ci.on},
+                                                         {"label", ci.label},
+                                                         {"shortLabel", ci.shortLabel}}));
                 break;
             }
         printer_->set(std::make_shared<Given>(s::Value::object({{"owner", owner}, {"name", name}, {"controls", s::Value(std::move(controls))}})));

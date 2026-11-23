@@ -187,7 +187,7 @@ Its members, in this order:
 | `places` | `[{place, connector, pinOut, available, reason?, empty: {available, reason?}, fitting: [choice]}]`; a choice is `{id, name, plugged, variant?, variants: [{id, available, reason?}], available, reason?}` |
 | `mediaPlaces` | `[{id, owner?: {place, peripheral}, kind, passage: "holding" \| "pass-through", sides: [..], insert: {available, reason?}}]` |
 | `panels` | `[{kind, owner?: {place, peripheral}}]`; `paper` is the one panel kind the library knows |
-| `controls` | `[{place, peripheral, id, form: "key" \| "switch", on}]` |
+| `controls` | `[{place, peripheral, id, form: "key" \| "switch", on, label, shortLabel}]` |
 | `actions` | `[{command, available, reason?}]`, in the order `reset`, `cold-boot`, `load-preset`, `open` |
 | `product` | `{<prefixed name>: value, …}`: the product's own entries, unread by the library |
 
@@ -199,7 +199,11 @@ Its members, in this order:
   replace when the place is full); plugged in, its detach.
 - `controls` lists every control of every plugged-in peripheral, in the
   order of the place walk and each owner's in its descriptor's order;
-  `on` is a key down or a switch on.
+  `on` is a key down or a switch on. `label` is what every GUI writes on
+  the control, `shortLabel` what it writes in a compact row (the paper
+  panel's below the chrome's `paperRowCompactWidth`, `shell::paperRowCompact`);
+  both are the peripheral descriptor's, filled in: `label` is the ID where
+  none is declared, `shortLabel` the label where none is declared.
 
 ## 6. Typing
 

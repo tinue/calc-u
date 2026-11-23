@@ -36,6 +36,10 @@ double Chrome::textScale(double faceplateWidth) const {
     return std::clamp(faceplateWidth / sizes.textScaleWidth, 1.0, std::max(1.0, sizes.textScaleMax));
 }
 
+bool paperRowCompact(const ChromeSizes& s, double rowWidth) {
+    return s.paperRowCompactWidth > 0 && rowWidth < s.paperRowCompactWidth;
+}
+
 namespace {
 
 Value colours(const ChromeColours& c) {
@@ -83,7 +87,10 @@ Value toValue(const Chrome& chrome) {
                                  {"panelsMinWidth", s.panelsMinWidth},
                                  {"panelsMinHeight", s.panelsMinHeight},
                                  {"textScaleWidth", s.textScaleWidth},
-                                 {"textScaleMax", s.textScaleMax}});
+                                 {"textScaleMax", s.textScaleMax},
+                                 {"paperRowCompactWidth", s.paperRowCompactWidth},
+                                 {"paperRowGap", s.paperRowGap},
+                                 {"paperRowCompactGap", s.paperRowCompactGap}});
     Value::Object o{{"light", colours(chrome.light)}};
     if (chrome.dark) o.push_back({"dark", colours(*chrome.dark)});
     o.push_back({"sizes", std::move(sizes)});

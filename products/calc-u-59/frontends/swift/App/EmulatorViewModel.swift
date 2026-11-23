@@ -122,7 +122,8 @@ class EmulatorViewModel {
     /// The outcome of the last Copy: "Copied to clipboard" or "Copy failed".
     var paperCopyMessage: String? = nil
     var paperCopySerial: Int = 0
-    var printerTrace: Bool = false
+    /// The PC-100C's controls as the control state lists them (none without one).
+    var printerControls: [TIPaperControl] = []
 
     // ── Binary trace (the "C" indicator toggle) ──────────────────────────────
     var cIndicatorDebug: Bool = false {
@@ -350,9 +351,7 @@ class EmulatorViewModel {
     // MARK: - Printer
 
     // The PC-100C's controls through the library's `set-control`.
-    func pressPrinterPrint(_ pressed: Bool) { session?.setPrinterControl("PRINT", on: pressed) }
-    func pressPrinterAdv(_ pressed: Bool) { session?.setPrinterControl("ADV", on: pressed) }
-    func togglePrinterTrace() { session?.setPrinterControl("TRACE", on: !printerTrace) }
+    func setPrinterControl(_ id: String, on: Bool) { session?.setPrinterControl(id, on: on) }
     /// Copy and Cut are the session's: the picture is the
     /// library's, the clipboard entry the bridge's.
     func copyPaper() { session?.copyPaper() }
@@ -577,7 +576,8 @@ class EmulatorViewModel {
                 }
                 paperBands = bands
             }
-            if printerTrace != controller.printerTrace { printerTrace = controller.printerTrace }
+            let controls = controller.printerControls
+            if printerControls != controls { printerControls = controls }
         }
         if c.contains(.card) {
             let state: CardState = controller.cardPassing ? .swiping : .noCard

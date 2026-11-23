@@ -13,11 +13,14 @@
 
 namespace calcu::peripherals {
 
-// key: on = down; switch: on.
+// key: on = down; switch: on. The labels are the descriptor's, filled in:
+// the ID where none is declared, the label where no short one is.
 struct ControlInfo {
     machine::ControlId id;
     machine::ControlForm form;
     bool on = false;
+    std::string label = {};
+    std::string shortLabel = {};
     bool operator==(const ControlInfo&) const = default;
 };
 

@@ -149,31 +149,35 @@ struct PrinterView: View {
 
     private var buttonBar: some View {
         GeometryReader { geo in
-            // The narrow tape beside the debugger (iPhone Duo).
-            let compact = TIViewRules.compactPrinterBar(geo.size.width)
-            let printLabel = compact ? "PRN" : "PRINT"
-            HStack(spacing: compact ? 6 : 12) {
-                printerButton(printLabel, compact: compact) {
-                    viewModel.pressPrinterPrint(true)
-                } onRelease: {
-                    viewModel.pressPrinterPrint(false)
-                }
-
-                Button {
-                    viewModel.togglePrinterTrace()
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("T")
-                        ChromeDot(on: viewModel.printerTrace)
+            // The library's rule (shell::paperRowCompact): the narrow tape
+            // beside the debugger (iPhone Duo) takes the short labels.
+            let compact = TIViewRules.paperRowCompact(geo.size.width)
+            let gap = compact ? Chrome.paperRowCompactGap : Chrome.paperRowGap
+            HStack(spacing: gap) {
+                // The PC-100C's controls as the control state labels them:
+                // a key held while pressed, a switch with the dot of its position.
+                ForEach(viewModel.printerControls, id: \.controlID) { c in
+                    let label = compact ? c.shortLabel : c.label
+                    if c.isSwitch {
+                        Button {
+                            viewModel.setPrinterControl(c.controlID, on: !c.on)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(label)
+                                ChromeDot(on: c.on)
+                            }
+                            .printerButtonChrome(compact: compact)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("paper-control-\(c.controlID)")
+                    } else {
+                        printerButton(label, compact: compact) {
+                            viewModel.setPrinterControl(c.controlID, on: true)
+                        } onRelease: {
+                            viewModel.setPrinterControl(c.controlID, on: false)
+                        }
+                        .accessibilityIdentifier("paper-control-\(c.controlID)")
                     }
-                    .printerButtonChrome(compact: compact)
-                }
-                .buttonStyle(.plain)
-
-                printerButton("ADV", compact: compact) {
-                    viewModel.pressPrinterAdv(true)
-                } onRelease: {
-                    viewModel.pressPrinterAdv(false)
                 }
 
                 Spacer(minLength: 0)
@@ -185,6 +189,7 @@ struct PrinterView: View {
                 }
                 .disabled(viewModel.printerLines.isEmpty || viewModel.paperOwner.isEmpty)
                 .accessibilityLabel("Copy")
+                .help("Copy")
                 .accessibilityIdentifier("paper-copy")
 
                 Button { viewModel.cutPaper() } label: {
@@ -194,10 +199,11 @@ struct PrinterView: View {
                 }
                 .disabled(viewModel.printerLines.isEmpty || viewModel.paperOwner.isEmpty)
                 .accessibilityLabel("Cut")
+                .help("Cut")
                 .accessibilityIdentifier("paper-cut")
             }
             .buttonStyle(ChromeButtonStyle())
-            .padding(.horizontal, compact ? 6 : 12)
+            .padding(.horizontal, gap)
             .frame(maxWidth: .infinity)
             .frame(height: Chrome.panelButtonsHeight)
             .background(Chrome.buttonBar)

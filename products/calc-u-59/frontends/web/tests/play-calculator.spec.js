@@ -574,6 +574,14 @@ test('PRINT and ADV are held, TRACE is a switch, the view control shows the view
   const control = (id) => printer.locator(`[data-calcu=paper-control-${id}]`);
   await connectPrinter(page);
   await expect(control('PRINT')).toBeVisible();
+  // The labels of the PC-100C's row, from the control state: PRINT, T with
+  // the dot of TRACE's position, ADV; Copy and Cut as icons.
+  await expect(control('PRINT')).toHaveText('PRINT');
+  await expect(control('TRACE')).toHaveText('T');
+  await expect(control('ADV')).toHaveText('ADV');
+  await expect(control('TRACE').locator('.calcu-paper-dot')).toHaveCount(1);
+  await expect(printer.locator('[data-calcu=paper-copy]')).toHaveAttribute('aria-label', 'Copy');
+  await expect(printer.locator('[data-calcu=paper-cut]')).toHaveAttribute('aria-label', 'Cut');
   // PRINT: down while held, up on release; it prints the display.
   await control('PRINT').dispatchEvent('pointerdown', { pointerId: 1 });
   await expect(control('PRINT')).toHaveAttribute('aria-pressed', 'true');
@@ -590,6 +598,7 @@ test('PRINT and ADV are held, TRACE is a switch, the view control shows the view
   await expect(control('TRACE')).toHaveAttribute('aria-pressed', 'false');
   await control('TRACE').click();
   await expect(control('TRACE')).toHaveAttribute('aria-pressed', 'true');
+  await expect(control('TRACE').locator('.calcu-paper-dot-on')).toHaveCount(1);
   await control('TRACE').click();
   await expect(control('TRACE')).toHaveAttribute('aria-pressed', 'false');
   // The view control names the view that is on.
@@ -836,9 +845,13 @@ test('the standalone app follows the window as it rotates', async ({ page }) => 
   // iPhone Duo open: the narrow tape's button bar fits it.
   await page.setViewportSize({ width: 880, height: 645 });
   await expect(page.locator('[data-panel=debug]')).toBeVisible();
-  // The row below the paper wraps in the narrow tape: nothing is cut off.
+  // The narrow tape's row: the short labels below the chrome's compact
+  // width, in one row, nothing cut off.
   const paperRow = page.locator('[data-panel=paper] .calcu-paper-footer');
-  await expect(paperRow.locator('[data-calcu=paper-control-PRINT]')).toBeVisible();
+  const print = paperRow.locator('[data-calcu=paper-control-PRINT]');
+  await expect(print).toBeVisible();
+  const paperWidth = await page.locator('[data-panel=paper] [data-calcu=paper-panel]').evaluate((e) => e.clientWidth);
+  await expect(print).toHaveText(paperWidth < 280 ? 'PRN' : 'PRINT');
   expect(await paperRow.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
 
   // iPad mini and iPad Pro: all three panels; the bar's labels only where

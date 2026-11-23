@@ -42,4 +42,6 @@ static TIChromeColour ti(const calcu::shell::Colour& c) {
 + (CGFloat)printerMinWidth { return sizes().printerMinWidth; }
 + (CGFloat)printerMaxWidth { return sizes().printerMaxWidth; }
 + (CGFloat)debuggerMinWidth { return sizes().debuggerMinWidth; }
++ (CGFloat)paperRowGap { return sizes().paperRowGap; }
++ (CGFloat)paperRowCompactGap { return sizes().paperRowCompactGap; }
 @end

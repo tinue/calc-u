@@ -356,9 +356,10 @@ TEST(pc100c_print_adv_trace) {
     CHECK(c != nullptr);
     if (!c) return;
     using calcu::peripherals::ControlInfo;
-    CHECK(c->list() == (std::vector<ControlInfo>{{ControlId{"PRINT"}, ControlForm::Key, false},
-                                                 {ControlId{"ADV"}, ControlForm::Key, false},
-                                                 {ControlId{"TRACE"}, ControlForm::Switch, false}}));
+    // The printer's row in its order and labels: PRINT (PRN where narrow), T, ADV.
+    CHECK(c->list() == (std::vector<ControlInfo>{{ControlId{"PRINT"}, ControlForm::Key, false, "PRINT", "PRN"},
+                                                 {ControlId{"TRACE"}, ControlForm::Switch, false, "T", "T"},
+                                                 {ControlId{"ADV"}, ControlForm::Key, false, "ADV", "ADV"}}));
     CHECK(c->set(ControlId{"PRINT"}, true) == calcu::peripherals::ControlCall::WrongForm);
     CHECK(c->press(ControlId{"TRACE"}) == calcu::peripherals::ControlCall::WrongForm);
     CHECK(c->press(ControlId{"PAPER"}) == calcu::peripherals::ControlCall::UnknownControl);

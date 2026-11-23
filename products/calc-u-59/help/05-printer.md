@@ -24,15 +24,15 @@ memory ([What differs by model](09-models.md)).
 ## The printer's controls
 
 While the PC-100C is attached, the paper panel has the printer's own
-controls, in the row below the paper:
+controls, at the left of the row below the paper:
 
-- **PRINT** prints the display.
-- **ADV** advances the paper while you hold it.
-- **T** is the printer's **TRACE** switch: while it is on, the calculator
-  prints every step it carries out. The switch keeps its position when
-  the printer is detached and attached again, and through a model
-  switch, as the real switch does. A preset sets it with
+- **PRINT** prints the display; in a narrow panel it reads **PRN**.
+- **T** is the printer's **TRACE** switch; its dot is lit while it is
+  on. While it is on, the calculator prints every step it carries out.
+  The switch keeps its position when the printer is detached and
+  attached again, and through a model switch, as the real switch does. A preset sets it with
   `printer-trace: on`; without that step a preset leaves it off.
+- **ADV** advances the paper while you hold it.
 
 ## The paper
 
@@ -43,8 +43,9 @@ control that switches them shows the view that is on:
   included;
 - the **text**, which can be selected and read quickly.
 
-**Copy** puts the paper on the clipboard as a picture and as text; **Cut**
-copies it and then empties it ([Copy and
+**Copy** (the two sheets at the right of the row) puts the paper on the
+clipboard as a picture and as text; **Cut** (the scissors) copies it and
+then empties it ([Copy and
 Cut](../../../library/help/05-peripherals-and-paper.md#copy-and-cut)).
 For long output, copy it and paste it into a text editor.
 

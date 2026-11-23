@@ -128,8 +128,9 @@ typedef struct {
 + (BOOL)debugHeaderNarrow:(CGFloat)baseFontSize;
 /// shell::view — the view of a window of this size (points, its safe area).
 + (TIView)viewWidth:(CGFloat)width height:(CGFloat)height;
-/// cu59::compactPrinterBar — short printer button labels for this tape width.
-+ (BOOL)compactPrinterBar:(CGFloat)printerWidth;
+/// shell::paperRowCompact — the paper panel's row this wide: the controls' short
+/// labels and the compact gap.
++ (BOOL)paperRowCompact:(CGFloat)rowWidth;
 /// cu59::mobileTopMargin — space above a side-by-side layout for a window's top inset.
 + (CGFloat)mobileTopMargin:(CGFloat)topInset;
 + (NSString *)partitionLineProgramRegs:(NSInteger)programRegs dataRegs:(NSInteger)dataRegs;

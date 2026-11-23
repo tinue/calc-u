@@ -181,7 +181,7 @@ TEST(descriptor_pc100c_and_14_modules) {
         CHECK(p->roms.empty());
         std::vector<std::string> ids;
         for (const auto& k : p->controls) ids.push_back(k.id.value + (k.form == ControlForm::Key ? ":key" : ":switch"));
-        CHECK(ids == (std::vector<std::string>{"PRINT:key", "ADV:key", "TRACE:switch"}));
+        CHECK(ids == (std::vector<std::string>{"PRINT:key", "TRACE:switch", "ADV:key"}));   // the row's order
         CHECK(!p->components.empty() && p->components[0].depth == Depth::Functional);
     }
     // Its paper: the capability of the kind paper-output while it is plugged in.

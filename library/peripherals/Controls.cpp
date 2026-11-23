@@ -4,7 +4,11 @@ namespace calcu::peripherals {
 
 ControlTable::ControlTable(std::vector<machine::ControlDescriptor> controls, OnChange onChange)
     : onChange_(std::move(onChange)) {
-    for (const auto& c : controls) controls_.push_back(ControlInfo{c.id, c.form, false});
+    for (const auto& c : controls) {
+        std::string label = c.label.empty() ? c.id.value : c.label;
+        std::string shortLabel = c.shortLabel.empty() ? label : c.shortLabel;
+        controls_.push_back(ControlInfo{c.id, c.form, false, std::move(label), std::move(shortLabel)});
+    }
 }
 
 ControlCall ControlTable::change(const machine::ControlId& id, machine::ControlForm form, bool on) {

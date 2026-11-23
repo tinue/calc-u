@@ -1,6 +1,7 @@
 // `calcu attach`: the client against an endpoint whose
 // inbox answers in the test (a stand-in for the app).
 
+#include "LineInput.hpp"
 #include "TestHarness.hpp"
 #include "harness/attach/AttachClient.hpp"
 #include "harness/attach/AttachEndpoint.hpp"
@@ -48,16 +49,6 @@ struct EchoApp final : AttachInbox {
         }
     }
 };
-
-std::function<std::optional<std::string>()> input(std::vector<std::string> lines) {
-    auto q = std::make_shared<std::deque<std::string>>(lines.begin(), lines.end());
-    return [q]() -> std::optional<std::string> {
-        if (q->empty()) return std::nullopt;
-        std::string l = q->front();
-        q->pop_front();
-        return l;
-    };
-}
 
 } // namespace
 

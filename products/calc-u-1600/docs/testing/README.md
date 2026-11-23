@@ -588,10 +588,10 @@ flowchart LR
 | Part | Where | Does |
 |---|---|---|
 | `calcu_pytest` | `products/calc-u-1600/tools/machine/` | the pytest plugin: the `make_machine` fixture, the path names, the report |
-| `report.py` | same folder | the run's report |
 | `Machine` | same folder, `machine.py` | the PC-1500/1600 part: models, slots, media, bus ROMs, `card()`, `listing()` |
 | `cardimage.py` | same folder | reads saved module files into bytes, and the RAM disk on them |
 | `Session` | `library/harness/python/calcu_machine.py` | the part common to every Calc-U product: steps, reads, path names, starting and ending `calcu` |
+| `report.py` | `library/harness/python/` | the run's report, common to every Calc-U product; `calcu_pytest` hands it the ROM folder |
 | `calcu` | `library/harness/cli/`, built into `build/tools/` | the harness: the emulator without a window, driven by command lines |
 
 - `conftest.py` loads `calcu_pytest`; `make_machine` makes the work folder and a `Machine` with the

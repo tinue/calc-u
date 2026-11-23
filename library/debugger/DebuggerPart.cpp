@@ -339,7 +339,6 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
             }
             before.emplace_back(at, old);
         }
-        c.machineEdited();   // a poke into display RAM or a display port shows at once
         return Done{};
     });
 

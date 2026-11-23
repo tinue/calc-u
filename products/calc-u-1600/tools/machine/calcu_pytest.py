@@ -1,5 +1,6 @@
 """The pytest plugin of the driver: the fixtures `make_machine` and `machine_class`, the path
-names of pytest.ini and the run's report (report.py).
+names of pytest.ini and the run's report (library/harness/python/report.py, on the PC-1500/1600's
+ROM images).
 
     [pytest]
     pythonpath = <checkout>/products/calc-u-1600/tools/machine <checkout>/library/harness/python
@@ -20,7 +21,10 @@ import itertools
 import pytest
 
 import report
+from calcu_machine import CHECKOUT
 from machine import Machine, MachineError
+
+ROMS = CHECKOUT / "products" / "calc-u-1600" / "roms"
 
 
 def pytest_addoption(parser):
@@ -40,7 +44,7 @@ def pytest_configure(config):
     if not folder or hasattr(config, "workerinput"):   # the workers' results reach the controller
         return
     title = config.getini("calcu_report_title") or config.rootpath.name
-    config.pluginmanager.register(report.Reporter(title, config.rootpath / folder), "calcu_report")
+    config.pluginmanager.register(report.Reporter(title, config.rootpath / folder, ROMS), "calcu_report")
 
 
 def _path_names(config) -> dict[str, str]:

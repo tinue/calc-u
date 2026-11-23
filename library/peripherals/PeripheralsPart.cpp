@@ -58,11 +58,9 @@ void PeripheralsPart::machineChanged(sessions::SessionContext& c) {
         return;
     }
     links_.machineChanged(*m);
-    setClocksFromHost(*m, hostDateTime(c.hostTime()));
+    setClocksFromHost(c);
 }
 
-void PeripheralsPart::operationEnded(sessions::SessionContext& c) {
-    if (machine::Machine* m = c.machine(); m && c.clockFollowsHost()) setClocksFromHost(*m, hostDateTime(c.hostTime()));
-}
+void PeripheralsPart::operationEnded(sessions::SessionContext& c) { followHostClock(c); }
 
 } // namespace calcu::peripherals

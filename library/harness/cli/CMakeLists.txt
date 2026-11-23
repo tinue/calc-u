@@ -106,4 +106,12 @@ if(CALCU_TESTS)
                    COMMAND ${py} ${lib}/harness/python/tests/test_calcu_serve.py $<TARGET_FILE:calcu_test>
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
+  # The run report of the products' pytest plugins, with pytest through uv
+  # (fetched once, so Longer). Where uv is.
+  if(CALCU_UV)
+    calcu_add_test(calcu_report_python longer
+                   COMMAND ${CMAKE_COMMAND} -E env CALCU=$<TARGET_FILE:calcu_test> PYTHONDONTWRITEBYTECODE=1
+                           ${CALCU_UV} run --no-project --with pytest==8.3.5 pytest -q
+                   WORKING_DIRECTORY ${lib}/harness/python)
+  endif()
 endif()

@@ -127,7 +127,7 @@ std::optional<Found> resolveByFile(MediaPart& part, const KindDecl& k, const std
         if (auto* v = std::get_if<std::vector<std::uint8_t>>(&c)) return std::string(v->begin(), v->end());
         return std::nullopt;
     });
-    if (moduleTaken && r.status == ReadOutcome::Status::NotMedium && r.info.content) {
+    if (moduleTaken && isPlainModule(k, r)) {
         Found f;
         f.info = r.info;
         f.content = r.info.content;

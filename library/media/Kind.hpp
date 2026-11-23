@@ -128,6 +128,13 @@ struct KindDecl {
 // The `asks:` question of a replace of the medium named `name`.
 std::string replaceQuestionFor(const KindDecl&, const std::string& name);
 
+// A file of a kind a module slot holds that is no medium but defines a
+// module (ReadOutcome::Status::NotMedium): plugged as that module, without
+// a binding, so it is never saved.
+inline bool isPlainModule(const KindDecl& k, const ReadOutcome& r) {
+    return k.heldBy == HeldBy::ModuleSlot && r.status == ReadOutcome::Status::NotMedium && r.info.content;
+}
+
 // For the non-media modules of a module slot: label, tooltip and
 // order. Default: the descriptor's name, no tooltip, by name. Calc-U-59: the
 // module's `description`, no tooltip, `menu-sort`.

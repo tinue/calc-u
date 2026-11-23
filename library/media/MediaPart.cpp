@@ -1019,11 +1019,11 @@ MediaPart::OpenedMedium MediaPart::readOpened(std::string_view name, const std::
         return out;
     }
     const ReadOutcome r = out.kind->codec->read(bytes, path.empty() ? MediumCodec::Companion{} : companionsBeside(path));
-    out.plainModule = r.status == ReadOutcome::Status::NotMedium && r.info.content && out.kind->heldBy == HeldBy::ModuleSlot;
+    out.plainModule = isPlainModule(*out.kind, r);
     if (r.unreadable() && !out.plainModule)
         out.refusal = "The " + out.kind->label + " file " + baseName(name) + " cannot be read" +
                       (r.problem.empty() ? "." : ": " + r.problem);
-    out.isTemplate = r.info.isTemplate;
+    out.info = r.info;
     out.isModule = out.kind->heldBy == HeldBy::ModuleSlot;
     return out;
 }
@@ -1063,22 +1063,23 @@ std::optional<std::string> MediaPart::refusesNow(const std::string& word, const 
 CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     const std::string name = sessions::textArg(a, "name");
     const std::string path = sessions::textArg(a, "path");
+    const bool upload = sessions::flagArg(a, "upload");
     std::string bytes;
     if (const auto b = sessions::bytesArg(a, "bytes")) bytes.assign(b->begin(), b->end());
     else if (const auto f = shelf_.files().read(path).bytes) bytes = *f;
     else return Refused{"The file " + baseName(name.empty() ? path : name) + " cannot be read."};
     const std::string fileName = baseName(name.empty() ? path : name);
-    const OpenedMedium o = readOpened(fileName, bytes, sessions::flagArg(a, "upload") ? std::string() : path);
+    const OpenedMedium o = readOpened(fileName, bytes, upload ? std::string() : path);
     if (o.refusal) return Refused{*o.refusal};
     const KindDecl& k = *o.kind;
-    if (o.plainModule) return plugModuleFile(c, k, bytes, sessions::textArg(a, "place"));
+    const std::string word = sessions::textArg(a, "place");
     Binding b;
-    Content content;
-    MediumInfo info;
-    if (sessions::flagArg(a, "upload")) {   // a Web frontend imports it first
+    MediumInfo info = o.info;
+    if (o.plainModule) {   // the module it defines goes into its slot, without a binding: never saved, nor imported
+        if (word.empty()) return Refused{"The " + k.label + " is no medium; it goes only into a slot."};
+    } else if (upload) {   // a Web frontend imports it first
         refreshShelf(&c);
-        const ReadOutcome r = k.codec->read(bytes, {});
-        const ShelfEntry* same = shelf_.find(k, nameOf(r.info, fileName, k));
+        const ShelfEntry* same = shelf_.find(k, nameOf(o.info, fileName, k));
         if (same && same->origin == Origin::Saved && !sessions::flagArg(a, "confirmed"))
             return Refused{std::string(kAsks) + replaceQuestionFor(k, same->name)};
         const Outcome imp = importBytes(c, fileName, bytes, {}, sessions::flagArg(a, "confirmed"));
@@ -1088,54 +1089,36 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
         b = bindingFor(*e);
         info = e->info;
     } else {   // used and written where it lies
-        const ReadOutcome r = k.codec->read(bytes, path.empty() ? MediumCodec::Companion{} : companionsBeside(path));
-        info = r.info;
         b.kind = &k;
-        b.name = nameOf(r.info, fileName, k);
-        b.description = r.info.description;
+        b.name = nameOf(info, fileName, k);
+        b.description = info.description;
         b.origin = Origin::Opened;
-        b.isTemplate = r.info.isTemplate;
+        b.isTemplate = info.isTemplate;
         b.path = path;
         b.source = bytes;
-        b.hasWriteProtect = r.info.hasWriteProtect;
-        b.writeProtected = r.info.writeProtected;
+        b.hasWriteProtect = info.hasWriteProtect;
+        b.writeProtected = info.writeProtected;
         if (path.empty()) b.isTemplate = true;   // nowhere to write it back
     }
-    content = info.content;
-    const std::string word = sessions::textArg(a, "place");
     if (word.empty()) return done();   // no place: only imported
     sync(c);
     const Place* p = place(word);
     if (!p) return Refused{noPlace(word)};
-    if (!p->kind || p->kind->id != k.id) return Refused{"The " + k.label + " does not go into " + word + "."};
+    if (!p->kind || p->kind->id != k.id || (o.plainModule && !p->slot))
+        return Refused{"The " + k.label + " does not go into " + word + "."};
     if (p->slot) {
-        if (!k.moduleRequest) return Refused{"The " + k.label + " cannot be plugged in."};
-        auto req = k.moduleRequest(info, p->path);
+        auto req = k.moduleRequest ? k.moduleRequest(info, p->path) : std::nullopt;
         if (!req) return Refused{"The " + k.label + " cannot be plugged in."};
+        if (o.plainModule) return changeSlot(c, *p, std::move(req), std::nullopt);
         b.peripheral = req->peripheral.value;
         return changeSlot(c, *p, std::move(req), std::move(b));
     }
     if (p->passThrough) {   // fitted, not fed
-        if (auto e = arm(c, word, std::move(b), std::move(content))) return Refused{*e};
+        if (auto e = arm(c, word, std::move(b), std::move(info.content))) return Refused{*e};
         return done();
     }
-    if (auto e = insert(c, word, std::move(b), std::move(content), p->sides.empty() ? 0 : p->sides[0])) return Refused{*e};
+    if (auto e = insert(c, word, std::move(b), std::move(info.content), p->sides.empty() ? 0 : p->sides[0])) return Refused{*e};
     return done();
-}
-
-// A module file that is no medium (a ROM module) goes into its slot as the
-// module it defines, without a binding: it is never saved, nor imported.
-CommandOutcome MediaPart::plugModuleFile(SessionContext& c, const KindDecl& k, const std::string& bytes,
-                                         const std::string& word) {
-    if (word.empty()) return Refused{"The " + k.label + " is no medium; it goes only into a slot."};
-    sync(c);
-    const Place* p = place(word);
-    if (!p) return Refused{noPlace(word)};
-    if (!p->slot || !p->kind || p->kind->id != k.id) return Refused{"The " + k.label + " does not go into " + word + "."};
-    const ReadOutcome r = k.codec->read(bytes, {});
-    auto req = k.moduleRequest ? k.moduleRequest(r.info, p->path) : std::nullopt;
-    if (!req) return Refused{"The " + k.label + " cannot be plugged in."};
-    return changeSlot(c, *p, std::move(req), std::nullopt);
 }
 
 // ── Choosing ────────────────────────────────────────────────────────────

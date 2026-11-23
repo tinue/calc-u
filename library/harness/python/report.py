@@ -1,9 +1,11 @@
 """A Markdown report of a pytest run: which state was tested on what, and whether the run was complete.
 
-calcu_pytest switches it on with `calcu_report = <folder>` in pytest.ini (relative to the test
-project root), with `calcu_report_title = <title>` (default: the root's folder name). The folder
-gets one report per run and `latest.md`, the last KEEP_REPORTS runs are kept. A project adds facts
-of its own with the hook `pytest_calcu_report_facts(config)`, returning a dict, in its conftest.py.
+A product's pytest plugin (Calc-U-1600's calcu_pytest) registers a Reporter with the folder of the
+reports and the product's ROM folder, switched on with `calcu_report = <folder>` in pytest.ini
+(relative to the test project root) and `calcu_report_title = <title>` (default: the root's folder
+name). The folder gets one report per run and `latest.md`, the last KEEP_REPORTS runs are kept. A
+project adds facts of its own with the hook `pytest_calcu_report_facts(config)`, returning a dict,
+in its conftest.py.
 
 Contributed by spellbound and fitted to the driver.
 """
@@ -27,14 +29,13 @@ MESSAGE_LENGTH = 160
 LATEST = "latest.md"
 OUTCOMES = ("passed", "failed", "error", "skipped")
 STOPPED_EXIT_CODES = {2, 3, 4}   # interrupted, internal error, usage error
-ROMS = CHECKOUT / "products" / "calc-u-1600" / "roms"
 
 
 def sha256(path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def rom_images_hash(folder: Path = ROMS) -> str:
+def rom_images_hash(folder: Path) -> str:
     """One hash over the ROM images calcu runs on: their names and bytes."""
     digest = hashlib.sha256()
     for path in sorted(folder.iterdir()):
@@ -60,12 +61,12 @@ def project_commit(root) -> str:
     return head + (" + uncommitted changes" if git(root, "status", "--porcelain", "--", ".") else "")
 
 
-def calcu_facts() -> dict[str, str]:
-    """What the suite ran on: the Calc-U checkout, the calcu program, the ROM images."""
+def calcu_facts(roms: Path) -> dict[str, str]:
+    """What the suite ran on: the Calc-U checkout, the calcu program, the ROM images in roms."""
     return {
         "Calc-U": git(CHECKOUT, "describe", "--always", "--dirty") or "unknown",
         "calcu": calcu_program(),
-        "ROM images": rom_images_hash(),
+        "ROM images": rom_images_hash(roms),
     }
 
 
@@ -142,9 +143,10 @@ class Hooks:
 class Reporter:
     """The pytest plugin; on the controlling process only, xdist sends it every result."""
 
-    def __init__(self, title: str, directory: Path):
+    def __init__(self, title: str, directory: Path, roms: Path):
         self.title = title
         self.directory = Path(directory)
+        self.roms = Path(roms)
         self.counts = defaultdict(lambda: defaultdict(int))
         self.failures = []
         self.started = datetime.now(timezone.utc)
@@ -173,7 +175,7 @@ class Reporter:
         if config.option.collectonly:
             return
         reasons = incomplete_reasons(config.option, config.args, config.rootpath, config.invocation_params.dir)
-        facts = {"Test project": project_commit(config.rootpath), **calcu_facts()}
+        facts = {"Test project": project_commit(config.rootpath), **calcu_facts(self.roms)}
         for extra in config.hook.pytest_calcu_report_facts(config=config):
             facts.update(extra or {})
         seconds = time.monotonic() - self.clock

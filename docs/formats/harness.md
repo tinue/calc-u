@@ -410,8 +410,8 @@ setter `harness`. A machine without a debug target refuses every one with
   program's instruction would do it; the space of the values last
   written keeps it, as it keeps the program's. A space of the values last
   written is not written (`The cell <address> of <space> cannot be
-  written.`). After a `poke` the `display` is read again, so a poke into
-  display memory or a display port shows at once.
+  written.`). The `display` is read again after every command, so a poke
+  into display memory or a display port shows at once.
 - `expect-register` is refused with `The register <name> is <value>.`,
   `expect-memory` at the first cell that differs with `The cell <address>
   of <space> is <value>.` (or `is unreadable.`, `holds none.`). A refused

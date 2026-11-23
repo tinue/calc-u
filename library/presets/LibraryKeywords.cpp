@@ -297,10 +297,8 @@ std::unique_ptr<Item> readScreenshot(const YamlNode& v, ReadContext& ctx) {
 class SyncClockItem final : public Item {
 public:
     Task<ItemResult> carryOut(RunContext& run) override {
-        machine::Machine* m = run.machine();
-        if (!m) co_return failed(sessions::kNoMachine);
-        const peripherals::HostDateTime t = peripherals::hostDateTime(run.session().hostTime());
-        peripherals::setClocksFromHost(*m, t);
+        if (!run.machine()) co_return failed(sessions::kNoMachine);
+        const peripherals::HostDateTime t = peripherals::setClocksFromHost(run.session());
         char buf[64];
         std::snprintf(buf, sizeof buf, "Clock set to %04d-%02d-%02d %02d:%02d:%02d.", t.year, t.month, t.day, t.hour,
                       t.minute, t.second);

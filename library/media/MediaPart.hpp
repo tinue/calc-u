@@ -183,7 +183,8 @@ public:
     struct OpenedMedium {
         std::optional<std::string> refusal;
         const KindDecl* kind = nullptr;
-        bool isTemplate = false, isModule = false;
+        MediumInfo info;            // as read, with the companions beside the file
+        bool isModule = false;
         bool plainModule = false;   // a module file that is no medium: plugged, never saved
     };
     // `path`: where the file lies, for its companions (a tape's sound file
@@ -237,8 +238,6 @@ private:
     std::optional<std::string> passingNow(const machine::Machine&, const Place&) const;   // the refusal while a medium passes
     // Command helpers.
     sessions::CommandOutcome choose(sessions::SessionContext&, const std::string& word, const std::string& entry);
-    sessions::CommandOutcome plugModuleFile(sessions::SessionContext&, const KindDecl&, const std::string& bytes,
-                                            const std::string& word);
     sessions::CommandOutcome changeSlot(sessions::SessionContext&, const Place&, std::optional<machine::PeripheralRequest>,
                                         std::optional<Binding>);
     struct Resolved {

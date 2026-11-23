@@ -47,6 +47,16 @@ def calcu_program() -> str:
     return program
 
 
+def _qualifiers(qualifiers: dict[str, Any]) -> str:
+    """The qualifiers as a command takes them, each after a blank: " bank=2"."""
+    return "".join(f" {k}={v}" for k, v in qualifiers.items())
+
+
+def _values(values: bytes) -> str:
+    """The bytes as hex numbers, separated by blanks."""
+    return " ".join(f"{b:#x}" for b in values)
+
+
 class Session:
     def __init__(self, workdir: os.PathLike | str, product: str, project: os.PathLike | str | None = None,
                  paths: Optional[dict[str, os.PathLike | str]] = None):
@@ -133,14 +143,12 @@ class Session:
         """count cells read without side effects (an unreadable cell is 0);
         qualifiers such as bank=2, vbank=17."""
         out = self.workdir / "peek.bin"
-        extra = "".join(f" {k}={v}" for k, v in qualifiers.items())
-        self.send(f"peek {target} {space} {address:#x} {count}{extra} file={out}")
+        self.send(f"peek {target} {space} {address:#x} {count}{_qualifiers(qualifiers)} file={out}")
         return out.read_bytes()
 
     def poke(self, target: str, space: str, address: int, values: bytes, **qualifiers: Any) -> None:
         """Writes the cells from address on, one per byte of values; qualifiers as peek."""
-        extra = "".join(f" {k}={v}" for k, v in qualifiers.items())
-        self.send(f"poke {target} {space} {address:#x} " + " ".join(f"{b:#x}" for b in values) + extra)
+        self.send(f"poke {target} {space} {address:#x} {_values(values)}{_qualifiers(qualifiers)}")
 
     def registers(self, target: str) -> dict[str, int]:
         """The registers of target, by name, as numbers."""
@@ -155,8 +163,7 @@ class Session:
 
     def expect_memory(self, target: str, space: str, address: int, values: bytes, **qualifiers: Any) -> None:
         """Raises MachineError if the cells do not hold values."""
-        extra = "".join(f" {k}={v}" for k, v in qualifiers.items())
-        self.send(f"expect-memory {target} {space} {address:#x} " + " ".join(f"{b:#x}" for b in values) + extra)
+        self.send(f"expect-memory {target} {space} {address:#x} {_values(values)}{_qualifiers(qualifiers)}")
 
     def save_state(self, path: os.PathLike | str) -> None:
         self.send(f"state-save {Path(path).resolve()}")
@@ -169,8 +176,7 @@ class Session:
         seconds of machine time. The machine stays paused there; returns the
         seconds it took. A paused machine runs on first, so a run_to to where it
         stands comes back there the next time round."""
-        extra = "".join(f" {k}={v}" for k, v in qualifiers.items())
-        self.send(f"break {target} {address:#x}{extra}")
+        self.send(f"break {target} {address:#x}{_qualifiers(qualifiers)}")
         try:
             # After the break: a resume passes the breakpoint it stands on.
             if self._send("state run-state")["result"]["state"]["paused"]:

@@ -306,8 +306,7 @@ RunControl::Result RunControl::resume() {
     mode_ = Mode::Running;
     hits_.clear();
     ctx_->machineSession().setPaused(false);   // pacing starts afresh
-    if (ctx_->clockFollowsHost())
-        peripherals::setClocksFromHost(*ctx_->machine(), peripherals::hostDateTime(ctx_->hostTime()));
+    peripherals::followHostClock(*ctx_);
     publish();
     return Result{};
 }

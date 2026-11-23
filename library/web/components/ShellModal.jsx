@@ -5,7 +5,9 @@
 // Opened, it takes the focus unless a child took it (autoFocus): the
 // default button (`calcu-shell-default`), else the dialog itself, so that
 // Escape always reaches it. And ShellDialogs, which shows
-// the settings dialog, About, the notice and "Loading…" of useCalcuShell.
+// the settings dialog, About, Name & Save (the library's CalcuNameAndSaveDialog
+// with the product's prompt for the place, data-calcu="name-and-save"), the
+// notice and "Loading…" of useCalcuShell.
 //
 //   <ShellModal name="settings-dialog" title="Settings" onClose={fn} buttons={…}>…</ShellModal>
 //   <ShellDialogs shell={s} savedMedia={Component?} />
@@ -37,6 +39,19 @@ function ShellModal({ name, title, onClose, children, buttons }) {
   );
 }
 
+// The prompt as shell::nameAndSavePrompt gives it: the place's, else the product's.
+function ShellNameAndSave({ shell }) {
+  const s = shell;
+  const n = (s.product && s.product.nameAndSave) || {};
+  const prompt = (n.prompts && n.prompts[s.naming]) || n.prompt;
+  return (
+    <ShellModal title="Name & Save" name="name-and-save" onClose={s.close}>
+      <CalcuNameAndSaveDialog place={calcuMediaPlace(s.inputs.media, s.naming)} prompt={prompt}
+        send={(c, a) => s.shell.send(c, a)} onClose={s.close} />
+    </ShellModal>
+  );
+}
+
 function ShellDialogs({ shell, savedMedia }) {
   const s = shell;
   const Saved = savedMedia;
@@ -46,6 +61,7 @@ function ShellDialogs({ shell, savedMedia }) {
       {s.open === "settings" && <ShellSettings shell={s} />}
       {s.open === "about" && <ShellAbout shell={s} />}
       {s.open === "saved-media" && Saved && <Saved shell={s.shell} onClose={s.close} />}
+      {s.open === "name-and-save" && <ShellNameAndSave shell={s} />}
       {s.notice && <ShellNotice shell={s} />}
     </React.Fragment>
   );

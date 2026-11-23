@@ -94,21 +94,9 @@ function LoadedDialog({ result, done }) {
   );
 }
 
-// Name & Save: the library's dialog with the prompt ("Instance name:" with the write-protect switch where the
-// module has one still off, "Disk name:", "Cassette name:"); a name an instance
-// has asks before it is replaced.
-function NameAndSaveDialog({ shell, place, prompt, done }) {
-  return (
-    <ShellModal title="Name & Save" name="name-and-save" onClose={() => done(null)}>
-      <CalcuNameAndSaveDialog place={place} prompt={prompt} send={(c, a) => shell.send(c, a)}
-        onClose={(saved) => done(saved ? true : null)} />
-    </ShellModal>
-  );
-}
-
 const DIALOGS = {
   notice: NoticeDialog, choice: ChoiceDialog,
-  address: AddressDialog, loaded: LoadedDialog, nameAndSave: NameAndSaveDialog,
+  address: AddressDialog, loaded: LoadedDialog,
 };
 
 // ask(kind, props) shows one dialog and resolves with its answer.

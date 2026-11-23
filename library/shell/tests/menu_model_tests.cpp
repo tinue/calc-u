@@ -397,6 +397,16 @@ TEST(media_place_item_only_with_its_media_place) {
     CHECK_EQ(problems.size(), std::size_t{1});
 }
 
+// Name & Save's prompt: the place's own, else the product's.
+TEST(name_and_save_prompt_per_place) {
+    auto p = st::product();
+    CHECK_EQ(nameAndSavePrompt(p, "card"), std::string("Name:"));
+    p.nameAndSave.prompt = "Instance name:";
+    p.nameAndSave.prompts = {{"card", "Card name:"}, {"slot-2", "Module name:"}};
+    CHECK_EQ(nameAndSavePrompt(p, "card"), std::string("Card name:"));
+    CHECK_EQ(nameAndSavePrompt(p, "slot-1"), std::string("Instance name:"));
+}
+
 TEST(no_settings_item_without_settings) {   // and Traits::about
     Traits t = kWeb;
     t.settings = false;

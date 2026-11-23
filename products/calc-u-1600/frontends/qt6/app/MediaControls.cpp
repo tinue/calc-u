@@ -13,7 +13,7 @@
 #include "control/ControlState.hpp"
 #include "media/MediaTopics.hpp"
 #include "qt6/MediaPicker.hpp"
-#include "qt6/SlotPicker.hpp"
+#include "qt6/Shell.hpp"
 #include "shell/Inputs.hpp"
 
 namespace sessions = calcu::sessions;
@@ -38,8 +38,8 @@ void lampStyle(QLabel* lamp, bool on) {
 
 } // namespace
 
-MediaPlaceControl::MediaPlaceControl(MachineController& c, std::string place, QWidget* parent)
-    : QWidget(parent), m_controller(c), m_place(std::move(place)) {
+MediaPlaceControl::MediaPlaceControl(MachineController& c, calcu::qt6::Shell& shell, std::string place, QWidget* parent)
+    : QWidget(parent), m_controller(c), m_shell(shell), m_place(std::move(place)) {
     m_picker = new calcu::qt6::MediaPicker(this);
     m_picker->setFocusPolicy(Qt::NoFocus);
     m_picker->setMinimumContentsLength(9);
@@ -61,11 +61,10 @@ void MediaPlaceControl::refresh() {
     if (m_save) m_save->setEnabled(p && p->nameAndSave);
 }
 
-void MediaPlaceControl::nameAndSave(const QString& prompt) {
-    calcu::qt6::nameAndSave(m_controller.host(), window(), m_place, prompt);
-}
+void MediaPlaceControl::nameAndSave() { m_shell.nameAndSave(m_place); }
 
-DiskControl::DiskControl(MachineController& c, QWidget* parent) : MediaPlaceControl(c, "floppy", parent) {
+DiskControl::DiskControl(MachineController& c, calcu::qt6::Shell& shell, QWidget* parent)
+    : MediaPlaceControl(c, shell, "floppy", parent) {
     setObjectName(QStringLiteral("bar-disk"));
     auto* l = new QHBoxLayout(this);
     l->setContentsMargins(0, 0, 0, 0);
@@ -88,7 +87,7 @@ DiskControl::DiskControl(MachineController& c, QWidget* parent) : MediaPlaceCont
     l->addWidget(m_lamp);
     connect(m_side, &QPushButton::clicked, this,
             [this] { m_controller.send(calcu::media::kTurnCommand, sessions::Value::object({{"place", "floppy"}})); });
-    connect(m_save, &QPushButton::clicked, this, [this] { nameAndSave(tr("Disk name:")); });
+    connect(m_save, &QPushButton::clicked, this, [this] { nameAndSave(); });
     refresh();
 }
 
@@ -107,7 +106,8 @@ void DiskControl::refresh() {
 
 void DiskControl::refreshLamps() { lampStyle(m_lamp, m_controller.lamps().floppyMotor); }
 
-TapeControl::TapeControl(MachineController& c, QWidget* parent) : MediaPlaceControl(c, "cassette", parent) {
+TapeControl::TapeControl(MachineController& c, calcu::qt6::Shell& shell, QWidget* parent)
+    : MediaPlaceControl(c, shell, "cassette", parent) {
     auto* l = new QHBoxLayout(this);
     l->setContentsMargins(0, 0, 0, 0);
     l->setSpacing(2);
@@ -123,7 +123,7 @@ TapeControl::TapeControl(MachineController& c, QWidget* parent) : MediaPlaceCont
     m_counter->setFixedWidth(m_counter->fontMetrics().horizontalAdvance(QStringLiteral("\u25CF 00:00 ")));
     m_counter->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     l->addWidget(m_counter);
-    connect(m_save, &QPushButton::clicked, this, [this] { nameAndSave(tr("Cassette name:")); });
+    connect(m_save, &QPushButton::clicked, this, [this] { nameAndSave(); });
     refresh();
 }
 

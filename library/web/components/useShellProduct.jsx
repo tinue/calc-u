@@ -1,7 +1,7 @@
 // A product page's glue to its session, the same for both products' pages.
 //
 //   useShellProduct(shell, {request, args, fallback, version, build,
-//                   copyScreen, openFiles, acts, nameAndSave}) → {product, ready, chrome}
+//                   copyScreen, openFiles, acts}) → {product, ready, chrome}
 //     the product's data: `request` (`<prefix>.shell-product`) with
 //     `args`, once per distinct `args` while the session runs, its answer
 //     {product, chrome} kept; `fallback` (the shell's frame with nothing of
@@ -9,8 +9,8 @@
 //     page's `version` and `build`, Copy Screen (`copyScreen`, or null:
 //     none), Load Preset… (the files picked by the product's
 //     `presetUploads`: the preset with the files it names, through
-//     `openFiles(files, "dialog")`), the items' acts (`acts`, by id) and
-//     Name & Save of a media place from More (`nameAndSave(place)`). copyScreen, openFiles and acts are read
+//     `openFiles(files, "dialog")`) and the items' acts (`acts`, by id); its
+//     `nameAndSave` the shell carries out. copyScreen, openFiles and acts are read
 //     when used, so they may be new closures at each render. `chrome`: the
 //     answer's chrome (the product's app/ Chrome in shell/Chrome's form),
 //     null until it came.
@@ -58,7 +58,6 @@ function useShellProduct(shell, options) {
       version: options.version,
       build: options.build,
       copyScreen: hasCopyScreen ? () => latest.current.copyScreen() : null,
-      nameAndSave: (place) => { if (latest.current.nameAndSave) latest.current.nameAndSave(place); },
       loadPreset: async () => {
         const files = await calcuPickFiles(p.presetUploads || "", true);
         if (files.length) latest.current.openFiles(files, "dialog");

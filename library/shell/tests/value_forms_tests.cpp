@@ -7,7 +7,7 @@ using namespace calcu;
 using sessions::Value;
 
 // What the page needs of the product: its texts, the uploads' accept list,
-// the items by id; the About links only when there are.
+// Name & Save, the items by id; the About links only when there are.
 TEST(shell_product_value_form) {
     shell::ShellProduct p;
     p.name = "Test-Product";
@@ -22,11 +22,20 @@ TEST(shell_product_value_form) {
                                       {"aboutLabel", "About Test…"},
                                       {"aboutLines", Value(Value::Array{"one", "two"})},
                                       {"presetUploads", ".tp,.yaml"},
+                                      {"nameAndSave", Value::object({{"slotButtons", false},
+                                                                     {"prompt", "Name:"},
+                                                                     {"prompts", Value(Value::Object{})}})},
                                       {"items", Value(Value::Array{Value::object({{"id", "mount"}, {"label", "Mount…"}})})}});
     CHECK_EQ(sessions::toText(shell::toValue(p)), sessions::toText(want));
     p.aboutLinks = {{"Source", "https://example.org/src"}};
     CHECK_EQ(sessions::toText(*shell::toValue(p).find("aboutLinks")),
              sessions::toText(Value(Value::Array{Value(Value::Array{"Source", "https://example.org/src"})})));
+    p.nameAndSave.slotButtons = true;
+    p.nameAndSave.prompts = {{"disk", "Disk name:"}};
+    CHECK_EQ(sessions::toText(*shell::toValue(p).find("nameAndSave")),
+             sessions::toText(Value::object({{"slotButtons", true},
+                                             {"prompt", "Name:"},
+                                             {"prompts", Value::object({{"disk", "Disk name:"}})}})));
 }
 
 // A menu item with every member, its kind, role and shortcut by name.

@@ -421,6 +421,10 @@ static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup gro
     return out;
 }
 + (NSString *)helpURL { return ns(product().helpUrl); }
++ (const std::vector<cs::TopicName> &)productTopics {
+    static const std::vector<cs::TopicName> topics = shell::productTopics(product());
+    return topics;
+}
 
 - (void)noticeArrived:(const std::string &)sentence { _notices.push(sentence); }
 

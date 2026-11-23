@@ -58,10 +58,9 @@ function SaveIcon() {
 const C1600Bar = React.createContext(null);
 
 // The module picker of a slot (the library's ShellSlotPicker), with its
-// Name & Save button.
+// Name & Save button (the product's nameAndSave.slotButtons).
 function SlotControls(props) {
-  const bar = React.useContext(C1600Bar);
-  return <ShellSlotPicker {...props} nameAndSave={bar.nameAndSave} icon={<SaveIcon />} />;
+  return <ShellSlotPicker {...props} icon={<SaveIcon />} />;
 }
 
 // The cassette's controls (the shell's media control of the kind
@@ -77,7 +76,7 @@ function TapeControls({ shell, entry }) {
       <span className="calcu-bar-label">Cassette:</span>
       <CalcuMediaPicker place={place} send={bar.send} />
       <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
-        data-calcu="name-and-save-cassette" aria-label="Name & Save cassette" onClick={() => bar.nameAndSave("cassette")}>
+        data-calcu="name-and-save-cassette" aria-label="Name & Save cassette" onClick={() => shell.nameAndSave("cassette")}>
         <SaveIcon />
       </button>
       <span className={`calcu-tape-counter${lamps && lamps.tapeMotor ? " on" : ""}${!lamps || lamps.tapeEmpty ? " empty" : ""}`}
@@ -113,7 +112,7 @@ function DiskControls({ s }) {
         {String(side)}
       </button>
       <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
-        data-calcu="name-and-save-floppy" aria-label="Name & Save disk" onClick={() => bar.nameAndSave("floppy")}>
+        data-calcu="name-and-save-floppy" aria-label="Name & Save disk" onClick={() => s.nameAndSave("floppy")}>
         <SaveIcon />
       </button>
       <span className={`calcu-lamp${bar.lamps && bar.lamps.floppyMotor ? " on" : ""}`} data-lamp="floppy"
@@ -248,7 +247,6 @@ function CalcU1600(props) {
     request: "c1600.shell-product", fallback: C1600_NO_PRODUCT, version: CalcU1600.version, build: CalcU1600.build,
     copyScreen, openFiles,
     acts: { "load-basic-program": () => pickProgram("basic"), "load-machine-code": () => pickProgram("code") },
-    nameAndSave: (place) => bar.nameAndSave(place),
   });
 
   const s = useCalcuShell(shell, product, CALCU_SHELL_WEB_TRAITS);
@@ -308,13 +306,6 @@ function CalcU1600(props) {
   const bar = {
     send,
     lamps,
-    // Name & Save of a module, a disk or a tape.
-    nameAndSave: async (word) => {
-      const place = calcuMediaPlace(s.inputs.media, word);
-      if (!place) return;
-      const prompt = word === "floppy" ? "Disk name:" : word === "cassette" ? "Cassette name:" : "Instance name:";
-      await dialogs.ask("nameAndSave", { shell, place, prompt });
-    },
   };
 
   // ── Keyboard (MainWindow::keyPressEvent / keyReleaseEvent) ──────────

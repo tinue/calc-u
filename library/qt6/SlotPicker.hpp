@@ -14,8 +14,9 @@ class QPushButton;
 // its tooltip, while the slot cannot be changed (the place entry's `empty`);
 // as wide as the chrome's slotPickerEm whatever it shows (0: as its text),
 // so no control after it moves when a module comes or goes. Where the
-// product wants it, a Name & Save button after it (the library's dialog,
-// usable while the slot's module can be named and saved).
+// product wants it (ShellProduct::nameAndSave.slotButtons), a Name & Save
+// button after it, usable while the slot's module can be named and saved,
+// which asks the shell for its dialog (Shell::nameAndSave).
 //
 // Object names: media-picker-<place> (the MediaPicker), media-save-<place>.
 
@@ -23,11 +24,6 @@ namespace calcu::qt6 {
 
 class MediaPicker;
 class SessionHost;
-
-struct SlotPickerOptions {
-    bool nameAndSave = false;
-    QString prompt = QStringLiteral("Instance name:");   // the Name & Save dialog's
-};
 
 // The Name & Save dialog over a media place as the topic `media` has it now;
 // it sends through the host and waits for the reply (a save with the power
@@ -39,9 +35,10 @@ class SlotPicker : public QWidget {
 public:
     using Send = std::function<void(const sessions::CommandName&, sessions::Value)>;
     // `entry`: the slot's place entry of the control state; `widthEm`: the
-    // chrome's slotPickerEm.
-    SlotPicker(SessionHost&, const sessions::Value& entry, const SlotPickerOptions&, double widthEm, Send,
-               QWidget* parent = nullptr);
+    // chrome's slotPickerEm; `nameAndSave`: Name & Save of the slot's place
+    // (empty: no button).
+    SlotPicker(SessionHost&, const sessions::Value& entry, std::function<void(const std::string& place)> nameAndSave,
+               double widthEm, Send, QWidget* parent = nullptr);
 
     MediaPicker* picker() const { return picker_; }
     void refresh();
@@ -49,7 +46,6 @@ public:
 private:
     SessionHost& host_;
     std::string place_;
-    SlotPickerOptions options_;
     MediaPicker* picker_;
     QPushButton* save_ = nullptr;
 };

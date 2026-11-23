@@ -8,11 +8,13 @@ class QLabel;
 class QPushButton;
 namespace calcu::qt6 {
 class MediaPicker;
+class Shell;
 }
 
 // Calc-U-1600's media controls on the shell's bar: each draws one place of
 // the library's topic `media` with the
-// library's MediaPicker and refreshes itself when the topic changes.
+// library's MediaPicker and refreshes itself when the topic changes; its
+// Name & Save is the shell's (Shell::nameAndSave, the product's prompt).
 //
 // - DiskControl: the CE-1600F's picker, the side and Name & Save, with the
 //   drive's lamp; shown while a PC-1600 has the CE-1600P (the product
@@ -28,13 +30,14 @@ class MediaPicker;
 class MediaPlaceControl : public QWidget {
     Q_OBJECT
 public:
-    MediaPlaceControl(MachineController&, std::string place, QWidget* parent);
+    MediaPlaceControl(MachineController&, calcu::qt6::Shell&, std::string place, QWidget* parent);
 
 public:   // refresh(): also after the shell put it on the bar
     virtual void refresh();
     virtual void refreshLamps() {}   // c1600.lamps: every host call, only the lamp and the counter
-    void nameAndSave(const QString& prompt);
+    void nameAndSave();
     MachineController& m_controller;
+    calcu::qt6::Shell& m_shell;
     std::string m_place;
     calcu::qt6::MediaPicker* m_picker = nullptr;
     QPushButton* m_save = nullptr;
@@ -43,7 +46,7 @@ public:   // refresh(): also after the shell put it on the bar
 class DiskControl : public MediaPlaceControl {
     Q_OBJECT
 public:
-    DiskControl(MachineController&, QWidget* parent);
+    DiskControl(MachineController&, calcu::qt6::Shell&, QWidget* parent);
 
 public:
     void refresh() override;
@@ -57,7 +60,7 @@ private:
 class TapeControl : public MediaPlaceControl {
     Q_OBJECT
 public:
-    TapeControl(MachineController&, QWidget* parent);
+    TapeControl(MachineController&, calcu::qt6::Shell&, QWidget* parent);
 
 public:
     void refresh() override;

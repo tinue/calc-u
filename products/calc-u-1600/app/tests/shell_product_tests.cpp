@@ -18,6 +18,7 @@ TEST(shell_product_complete) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     const calcu::shell::ShellProduct p = cu1600::shellProduct("1.0", "test", true, true);
     SessionFixture f;
+    std::vector<calcu::sessions::Value> states;
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         CHECK(model == std::string("PC-1500") ? f.start(model) : f.model(model));
         if (std::string(model) == "PC-1600") CHECK(f.attach("CE-1600P"));
@@ -27,7 +28,16 @@ TEST(shell_product_complete) {
         const std::vector<std::string> problems = calcu::shell::checkShellProduct(p, cs->toValue());
         for (const auto& s : problems) std::fprintf(stderr, "  %s: %s\n", model, s.c_str());
         CHECK(problems.empty());
+        states.push_back(cs->toValue());
     }
+    // Across the models: every media place an item names is listed.
+    const std::vector<std::string> across = calcu::shell::checkShellProduct(p, states);
+    for (const auto& s : across) std::fprintf(stderr, "  %s\n", s.c_str());
+    CHECK(across.empty());
+    CHECK(p.nameAndSave.slotButtons);
+    CHECK_EQ(calcu::shell::nameAndSavePrompt(p, "slot-1"), std::string("Instance name:"));
+    CHECK_EQ(calcu::shell::nameAndSavePrompt(p, "floppy"), std::string("Disk name:"));
+    CHECK_EQ(calcu::shell::nameAndSavePrompt(p, "cassette"), std::string("Cassette name:"));
     std::vector<std::string> items;
     for (const auto& i : p.items) items.push_back(i.label);
     CHECK(items == (std::vector<std::string>{"Load BASIC Program…", "Load Machine Code…", "Host Drive…", "Unmount", "Trace", "Log Level"}));

@@ -86,8 +86,23 @@ struct ShellProduct {
     // The media kinds a mobile bar keeps ("magnetic-card"); every other
     // medium is chosen through More there.
     std::set<std::string> mobileBarMedia;
+    // Name & Save… of a media place, which the shell carries out with the
+    // media components' dialog: from the place's submenu (mobile), from the
+    // button after each module slot's picker on the bar (`slotButtons`) and
+    // from a product's own media control (the frontend shell's
+    // nameAndSave(place)). The dialog asks for the name with the place's
+    // prompt in `prompts` (by the place of the topic `media`), else with `prompt`.
+    struct NameAndSave {
+        bool slotButtons = false;
+        std::string prompt = "Name:";
+        std::map<std::string, std::string> prompts;   // place → prompt ("floppy" → "Disk name:")
+    };
+    NameAndSave nameAndSave;
     std::vector<ProductItem> items;
 };
+
+// The Name & Save dialog's prompt for a place.
+std::string nameAndSavePrompt(const ShellProduct&, const std::string& place);
 
 // The About dialog: the product's name, "Version <v> (<build>)",
 // its texts and links in order, one button to close it.

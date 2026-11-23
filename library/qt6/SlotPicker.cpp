@@ -41,17 +41,17 @@ void nameAndSave(SessionHost& host, QWidget* parent, const std::string& place, c
     dialog.exec();
 }
 
-SlotPicker::SlotPicker(SessionHost& host, const sessions::Value& entry, const SlotPickerOptions& options, double widthEm,
-                       Send send, QWidget* parent)
-    : QWidget(parent), host_(host), place_(shell::read::text(entry, "place")), options_(options),
-      picker_(new MediaPicker(this)) {
+SlotPicker::SlotPicker(SessionHost& host, const sessions::Value& entry,
+                       std::function<void(const std::string& place)> nameAndSave, double widthEm, Send send,
+                       QWidget* parent)
+    : QWidget(parent), host_(host), place_(shell::read::text(entry, "place")), picker_(new MediaPicker(this)) {
     auto* l = new QHBoxLayout(this);
     l->setContentsMargins(0, 0, 0, 0);
     l->setSpacing(2);
     l->addWidget(picker_);
     picker_->setSender(std::move(send));
     if (widthEm > 0) picker_->setFixedWidth(qRound(widthEm * QFontInfo(picker_->font()).pixelSize()));
-    if (options_.nameAndSave) {
+    if (nameAndSave) {
         save_ = new QPushButton(this);
         save_->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
         save_->setToolTip(QStringLiteral("Name & Save"));
@@ -59,7 +59,7 @@ SlotPicker::SlotPicker(SessionHost& host, const sessions::Value& entry, const Sl
         save_->setFixedWidth(save_->iconSize().width() + 12);
         save_->setObjectName(QString::fromStdString("media-save-" + place_));
         l->addWidget(save_);
-        connect(save_, &QPushButton::clicked, this, [this] { nameAndSave(host_, window(), place_, options_.prompt); });
+        connect(save_, &QPushButton::clicked, this, [this, nameAndSave] { nameAndSave(place_); });
     }
     const shell::Availability a = shell::availabilityOf(entry, "empty");
     setEnabled(a.now);

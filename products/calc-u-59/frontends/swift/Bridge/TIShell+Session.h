@@ -6,6 +6,7 @@
 #include "shell/Inputs.hpp"
 #include <functional>
 #include <string>
+#include <vector>
 
 @interface TIShell ()
 - (instancetype)initWithSession:(TIAppSession *)session;
@@ -15,6 +16,9 @@
 - (void)busyChanged;
 /// The machine changed model: every pointer lets go.
 - (void)modelChanged;
+/// The state topics the product's items follow (shell::productTopics): the
+/// session keeps their last values in ShellInputs::productTopics.
++ (const std::vector<calcu::sessions::TopicName> &)productTopics;
 @end
 
 @interface TIAppSession ()

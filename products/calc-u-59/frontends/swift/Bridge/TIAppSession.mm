@@ -578,7 +578,7 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         }
         if (const auto* st = std::get_if<cs::StateMessage>(&m)) {
             changes = static_cast<TIChange>(changes | changeOf(st->topic));
-            [self takeInput:*st];
+            if ([self takeInput:*st]) changes = static_cast<TIChange>(changes | TIChangeShell);
         }
         _mirror.deliver(m);
     }
@@ -590,8 +590,9 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     if (changes) [d changed:changes];
 }
 
-// The shell's inputs: the last Value of each topic it draws from.
-- (void)takeInput:(const cs::StateMessage&)st {
+// The shell's inputs: the last Value of each topic it draws from. YES: a
+// topic the product's items follow changed (the shell's models draw anew).
+- (BOOL)takeInput:(const cs::StateMessage&)st {
     static const calcu::shell::InputNames n;
     const cs::Value v = st.state ? st.state->toValue() : cs::Value();
     if (st.topic == n.controlState) {
@@ -612,7 +613,16 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         _inputs.settings = v;
     } else if (st.topic == n.media) {
         _inputs.media = v;
+    } else {
+        for (const auto& t : [TIShell productTopics])
+            if (st.topic == t) {
+                cs::Value& kept = _inputs.productTopics[t.value];
+                if (kept == v) return NO;
+                kept = v;
+                return YES;
+            }
     }
+    return NO;
 }
 
 - (const calcu::shell::ShellInputs&)shellInputs { return _inputs; }

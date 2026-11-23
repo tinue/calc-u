@@ -125,12 +125,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // pixels, at the art's scale as shown.
     m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{"PC-1500A"}), faceplateGeometry());
     // The library's media controls on the bar: the module slots (with Name &
-    // Save) and the cassette by the family rule; the disk controls are the product's.
-    m_shell->setSlotPicker({true, tr("Instance name:")});
+    // Save, as the product declares) and the cassette by the family rule; the
+    // disk controls are the product's.
     m_shell->registerMediaControls("cassette", [this](const calcu::sessions::Value&, QWidget* p) -> QWidget* {
-        return new TapeControl(*m_controller, p);
+        return new TapeControl(*m_controller, *m_shell, p);
     });
-    m_disk = new DiskControl(*m_controller, nullptr);
+    m_disk = new DiskControl(*m_controller, *m_shell, nullptr);
     m_shell->addBarControl(calcu::shell::BarGroup::Media, m_disk);
     m_disk->refresh();
 

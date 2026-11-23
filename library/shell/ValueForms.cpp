@@ -178,6 +178,11 @@ Value toValue(const ShellProduct& p) {
         out.push_back({"aboutLinks", Value(std::move(links))});
     }
     out.push_back({"presetUploads", Value(p.presetUploads)});
+    Value::Object prompts;
+    for (const auto& [place, prompt] : p.nameAndSave.prompts) prompts.push_back({place, Value(prompt)});
+    out.push_back({"nameAndSave", Value::object({{"slotButtons", p.nameAndSave.slotButtons},
+                                                 {"prompt", p.nameAndSave.prompt},
+                                                 {"prompts", Value(std::move(prompts))}})});
     out.push_back({"items", Value(std::move(items))});
     return Value(std::move(out));
 }

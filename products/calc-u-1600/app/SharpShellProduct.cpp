@@ -47,6 +47,11 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
     // The disk stays on a phone's bar (its own controls, the product's);
     // the cassette is chosen through More there.
     p.mobileBarMedia = {"floppy-disk"};
+    // Name & Save of a module (a button after each slot's picker), a disk
+    // and a cassette.
+    p.nameAndSave.slotButtons = true;
+    p.nameAndSave.prompt = "Instance name:";
+    p.nameAndSave.prompts = {{"floppy", "Disk name:"}, {"cassette", "Cassette name:"}};
     auto item = [](shell::MenuGroup g, const char* id, const char* label, const char* entry = "") {
         shell::ProductItem i;
         i.group = g;

@@ -60,8 +60,8 @@
 // stays the part's: the PC-100C's TRACE position (the switch is
 // set through the library's `set-control`, the position kept while the PC-100C is
 // detached and put into the next one by TIProductMachines::attaching), the
-// cue card shown (one fitted at a time, the module cue card of the library
-// program on top), the corner taps (c59.tap-card). The debug
+// cue card shown (one fitted at a time; it and the module cue card of the
+// library program: the one put there last on top), the corner taps (c59.tap-card). The debug
 // panel is TIDebugPart's, a part of the same session it owns;
 // the file kinds of the library's `open` are TIFileKinds. Diagnostics are
 // log lines. The product topics below are set after each flow with what it
@@ -90,9 +90,9 @@ struct TICalcIndicatorState final : calcu::sessions::PayloadOf<TICalcIndicatorSt
     bool same(const TICalcIndicatorState& o) const { return led == o.led && calcIndicatorOpacity == o.calcIndicatorOpacity; }
     calcu::sessions::Value toValue() const override;
 };
-/// The cue card to show: the module cue card of the library program
-/// selected, else the fitted one. `onShow`: a fitted magnetic card that no
-/// module cue card covers, whose corners feed it; `litCorner`: the side
+/// The cue card to show: of the module cue card of the library program
+/// selected and the fitted one, the one put there last. `onShow`: a fitted
+/// magnetic card that no module cue card covers, whose corners feed it; `litCorner`: the side
 /// passing now, while on show.
 struct TICueCardState final : calcu::sessions::PayloadOf<TICueCardState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.cue-card"};
@@ -306,6 +306,9 @@ private:
     std::optional<CueCardContent> m_userCueCard;
     std::uint64_t m_userCueCardGeneration = 0;   ///< the machine it was fitted on (a preset's section)
     int m_activeProgram = 0;
+    /// The module cue card lies on top of the fitted card: a program was
+    /// selected after the card was fitted (the one put there last shows).
+    bool m_moduleOnTop = true;
 
     LedFrame m_display{};
     double m_calcOpacity = 0;

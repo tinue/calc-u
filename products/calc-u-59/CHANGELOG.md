@@ -6,7 +6,7 @@
 
 ### New and changed
 - **Presets** A new format (YAML, key IDs such as `- key: Pgm`). A preset builds its calculator from a cold boot, runs at full speed, waits after each item until the calculator is idle and is refused whole on an error; new steps `expect:`, `not-expect:`, `screenshot:`. Settings has a startup preset per model.
-- **Magnetic cards** A card is a file named after the card, with its own cue card; its sides are 0 and 1, and "Fit Card" is "Arm Card".
+- **Magnetic cards** A card is a file named after the card, with its own cue card; its sides are 0 and 1, and "Fit Card" is "Arm Card". A library program's cue card and a fitted card show the one put there last on top, so a card armed while a program is selected is seen.
 - **Calculator** Changing the module or the printer power-cycles the calculator, as on the real one; the TI-58C's constant memory brings back its partition and display format at a start. A key is held long enough for the ROM to read it, so Adv and R/S behave the same at every speed. The faceplate and the cue cards are drawn anew.
 - **Control bar** Every bar ends with More, which holds every menu item; the module is chosen with a picker on the bar. The card buttons are the same in every app: disabled while they cannot be used, the reason as their tooltip; More reads "⋯ More" where the bar has room. On iOS, traces go to Application Support by default instead of iCloud.
 - **Printer** The row below the paper is the same in every app: PRINT, T with the dot of the TRACE switch, ADV, and Copy and Cut as icons; in a narrow panel PRINT reads PRN.

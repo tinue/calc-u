@@ -375,6 +375,28 @@ TEST(module_card_of_selected_program_or_fitted) {
     CHECK(r.part().cueCard() && r.part().cueCard()->title == "Mine");
 }
 
+// The card shown is the one put there last: a program selected (its module
+// cue card) or a card fitted. A program selected again shows nothing new:
+// the calculator's registers do not tell it from the one selected before.
+TEST(cue_card_put_there_last_shows) {
+    NEEDS_ROMS;
+    CardRig r;
+    auto mine = [&] { return r.part().cueCard() && r.part().cueCard()->title == "Mine"; };
+    auto module = [&](const char* id) { return r.part().cueCard() && r.part().cueCard()->id == id; };
+    CHECK(r.step("key", "Pgm 0 1").done);
+    CHECK(r.until([&] { return module("ML-01"); }));
+    CHECK(r.armFresh("Mine").done);   // fitted after the program: on top
+    r.runFor(50ms);
+    CHECK(mine());
+    CHECK(r.state<TICueCardState>(topics::kCueCard)->onShow);
+    CHECK(r.step("key", "Pgm 0 2").done);   // another program after the card: on top
+    CHECK(r.until([&] { return module("ML-02"); }));
+    CHECK(!r.state<TICueCardState>(topics::kCueCard)->onShow);
+    CHECK(r.load(CardRig::preset("cue-card:\n  title: Section\n")).done);   // a preset's own card, fitted last
+    r.runFor(50ms);
+    CHECK(r.part().cueCard() && r.part().cueCard()->title == "Section");
+}
+
 TEST(cue_card_follows_within_half_a_second) {
     NEEDS_ROMS;
     CardRig r;

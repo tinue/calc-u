@@ -6,7 +6,7 @@
 // PC-100C is attached and detached by its button at the left of the
 // panel's header (the shell's place control, `places`). Its controls are
 // the PC-100C's PRINT and ADV (keys) and TRACE (a switch), with their
-// positions, as the control state lists them (`controls`).
+// positions and labels, as the control state lists them (`controls`).
 // Copy and Cut are the panel's: the session's paper.copy / paper.cut through
 // the page's clipboard service.
 
@@ -17,7 +17,8 @@ const PRINTER_PLACE = "printer";   // kTIPrinterPlace (core/TICatalogue.hpp)
 // `places`, `onChoose`: the shell's place controls on the paper and its choose.
 function PaperPane({ shell, owner, places, onChoose }) {
   const all = useTopic(shell, "control-state", (cs) => (cs && cs.controls) || NO_CONTROLS);
-  const controls = all.filter((c) => c.place === PRINTER_PLACE).map(({ id, form, on }) => ({ id, form, on }));
+  const controls = all.filter((c) => c.place === PRINTER_PLACE)
+    .map(({ id, form, on, label, shortLabel }) => ({ id, form, on, label, shortLabel }));
   return (
     <div className="calcu-printer" data-panel="paper">
       <CalcuPaperPanel shell={shell} owner={owner || null} controls={controls} places={places} onChoose={onChoose} />

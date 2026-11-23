@@ -49,7 +49,8 @@ through unplugging, a ROM or module change, a model switch (also from a
 PC-1500 to a PC-1600) and a Reset or Cold boot, after which the next plot
 goes on below what is drawn. A paper feed without a mark shows as blank
 paper. The paper scrolls, and it follows the pen as long as you are at
-the bottom:
+the bottom. **Copy** and **Cut** are the two icons at the right of the row
+below the paper (two sheets, scissors):
 
 ![The paper panel with its Copy and Cut buttons](images/03-paper-panel.png)
 

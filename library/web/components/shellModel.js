@@ -1,5 +1,5 @@
 // The shell's rules that run on the page's own clock and measurements, in
-// plain JS: the same rules as library/shell/ (barFit, view, LoadingRule,
+// plain JS: the same rules as library/shell/ (barFit, paperRowCompact, view, LoadingRule,
 // NoticeQueue, the hit rule, PointerTracker, about), rule by rule. The
 // menus, the bar, the panels and the settings dialog are the C++ models',
 // which the worker serves (topic `web.shell`, shell::ModelHost). No React,
@@ -8,6 +8,7 @@
 // set's closure; every top-level name starts with `calcuShell` or `CALCU_SHELL`.
 //
 //   calcuShellBarFit(faceplate, withoutLabels, withLabels, room?) → {width, labels}
+//   calcuShellPaperRowCompact(sizes, rowWidth) → bool
 //   calcuShellView(inputs) → {side, panelsFit, panelsAlone, faceplateWidth, faceplateHeight, room}
 //   calcuShellLoading() → {busy(runs, full, now), shown(now), due()}
 //   calcuShellNotices() → {push, refusal, current, close, answer, waiting}
@@ -45,6 +46,13 @@ function calcuShellAvailability(entry, key) {
 function calcuShellBarFit(faceplate, withoutLabels, withLabels, room = Infinity) {
   const labels = withLabels <= faceplate;
   return { labels, width: Math.min(room, Math.max(faceplate, labels ? withLabels : withoutLabels)) };
+}
+
+// The paper panel's control row (C++ shell::paperRowCompact): compact below
+// the chrome's paperRowCompactWidth; 0: never.
+function calcuShellPaperRowCompact(sizes, rowWidth) {
+  const least = (sizes && sizes.paperRowCompactWidth) || 0;
+  return least > 0 && rowWidth < least;
 }
 
 // The view rule (C++ shell::view): the faceplate as large as the window
@@ -203,7 +211,7 @@ function calcuShellAbout(product) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    calcuShellBarFit, calcuShellView, calcuShellLoading, calcuShellNotices, calcuShellKeyAt,
+    calcuShellBarFit, calcuShellPaperRowCompact, calcuShellView, calcuShellLoading, calcuShellNotices, calcuShellKeyAt,
     calcuShellPointer, calcuShellAbout, calcuShellAvailability, CALCU_SHELL_LOADING_MS,
   };
 }

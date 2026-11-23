@@ -61,7 +61,7 @@ public:
     /// on the TI-58C `RAM/c59.constant-memory`; with the PC-100C:
     /// the debug panel's kinds `TMC0501/c59.asm-overlay`, `TMC0501/c59.rom-heatmap`,
     /// `TMC0501/c59.calculator-state`, `TMC0501/c59.machine-log`;
-    /// `printer/controls` (PRINT, ADV, TRACE) and
+    /// `printer/controls` (PRINT, TRACE, ADV) and
     /// `printer/paper-output`; always
     /// `TMC0501/c59.library-program`; on the TI-59 the card
     /// reader's media place `card-reader/media-place`.

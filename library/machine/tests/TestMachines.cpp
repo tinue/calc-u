@@ -99,9 +99,10 @@ std::vector<PeripheralDescriptor> peripherals() {
     printer.id = kPrinter;
     printer.name = "Test printer";
     printer.fits = {PinOutId{"test.bus"}, PinOutId{"test.chain"}, PinOutId{"test.jack"}};
+    // No labels, both labels, a label alone: the fallbacks are the ID and the label.
     printer.controls = {ControlDescriptor{ControlId{"online"}, ControlForm::Switch},
-                        ControlDescriptor{ControlId{"feed"}, ControlForm::Key},
-                        ControlDescriptor{ControlId{"trace"}, ControlForm::Switch}};
+                        ControlDescriptor{ControlId{"feed"}, ControlForm::Key, "Feed", "FD"},
+                        ControlDescriptor{ControlId{"trace"}, ControlForm::Switch, "T"}};
     printer.components = {ComponentDescriptor{ComponentId{"mech"}, "printer mechanism", Depth::Functional, std::nullopt}};
 
     PeripheralDescriptor module;
@@ -188,7 +189,7 @@ Catalogue makePaperTestCatalogue() {
     dotter.variants = {VariantDescriptor{VariantId{"r1"}, {}}, VariantDescriptor{VariantId{"r2"}, {}}};
     dotter.defaultVariant = VariantId{"r1"};
     dotter.fits = {PinOutId{"test.bus"}, PinOutId{"test.chain"}};
-    dotter.controls = {ControlDescriptor{ControlId{"feed"}, ControlForm::Key},
+    dotter.controls = {ControlDescriptor{ControlId{"feed"}, ControlForm::Key, "FEED", "FD"},
                        ControlDescriptor{ControlId{"online"}, ControlForm::Switch}};
     PeripheralDescriptor plotter;
     plotter.id = kPlotter;

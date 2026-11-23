@@ -317,12 +317,15 @@ TEST(control_state_controls_of_plugged_peripherals_with_place_form_and_position)
     const ControlState moved = computeControlState(*m, testSetup(), false);
     CHECK(moved.controls.size() == 3 && moved.controls[1].control.on && moved.controls[2].control.on);
     CHECK(!moved.same(s));
-    // The value form: {place, peripheral, id, form, on}, after the panels.
+    // The value form: {place, peripheral, id, form, on, label, shortLabel},
+    // after the panels; the labels filled in where none is declared.
     const std::string t = toText(moved.toValue());
     CHECK(contains(t, "\"controls\":[{\"place\":\"printer\",\"peripheral\":\"test-printer\",\"id\":\"online\","
-                      "\"form\":\"switch\",\"on\":false},{\"place\":\"printer\",\"peripheral\":\"test-printer\","
-                      "\"id\":\"feed\",\"form\":\"key\",\"on\":true},{\"place\":\"printer\",\"peripheral\":\"test-printer\","
-                      "\"id\":\"trace\",\"form\":\"switch\",\"on\":true}]"));
+                      "\"form\":\"switch\",\"on\":false,\"label\":\"online\",\"shortLabel\":\"online\"},"
+                      "{\"place\":\"printer\",\"peripheral\":\"test-printer\",\"id\":\"feed\",\"form\":\"key\","
+                      "\"on\":true,\"label\":\"Feed\",\"shortLabel\":\"FD\"},"
+                      "{\"place\":\"printer\",\"peripheral\":\"test-printer\",\"id\":\"trace\",\"form\":\"switch\","
+                      "\"on\":true,\"label\":\"T\",\"shortLabel\":\"T\"}]"));
     // A peripheral on a peripheral's place: the place path names it.
     const ControlState nested = computeControlState(*dotWithHubAndPrinter(), testSetup(), false);
     CHECK(nested.controls.size() == 3 && nested.controls[0].place == at({"a", "jack"}));

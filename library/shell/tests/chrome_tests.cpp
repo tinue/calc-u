@@ -22,6 +22,15 @@ TEST(chrome_text_scale) {
     CHECK_EQ(c.textScale(2000), 2.0);
 }
 
+TEST(chrome_paper_row_compact) {
+    shell::ChromeSizes s;
+    CHECK(shell::paperRowCompact(s, 279));    // the narrow tape: short labels
+    CHECK(!shell::paperRowCompact(s, 280));
+    CHECK(!shell::paperRowCompact(s, 400));
+    s.paperRowCompactWidth = 0;               // never
+    CHECK(!shell::paperRowCompact(s, 100));
+}
+
 TEST(chrome_value_form) {
     shell::Chrome c;
     c.light.pill = shell::Colour::grey(0.25);
@@ -33,6 +42,7 @@ TEST(chrome_value_form) {
     CHECK_EQ(*v.find("light")->find("debug-header")->string(), std::string("#121212"));
     CHECK_EQ(*v.find("sizes")->find("panelHeaderHeight")->real(), 36.0);
     CHECK_EQ(*v.find("sizes")->find("pillRadius")->real(), 6.0);
+    CHECK_EQ(*v.find("sizes")->find("paperRowCompactWidth")->real(), 280.0);
     c.dark = c.light;
     CHECK(shell::toValue(c).find("dark") != nullptr);
 }

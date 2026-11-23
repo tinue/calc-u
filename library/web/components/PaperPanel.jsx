@@ -3,17 +3,21 @@
 // area for panels.
 //
 //   <CalcuPaperPanel shell={shell} owner={peripheralId | null}
-//                    controls={[{id, form: "key" | "switch", on}]} send={fn?}
-//                    places={[bar control]} onChoose={fn} />
+//                    controls={[{id, form: "key" | "switch", on, label?, shortLabel?}]}
+//                    send={fn?} places={[bar control]} onChoose={fn} />
 //
 // owner: the printer plugged in, from the control state; controls:
 // that printer's controls; places: the shell's place controls on the paper
 // (the panel model's), first in the header, onChoose(item) carrying out
 // their choice (the shell's choose); send(command, args) defaults to
 // shell.send. The header holds the places left, the owner's name centred
-// and the view control right; below the paper, the owner's controls left
-// and Copy and Cut right. Copy and Cut arm the clipboard inside the click (armClipboard,
-// hostServices.js) and send `paper.copy` / `paper.cut {copy: true}`.
+// and the view control right; below the paper one row that never wraps: the
+// owner's controls left, labelled as the control state labels them (the
+// short labels where the row is compact: calcuShellPaperRowCompact on the
+// panel's width and the chrome's --calcu-paper-row-compact-width), a switch
+// with the dot of its position; Copy and Cut right as icons. Copy and Cut
+// arm the clipboard inside the click (armClipboard, hostServices.js) and
+// send `paper.copy` / `paper.cut {copy: true}`.
 // Elements carry data-calcu names for the tests: paper-panel, paper-owner,
 // paper-view, paper-copy, paper-cut, paper-toast, paper-text,
 // paper-control-<id>, paper-scroll, paper-canvas.
@@ -31,8 +35,30 @@ function useCalcuPaper(shell) {
     () => none);
 }
 
-function CalcuPaperControl({ control, onSet }) {
+// Copy (two sheets) and Cut (scissors), drawn in the button's text colour.
+function CalcuPaperIcon({ kind }) {
+  return (
+    <svg className="calcu-paper-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"
+      fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      {kind === "copy" ? (
+        <>
+          <rect x="5.5" y="1.5" width="8" height="10" rx="1.5" />
+          <path d="M5.5 4.5H2.5V14.5H10.5V11.5" />
+        </>
+      ) : (
+        <>
+          <circle cx="4" cy="12" r="2" />
+          <circle cx="12" cy="12" r="2" />
+          <path d="M5.4 10.6L11.5 1.5M10.6 10.6L4.5 1.5" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function CalcuPaperControl({ control, compact, onSet }) {
   const [held, setHeld] = React.useState(false);
+  const label = (compact ? control.shortLabel : control.label) || control.label || control.id;
   if (control.form === "key") {
     const down = held || !!control.on;
     const release = () => {
@@ -51,15 +77,17 @@ function CalcuPaperControl({ control, onSet }) {
           onSet(control.id, true);
         }}
         onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}>
-        {control.id}
+        {label}
       </button>
     );
   }
+  // A switch: its label and the dot of its position.
   return (
-    <button type="button" className={"calcu-paper-control" + (control.on ? " calcu-paper-down" : "")}
+    <button type="button" className="calcu-paper-control calcu-paper-switch"
       data-calcu={`paper-control-${control.id}`} aria-pressed={!!control.on}
       onClick={() => onSet(control.id, !control.on)}>
-      {control.id}
+      {label}
+      <span className={"calcu-paper-dot" + (control.on ? " calcu-paper-dot-on" : "")} aria-hidden="true" />
     </button>
   );
 }
@@ -75,6 +103,23 @@ function CalcuPaperPanel({ shell, owner, controls, send, places, onChoose }) {
   const showText = textLayer && view === "text";
   const usable = !!entry && !paper.empty;
   const sendTo = send || ((n, a) => (shell ? shell.send(n, a) : Promise.resolve({ done: false })));
+
+  // The row's rule on the panel's width (the page measures it).
+  const panelRef = React.useRef(null);
+  const [compact, setCompact] = React.useState(false);
+  React.useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return undefined;
+    const update = () => {
+      const width = parseFloat(getComputedStyle(el).getPropertyValue("--calcu-paper-row-compact-width")) || 0;
+      setCompact(calcuShellPaperRowCompact({ paperRowCompactWidth: width }, el.clientWidth));
+    };
+    update();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const o = new ResizeObserver(update);
+    o.observe(el);
+    return () => o.disconnect();
+  }, []);
 
   const scrollRef = React.useRef(null);
   const canvasRef = React.useRef(null);
@@ -159,7 +204,8 @@ function CalcuPaperPanel({ shell, owner, controls, send, places, onChoose }) {
   const setControl = (id, on) => sendTo("set-control", { peripheral: owner, control: id, on });
 
   return (
-    <div className="calcu-paper-panel" data-calcu="paper-panel">
+    <div className={"calcu-paper-panel" + (compact ? " calcu-paper-compact" : "")} data-calcu="paper-panel"
+      data-compact={compact ? "true" : "false"} ref={panelRef}>
       <div className="calcu-paper-header">
         <span className="calcu-paper-places">
           {(places || []).map((c) => (
@@ -188,12 +234,16 @@ function CalcuPaperPanel({ shell, owner, controls, send, places, onChoose }) {
         </div>
       )}
       <div className="calcu-paper-footer">
-        {entry && (controls || []).map((c) => <CalcuPaperControl key={c.id} control={c} onSet={setControl} />)}
+        {entry && (controls || []).map((c) => (
+          <CalcuPaperControl key={c.id} control={c} compact={compact} onSet={setControl} />
+        ))}
         <span className="calcu-paper-actions">
-          <button type="button" data-calcu="paper-copy" disabled={!usable}
-            onClick={() => copyOrCut("paper.copy", { owner: name })}>Copy</button>
-          <button type="button" data-calcu="paper-cut" disabled={!usable}
-            onClick={() => copyOrCut("paper.cut", { owner: name, copy: true })}>Cut</button>
+          <button type="button" className="calcu-paper-action" data-calcu="paper-copy" disabled={!usable}
+            title="Copy" aria-label="Copy"
+            onClick={() => copyOrCut("paper.copy", { owner: name })}><CalcuPaperIcon kind="copy" /></button>
+          <button type="button" className="calcu-paper-action" data-calcu="paper-cut" disabled={!usable}
+            title="Cut" aria-label="Cut"
+            onClick={() => copyOrCut("paper.cut", { owner: name, copy: true })}><CalcuPaperIcon kind="cut" /></button>
         </span>
       </div>
       {toast && <div className="calcu-paper-toast" data-calcu="paper-toast" role="status">{toast}</div>}

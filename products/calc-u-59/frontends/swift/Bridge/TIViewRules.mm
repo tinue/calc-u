@@ -244,7 +244,7 @@ static std::vector<cu59::LabelSpan> spansFrom(NSArray<TILabelSpan*>* spans) {
     return TIView{v.side == calcu::shell::ViewSide::Beside && v.panelsFit, v.debuggerFits};
 }
 + (CGFloat)mobileTopMargin:(CGFloat)topInset { return cu59::mobileTopMargin(topInset); }
-+ (BOOL)compactPrinterBar:(CGFloat)printerWidth { return cu59::compactPrinterBar(printerWidth); }
++ (BOOL)paperRowCompact:(CGFloat)rowWidth { return calcu::shell::paperRowCompact(cu59::tiChrome().sizes, rowWidth); }
 + (NSString *)partitionLineProgramRegs:(NSInteger)programRegs dataRegs:(NSInteger)dataRegs {
     return ns(cu59::partitionLine(static_cast<int>(programRegs), static_cast<int>(dataRegs)));
 }

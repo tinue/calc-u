@@ -376,6 +376,33 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 }
 @end
 
+@interface TIPaperControl ()
+- (instancetype)initWithID:(NSString *)controlID isSwitch:(BOOL)isSwitch on:(BOOL)on label:(NSString *)label
+                shortLabel:(NSString *)shortLabel;
+@end
+
+@implementation TIPaperControl
+- (instancetype)initWithID:(NSString *)controlID isSwitch:(BOOL)isSwitch on:(BOOL)on label:(NSString *)label
+                shortLabel:(NSString *)shortLabel {
+    if ((self = [super init])) {
+        _controlID = [controlID copy];
+        _isSwitch = isSwitch;
+        _on = on;
+        _label = [label copy];
+        _shortLabel = [shortLabel copy];
+    }
+    return self;
+}
+// By value: the view model keeps a new list only when it differs.
+- (BOOL)isEqual:(id)other {
+    if (![other isKindOfClass:[TIPaperControl class]]) return NO;
+    TIPaperControl* o = other;
+    return [_controlID isEqualToString:o.controlID] && _isSwitch == o.isSwitch && _on == o.on &&
+           [_label isEqualToString:o.label] && [_shortLabel isEqualToString:o.shortLabel];
+}
+- (NSUInteger)hash { return _controlID.hash ^ (_on ? 1u : 0u); }
+@end
+
 static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     if (!done) return {};
     return [done](const cs::ReplyMessage& r) {
@@ -749,12 +776,17 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (double)paperReachUnits { return _paperReach; }
 - (void)copyPaper { [self send:calcu::paper::kPaperCopyCommand args:{{"owner", kPC100COwner}}]; }
 - (void)cutPaper { [self send:calcu::paper::kPaperCutCommand args:{{"owner", kPC100COwner}, {"copy", true}}]; }
-- (BOOL)printerTrace {
+- (NSArray<TIPaperControl *> *)printerControls {
+    NSMutableArray<TIPaperControl *>* out = [NSMutableArray array];
     const auto* c = [self controlState];
-    if (!c) return NO;
+    if (!c) return out;
     for (const auto& i : c->controlsAt(calcu::machine::PlacePath{{::kTIPrinterPlace}}))
-        if (i.id == ::PC100C::kTrace) return i.on ? YES : NO;
-    return NO;
+        [out addObject:[[TIPaperControl alloc] initWithID:ns(i.id.value)
+                                                 isSwitch:i.form == calcu::machine::ControlForm::Switch
+                                                       on:i.on
+                                                    label:ns(i.label)
+                                               shortLabel:ns(i.shortLabel)]];
+    return out;
 }
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on {
     [self send:calcu::peripherals::kSetControlCommand args:{{"peripheral", kPC100COwner}, {"control", cpp(control)}, {"on", on == YES}}];

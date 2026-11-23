@@ -158,6 +158,49 @@ test('printer controls held and switched', async ({ page, context, browserName }
   await expect(el(page, 'paper-copy')).toBeEnabled();
 });
 
+// The row: the control state's labels (the ID where none is declared), the
+// short ones below the chrome's compact width (calcuShellPaperRowCompact),
+// a switch with the dot of its position, Copy and Cut as named icons; one
+// row that never wraps, Copy and Cut where they were with or without a
+// printer.
+test('the row: labels, compact labels, dot, icons', async ({ page, context, browserName }) => {
+  await start(page, context, browserName);
+  const cut = el(page, 'paper-cut');
+  const cutRight = async () => { const b = await cut.boundingBox(); return b.x + b.width; };
+  const before = await cutRight();
+  await attachTd20(page);
+  const online = el(page, 'paper-control-online');
+  const feed = el(page, 'paper-control-feed');
+  await expect(feed).toHaveText('FEED');
+  await expect(online).toHaveText('online');
+  await expect(online.locator('.calcu-paper-dot.calcu-paper-dot-on')).toHaveCount(1);
+  await online.click();
+  await expect(online.locator('.calcu-paper-dot')).toHaveCount(1);
+  await expect(online.locator('.calcu-paper-dot-on')).toHaveCount(0);
+  for (const [name, label] of [['paper-copy', 'Copy'], ['paper-cut', 'Cut']]) {
+    await expect(el(page, name)).toHaveAttribute('aria-label', label);
+    await expect(el(page, name)).toHaveAttribute('title', label);
+    await expect(el(page, name).locator('svg')).toHaveCount(1);
+    await expect(el(page, name)).toHaveText('');
+  }
+  expect(await cutRight()).toBe(before);
+  // Narrow, with a chrome's compact width: the short labels.
+  await expect(panel(page)).toHaveAttribute('data-compact', 'false');
+  await page.evaluate(() => {
+    const p = document.querySelector('.calcu-test-paper');
+    p.style.setProperty('--calcu-paper-row-compact-width', '280');
+    p.style.width = '240px';
+  });
+  await expect(panel(page)).toHaveAttribute('data-compact', 'true');
+  await expect(feed).toHaveText('FD');
+  await expect(online).toHaveText('online');   // no short label: the label
+  const row = page.locator('.calcu-paper-footer');
+  const box = await row.boundingBox();
+  for (const b of [feed, online, cut]) expect(Math.abs((await b.boundingBox()).y - box.y) < box.height).toBe(true);
+  await page.evaluate(() => { document.querySelector('.calcu-test-paper').style.width = ''; });
+  await expect(feed).toHaveText('FEED');
+});
+
 test('empty paper copy and cut disabled', async ({ page, context, browserName }) => {
   await start(page, context, browserName);
   await attachTd20(page);

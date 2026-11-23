@@ -301,6 +301,49 @@ TEST(paper_controls_key_down_while_held_switch_shows_position) {
     CHECK(!online->isChecked());
 }
 
+// The row: the controls' labels from the control state (the ID where none
+// is declared), the short ones below the chrome's compact width; a switch
+// with the dot of its position; Copy and Cut as icons, named.
+TEST(paper_row_labels_compact_and_icons) {
+    PanelRig r;
+    r.build();
+    r.own(mt::kDotter, kPrinterPlace);
+    auto* feed = r.child<QToolButton>("paper-control-feed");
+    auto* online = r.child<QToolButton>("paper-control-online");
+    CHECK(feed && online);
+    if (!feed || !online) return;
+    CHECK(!r.panel.compact());   // 400 wide
+    CHECK_EQ(feed->text().toStdString(), std::string("FEED"));
+    CHECK_EQ(online->text().toStdString(), std::string("online"));
+    CHECK(online->toolButtonStyle() == Qt::ToolButtonTextBesideIcon && !online->icon().isNull());
+    const QPoint feedAt = feed->mapTo(&r.panel, QPoint(0, 0));
+    r.panel.resize(260, 300);
+    settle();
+    CHECK(r.panel.compact());
+    CHECK_EQ(feed->text().toStdString(), std::string("FD"));
+    CHECK_EQ(online->text().toStdString(), std::string("online"));   // no short label: the label
+    r.panel.resize(400, 300);
+    settle();
+    CHECK(!r.panel.compact());
+    CHECK_EQ(feed->text().toStdString(), std::string("FEED"));
+    CHECK(feed->mapTo(&r.panel, QPoint(0, 0)) == feedAt);
+    for (const char* name : {"paper-copy", "paper-cut"}) {
+        auto* b = r.child<QToolButton>(name);
+        CHECK(b && b->toolButtonStyle() == Qt::ToolButtonIconOnly && !b->icon().isNull());
+    }
+    CHECK_EQ(r.child<QToolButton>("paper-copy")->toolTip().toStdString(), std::string("Copy"));
+    CHECK_EQ(r.child<QToolButton>("paper-copy")->accessibleName().toStdString(), std::string("Copy"));
+    CHECK_EQ(r.child<QToolButton>("paper-cut")->toolTip().toStdString(), std::string("Cut"));
+    CHECK_EQ(r.child<QToolButton>("paper-cut")->accessibleName().toStdString(), std::string("Cut"));
+    // Copy and Cut stay at the right whether the owner's controls are there.
+    auto* cut = r.child<QToolButton>("paper-cut");
+    const int cutRight = cut->mapTo(&r.panel, QPoint(cut->width(), 0)).x();
+    r.panel.setOwner(std::nullopt);
+    r.panel.setControls({});
+    settle();
+    CHECK_EQ(cut->mapTo(&r.panel, QPoint(cut->width(), 0)).x(), cutRight);
+}
+
 TEST(paper_copy_puts_image_and_text_on_clipboard) {
     PanelRig r;
     r.build();

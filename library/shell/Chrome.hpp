@@ -103,7 +103,16 @@ struct ChromeSizes {
     // as designed at `textScaleWidth`, growing with a wider faceplate up to
     // `textScaleMax` times. 0: the text never scales.
     double textScaleWidth = 0, textScaleMax = 1;
+    // The paper panel's control row is compact (the controls' short labels,
+    // tighter spacing) below this width; 0: never. Its gap between the
+    // buttons and at its ends, and the compact row's.
+    double paperRowCompactWidth = 280;
+    double paperRowGap = 12, paperRowCompactGap = 6;
 };
+
+// The paper panel's control row at this width: compact or not. Mirrored in
+// shellModel.js (calcuShellPaperRowCompact): the page measures its panel.
+bool paperRowCompact(const ChromeSizes&, double rowWidth);
 
 struct Chrome {
     ChromeColours light;
@@ -120,7 +129,8 @@ struct Chrome {
 //  pillRadius, pillPaddingX, pillPaddingY, pillFontSize, pillBold,
 //  barHeight, barGap, slotPickerEm, printerMinWidth, printerMaxWidth,
 //  debuggerMinWidth, debuggerMinHeight, panelsMinWidth, panelsMinHeight,
-//  textScaleWidth, textScaleMax}}; colour names in kebab-case, as the Web's
+//  textScaleWidth, textScaleMax, paperRowCompactWidth, paperRowGap,
+//  paperRowCompactGap}}; colour names in kebab-case, as the Web's
 // custom properties (`--calcu-pill-text`).
 sessions::Value toValue(const Chrome&);
 

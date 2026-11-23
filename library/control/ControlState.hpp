@@ -82,7 +82,8 @@ struct PanelEntry {
 };
 
 // One control of a plugged-in peripheral, named by its
-// owner, with its form and its position (a key down, a switch on).
+// owner, with its form, its position (a key down, a switch on) and the
+// labels every GUI writes on it.
 struct ControlEntry {
     machine::PlacePath place;
     machine::PeripheralId peripheral;
@@ -127,7 +128,7 @@ struct ControlState final : sessions::PayloadOf<ControlState> {
     // The fields by ==, the product entries by name and Payload::equals.
     bool same(const ControlState&) const;
     // One object, keys in the order of the fields; `reason` only where
-    // `available` is false; `controls` as [{place, peripheral, id, form, on}];
+    // `available` is false; `controls` as [{place, peripheral, id, form, on, label, shortLabel}];
     // `product` as {name: value}.
     sessions::Value toValue() const override;
 

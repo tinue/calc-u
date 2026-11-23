@@ -8,6 +8,7 @@
 #include <QIcon>
 #include <QLabel>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPlainTextEdit>
 #include <QScrollBar>
 #include <QScroller>
@@ -76,29 +77,35 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     stack_->addWidget(text_);
     outer->addWidget(stack_, 1);
 
-    // Below the paper: the owner's controls left, Copy and Cut right.
+    // Below the paper, in one row that never wraps: the owner's controls
+    // left, Copy and Cut right as icons.
     footer_ = new QWidget(this);
     footer_->setObjectName(QStringLiteral("paper-footer"));
     footer_->setAttribute(Qt::WA_StyledBackground, true);
-    auto* footer = new QHBoxLayout(footer_);
-    footer->setContentsMargins(10, 0, 10, 0);
-    footer->setSpacing(8);
+    footerLayout_ = new QHBoxLayout(footer_);
     controlsBox_ = new QWidget(this);
     controlsLayout_ = new QHBoxLayout(controlsBox_);
     controlsLayout_->setContentsMargins(0, 0, 0, 0);
-    footer->addWidget(controlsBox_);
-    footer->addStretch(1);
-    copy_ = new QToolButton(this);
-    copy_->setFocusPolicy(Qt::NoFocus);
-    copy_->setObjectName(QStringLiteral("paper-copy"));
-    copy_->setText(tr("Copy"));
-    footer->addWidget(copy_);
-    cut_ = new QToolButton(this);
-    cut_->setFocusPolicy(Qt::NoFocus);
-    cut_->setObjectName(QStringLiteral("paper-cut"));
-    cut_->setText(tr("Cut"));
-    footer->addWidget(cut_);
+    footerLayout_->addWidget(controlsBox_);
+    footerLayout_->addStretch(1);
+    const auto action = [this](const char* name, const QString& label) {
+        auto* b = new QToolButton(this);
+        b->setFocusPolicy(Qt::NoFocus);
+        b->setObjectName(QString::fromLatin1(name));
+        b->setText(label);
+        b->setToolTip(label);
+        b->setAccessibleName(label);
+        b->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        b->setIconSize(QSize(kActionIconPoints, kActionIconPoints));
+        footerLayout_->addWidget(b);
+        return b;
+    };
+    copy_ = action("paper-copy", tr("Copy"));
+    cut_ = action("paper-cut", tr("Cut"));
+    copy_->setIcon(actionIcon(Action::Copy, palette().color(QPalette::ButtonText), palette().color(QPalette::PlaceholderText)));
+    cut_->setIcon(actionIcon(Action::Cut, palette().color(QPalette::ButtonText), palette().color(QPalette::PlaceholderText)));
     outer->addWidget(footer_);
+    applyCompact();
 
     toast_ = new QLabel(this);
     toast_->setObjectName(QStringLiteral("paper-toast"));
@@ -235,14 +242,21 @@ static QIcon printerIcon() {
 }
 
 // The panel in the product's chrome: the header and the button bar at
-// its heights and colours, every button in them a pill, the paper's body
-// with the output border, the place dot's colours.
+// its heights and colours, every button in them a pill (a switch's pill
+// stays as it is: its dot shows the position), the paper's body with the
+// output border, the place dot's and the icons' colours.
 void PaperPanel::setChrome(const shell::ChromeColours& c, const shell::ChromeSizes& s) {
     using namespace qt6::chrome;
+    sizes_ = s;
     header_->setStyleSheet(QStringLiteral("#paper-header { %1 } #paper-header QLabel { color: %2; font-weight: bold; }")
                                .arg(header(c, s), qcss(c.headerText)) +
                            pills(c, s, QStringLiteral("QToolButton")));
-    footer_->setStyleSheet(panelButtons(c, s, QStringLiteral("QToolButton"), QStringLiteral("paper-footer")));
+    footer_->setStyleSheet(panelButtons(c, s, QStringLiteral("QToolButton"), QStringLiteral("paper-footer")) +
+                           QStringLiteral("#paper-footer QToolButton[paperSwitch=\"true\"]:checked { background-color: %1; }"
+                                          "#paper-footer QToolButton[paperSwitch=\"true\"]:checked:hover { background-color: %2; }")
+                               .arg(qcss(c.pill), qcss(c.pillHover)));
+    copy_->setIcon(actionIcon(Action::Copy, qcolour(c.pillText), qcolour(c.pillTextOff)));
+    cut_->setIcon(actionIcon(Action::Cut, qcolour(c.pillText), qcolour(c.pillTextOff)));
     stack_->setStyleSheet(QStringLiteral("QStackedWidget { border: 1px solid %1; border-top: none; }").arg(qcss(c.outputBorder)));
     plugged_ = qcolour(c.plugged);
     unplugged_ = qcolour(c.unplugged);
@@ -256,6 +270,84 @@ void PaperPanel::setChrome(const shell::ChromeColours& c, const shell::ChromeSiz
     const QIcon printer = printerIcon();
     for (QToolButton* b : header_->findChildren<QToolButton*>())
         if (b != viewToggle_) b->setIcon(placeIcon(printer, b->isChecked() ? plugged_ : unplugged_));
+    for (const auto& ctl : controls_)
+        if (ctl.form == machine::ControlForm::Switch)
+            if (auto* b = controlsBox_->findChild<QToolButton*>(QString::fromStdString("paper-control-" + ctl.id.value)))
+                b->setIcon(switchDot(ctl.on ? plugged_ : unplugged_));
+    applyCompact();
+}
+
+// A switch's dot: the chrome's plugged colour while on, its unplugged one
+// while off, as a place button's dot.
+QIcon PaperPanel::switchDot(const QColor& dot) {
+    const qreal dpr = qApp->devicePixelRatio();
+    QPixmap pm(QSize(8, 8) * dpr);
+    pm.setDevicePixelRatio(dpr);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(Qt::NoPen);
+    p.setBrush(dot);
+    p.drawEllipse(QRectF(0, 0, 8, 8));
+    return QIcon(pm);
+}
+
+// Copy (two sheets, one over the other) and Cut (scissors) in the pill's
+// text colour, and in its disabled text colour while disabled.
+QIcon PaperPanel::actionIcon(Action a, const QColor& on, const QColor& off) {
+    const qreal dpr = qApp->devicePixelRatio();
+    const auto draw = [&](const QColor& colour) {
+        QPixmap pm(QSize(kActionIconPoints, kActionIconPoints) * dpr);
+        pm.setDevicePixelRatio(dpr);
+        pm.fill(Qt::transparent);
+        QPainter p(&pm);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.scale(kActionIconPoints / 16.0, kActionIconPoints / 16.0);   // drawn on a 16-point grid
+        QPen pen(colour, 1.4);
+        pen.setCapStyle(Qt::RoundCap);
+        pen.setJoinStyle(Qt::RoundJoin);
+        p.setPen(pen);
+        p.setBrush(Qt::NoBrush);
+        if (a == Action::Copy) {
+            p.drawRoundedRect(QRectF(5.5, 1.5, 8, 10), 1.5, 1.5);
+            // The sheet below shows only outside the one above.
+            QPainterPath back;
+            back.moveTo(5.5, 4.5);
+            back.lineTo(2.5, 4.5);
+            back.lineTo(2.5, 14.5);
+            back.lineTo(10.5, 14.5);
+            back.lineTo(10.5, 11.5);
+            p.drawPath(back);
+        } else {
+            p.drawEllipse(QRectF(2, 10, 4, 4));
+            p.drawEllipse(QRectF(10, 10, 4, 4));
+            p.drawLine(QPointF(5.4, 10.6), QPointF(11.5, 1.5));
+            p.drawLine(QPointF(10.6, 10.6), QPointF(4.5, 1.5));
+        }
+        return pm;
+    };
+    QIcon icon;
+    icon.addPixmap(draw(on), QIcon::Normal);
+    icon.addPixmap(draw(off), QIcon::Disabled);
+    return icon;
+}
+
+// The row as the library's rule has it for the panel's width: compact, the
+// controls' short labels and the compact gap; else their labels and the gap.
+void PaperPanel::applyCompact() {
+    compact_ = shell::paperRowCompact(sizes_, width());
+    const int gap = qRound(compact_ ? sizes_.paperRowCompactGap : sizes_.paperRowGap);
+    footerLayout_->setContentsMargins(gap, 0, gap, 0);
+    footerLayout_->setSpacing(gap);
+    controlsLayout_->setSpacing(gap);
+    for (const auto& c : controls_)
+        if (auto* b = controlsBox_->findChild<QToolButton*>(QString::fromStdString("paper-control-" + c.id.value)))
+            b->setText(QString::fromStdString(compact_ ? c.shortLabel : c.label));
+}
+
+void PaperPanel::resizeEvent(QResizeEvent* e) {
+    QWidget::resizeEvent(e);
+    if (shell::paperRowCompact(sizes_, width()) != compact_) applyCompact();
 }
 
 // A place button's icon: the printer (where the platform has one) and the
@@ -300,7 +392,10 @@ void PaperPanel::setPlaces(std::vector<QWidget*> places) {
 void PaperPanel::setControls(std::vector<peripherals::ControlInfo> controls) {
     const bool same = controls.size() == controls_.size() &&
                       std::equal(controls.begin(), controls.end(), controls_.begin(),
-                                 [](const auto& a, const auto& b) { return a.id == b.id && a.form == b.form; });
+                                 [](const auto& a, const auto& b) {
+                                     return a.id == b.id && a.form == b.form && a.label == b.label &&
+                                            a.shortLabel == b.shortLabel;
+                                 });
     controls_ = std::move(controls);
     if (!same) rebuildControls();
     // The state of each control: a key down while held, a switch at its position.
@@ -311,6 +406,7 @@ void PaperPanel::setControls(std::vector<peripherals::ControlInfo> controls) {
             b->blockSignals(true);
             b->setChecked(c.on);
             b->blockSignals(false);
+            b->setIcon(switchDot(c.on ? plugged_ : unplugged_));
         } else {
             b->setDown(c.on);
         }
@@ -324,12 +420,18 @@ void PaperPanel::rebuildControls() {
         b->setFocusPolicy(Qt::NoFocus);
         const std::string id = c.id.value;
         b->setObjectName(QString::fromStdString("paper-control-" + id));
-        b->setText(QString::fromStdString(id));
+        b->setText(QString::fromStdString(compact_ ? c.shortLabel : c.label));
         const auto args = [this, id](bool on) {
             return Value::object({{"peripheral", owner_ ? owner_->value : std::string()}, {"control", id}, {"on", on}});
         };
         if (c.form == machine::ControlForm::Switch) {
+            // The label, then the dot of its position.
             b->setCheckable(true);
+            b->setProperty("paperSwitch", true);
+            b->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+            b->setLayoutDirection(Qt::RightToLeft);
+            b->setIconSize(QSize(8, 8));
+            b->setIcon(switchDot(c.on ? plugged_ : unplugged_));
             connect(b, &QToolButton::toggled, this, [this, args](bool on) { send(kSetControl, args(on)); });
         } else {
             connect(b, &QToolButton::pressed, this, [this, args] { send(kSetControl, args(true)); });

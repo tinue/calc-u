@@ -111,6 +111,17 @@ typedef struct {
 @property (nonatomic, readonly, copy, nullable) NSString *hint;
 @end
 
+/// A control of the printer plugged in, as the control state lists it: its
+/// form, its position (a key down, a switch on) and the labels the paper
+/// panel's row writes on it (the short one where the row is compact).
+@interface TIPaperControl : NSObject
+@property (nonatomic, readonly, copy) NSString *controlID;    ///< what `set-control` takes ("PRINT")
+@property (nonatomic, readonly) BOOL isSwitch;                ///< NO: a key, held
+@property (nonatomic, readonly) BOOL on;
+@property (nonatomic, readonly, copy) NSString *label;        ///< "PRINT"
+@property (nonatomic, readonly, copy) NSString *shortLabel;   ///< "PRN"
+@end
+
 /// What the session is built with. The settings file is
 /// the session's (the library's SettingsPart on the session thread,
 /// one owner of the file; the startup model is read from it); the
@@ -254,10 +265,11 @@ typedef struct {
 /// (a copy, then the paper emptied).
 - (void)copyPaper;
 - (void)cutPaper;
-/// TRACE's position: the control state's `controls`, NO
-/// while no PC-100C is plugged in.
-@property (nonatomic, readonly) BOOL printerTrace;
-/// PRINT, ADV (held) and TRACE (a switch) of the PC-100C (`set-control`).
+/// The PC-100C's controls (PRINT, TRACE, ADV) with their positions and
+/// labels: the control state's `controls`, none while no PC-100C is
+/// plugged in.
+@property (nonatomic, readonly) NSArray<TIPaperControl *> *printerControls;
+/// A control of the PC-100C (`set-control`): a key held or let go, a switch set.
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on NS_SWIFT_NAME(setPrinterControl(_:on:));
 
 // ── Magnetic cards (the library's `media` topic and `media.*`

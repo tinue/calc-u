@@ -32,10 +32,6 @@ DebugHeader debugHeader(bool cpu);
 inline constexpr double kDebugHeaderNarrowBelow = 13;
 inline bool debugHeaderNarrow(double baseFontSize) { return baseFontSize < kDebugHeaderNarrowBelow; }
 
-/// The printer's button bar goes compact (short labels, tighter buttons) on a
-/// narrow tape (iOS).
-bool compactPrinterBar(double printerWidth);
-
 /// Space (points) above a side-by-side layout. A window with no top inset
 /// (iPhone Duo open, iOS 27.1 simulator) doesn't deliver touches in its top
 /// ~30 pt — measured: controls centred at y ≤ 29 dead, ≥ 35 working — so the

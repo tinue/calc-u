@@ -74,9 +74,16 @@ struct MediaPlaceDescriptor {
     bool existsAt(const PinOutId&) const;
 };
 
-// A peripheral's keys and switches; never machine keys.
+// A peripheral's keys and switches; never machine keys. The label is what a
+// GUI writes on the control, the short label what it writes in a narrow row;
+// empty: the ID, and the label for the short one.
 enum class ControlForm { Key, Switch };
-struct ControlDescriptor { ControlId id; ControlForm form; };
+struct ControlDescriptor {
+    ControlId id;
+    ControlForm form;
+    std::string label = {};
+    std::string shortLabel = {};
+};
 
 struct MachineDescriptor {
     ModelId model;

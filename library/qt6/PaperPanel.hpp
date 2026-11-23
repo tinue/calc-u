@@ -32,9 +32,13 @@ class QHBoxLayout;
 // The header shows the shell's place controls on the paper (setPlaces)
 // left, the owner's name centred and the view control (with a text layer)
 // right; below it the paper, scrolled with the wheel or by touch without a
-// scroll bar, or the text in a fixed-width font; below the paper the
-// owner's controls left, Copy and Cut right. The product's chrome
-// (setChrome) gives the header and the button bar their heights and look.
+// scroll bar, or the text in a fixed-width font; below the paper one row
+// that never wraps: the owner's controls left (a switch with the dot of its
+// position), labelled as the control state labels them (the short labels
+// where shell::paperRowCompact says so for the panel's width), and Copy
+// and Cut right as icons (tooltips and accessible names "Copy", "Cut").
+// The product's chrome (setChrome) gives the header and the button bar
+// their heights and look.
 // A Copy or Cut is answered by a toast inside the panel for 1.8 s.
 //
 // Object names: paper-panel, paper-header, paper-footer, paper-owner,
@@ -64,6 +68,11 @@ public:
     // platform has one, its name as the tooltip.
     void setPlaces(std::vector<QWidget*>);
     static QIcon placeIcon(const QIcon& printer, const QColor& dot);
+    static QIcon switchDot(const QColor& dot);
+    enum class Action { Copy, Cut };
+    static constexpr int kActionIconPoints = 16;
+    static QIcon actionIcon(Action, const QColor& on, const QColor& off);
+    bool compact() const { return compact_; }   // the row's short labels and gap are on
     // The product's chrome (shell/Chrome): the header and the button bar
     // line up with the panels beside it; the paper's colours.
     void setChrome(const shell::ChromeColours&, const shell::ChromeSizes&);
@@ -84,7 +93,11 @@ public:
         bool empty() const { return marks.empty() && lines.empty() && reach == paper::Reach{}; }
     };
 
+protected:
+    void resizeEvent(QResizeEvent*) override;
+
 private:
+    void applyCompact();
     void apply(const std::string& owner, const paper::PaperAppended&);
     void refresh();
     void refreshText();
@@ -102,6 +115,9 @@ private:
     QWidget* header_;
     QWidget* footer_;
     QColor plugged_, unplugged_;   // the chrome's (setChrome)
+    shell::ChromeSizes sizes_;     // the chrome's (setChrome); the library's until then
+    bool compact_ = false;
+    QHBoxLayout* footerLayout_;
     QHBoxLayout* placesLayout_;
     QLabel* ownerLabel_;
     QToolButton* viewToggle_;

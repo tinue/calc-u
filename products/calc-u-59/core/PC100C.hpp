@@ -55,7 +55,8 @@ public:
     static constexpr std::uint32_t kRowStart = 18;
     static constexpr std::uint32_t kColumnInstructions = 64;
 
-    /// The controls of the descriptor: PRINT and ADV keys, TRACE switch.
+    /// The controls of the descriptor: PRINT key, TRACE switch, ADV key, with
+    /// the labels of the real printer's row (PRINT/PRN, ADV, T).
     static std::vector<calcu::machine::ControlDescriptor> controlDescriptors();
     static inline const calcu::machine::ControlId kPrint{"PRINT"}, kAdv{"ADV"}, kTrace{"TRACE"};
 

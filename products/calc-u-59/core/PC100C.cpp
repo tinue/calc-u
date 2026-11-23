@@ -74,7 +74,9 @@ const struct { uint8_t code; char str[4]; } PRN_STR[] = {
 } // namespace
 
 std::vector<ControlDescriptor> PC100C::controlDescriptors() {
-    return {{kPrint, ControlForm::Key}, {kAdv, ControlForm::Key}, {kTrace, ControlForm::Switch}};
+    // In the order of the printer's row: PRINT, the TRACE switch, ADV.
+    return {{kPrint, ControlForm::Key, "PRINT", "PRN"}, {kTrace, ControlForm::Switch, "T", "T"},
+            {kAdv, ControlForm::Key, "ADV", "ADV"}};
 }
 
 PC100C::PC100C(const std::vector<calcu::machine::SwitchPosition>& switches)

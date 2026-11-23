@@ -32,10 +32,11 @@ TEST(controls_listed_with_id_form_state) {
     const auto entries = m->capabilities(Controls::kKind);
     CHECK(entries.size() == 1 && entries[0].owner == kOwner && entries[0].id == CapabilityId{"printer/controls"});
     const auto list = controlsOf(*m, kOwner);
-    const std::vector<ControlInfo> want{{ControlId{"online"}, ControlForm::Switch, false},
-                                        {ControlId{"feed"}, ControlForm::Key, false},
-                                        {ControlId{"trace"}, ControlForm::Switch, false}};
-    CHECK(list == want);   // the descriptor's order, IDs, forms, up and off
+    // The labels: the ID without one, the label without a short one.
+    const std::vector<ControlInfo> want{{ControlId{"online"}, ControlForm::Switch, false, "online", "online"},
+                                        {ControlId{"feed"}, ControlForm::Key, false, "Feed", "FD"},
+                                        {ControlId{"trace"}, ControlForm::Switch, false, "T", "T"}};
+    CHECK(list == want);   // the descriptor's order, IDs, forms, labels, up and off
     // A control is named by owner and ID: another owner has its own.
     const Catalogue& cat = testCatalogue();
     auto dot = buildTestMachine(kDot);

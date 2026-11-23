@@ -84,6 +84,8 @@ enum Chrome {
     static let pillShape = TIChrome.pillShape
     static let barHeight = TIChrome.barHeight
     static let barGap = TIChrome.barGap
+    static let paperRowGap = TIChrome.paperRowGap
+    static let paperRowCompactGap = TIChrome.paperRowCompactGap
     static var pillFont: Font {
         .system(size: TIChrome.pillFontSize, weight: TIChrome.pillBold ? .bold : .regular)
     }

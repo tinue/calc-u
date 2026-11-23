@@ -76,6 +76,11 @@ TEST(paper_panel_print_adv_held_trace_switch_view_control) {
     CHECK(print && adv && trace);
     if (!print || !adv || !trace) return;
     CHECK(!print->isCheckable() && !adv->isCheckable());   // held: pressed and released
+    // The row as the control state labels it, left to right: PRINT, T, ADV
+    // (the short labels only in a narrow panel).
+    const QString printText = panel->compact() ? QStringLiteral("PRN") : QStringLiteral("PRINT");
+    CHECK(print->text() == printText && trace->text() == QStringLiteral("T") && adv->text() == QStringLiteral("ADV"));
+    CHECK(print->x() < trace->x() && trace->x() < adv->x());
     CHECK(trace->isCheckable() && !trace->isChecked());
     trace->click();   // set-control TRACE on
     CHECK(f.waitFor([&] { return f.c().printerTrace(); }));

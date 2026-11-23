@@ -63,9 +63,10 @@ front.
 - **Eject Card** takes the place of the Crd buttons while a side is in
   the reader. It takes the card out at once; the card stays fitted. A
   bank is kept only when the calculator had written all of it.
-- **A library program's cue card** covers a fitted card, and the corners
-  do nothing while it does. The card shows again when no library
-  program is selected, for instance after **2nd Pgm 00**.
+- **A library program's cue card** and a fitted card lie on top of each
+  other, the one put there last on top; the corners do nothing while
+  the program's card covers yours. Fitting a card brings it on top, and
+  so does **2nd Pgm 00**, which selects no library program.
 - **A fitted card stays** through a Reset, a power cycle and a Cold
   boot, and can be fed again afterwards. It goes when you fit another
   one, switch the model or load a preset. Its file stays as it is.

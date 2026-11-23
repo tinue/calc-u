@@ -380,7 +380,12 @@ is the library's media part:
   fitted card at a time, the last of a fitted magnetic card, a preset's
   `cue-card:` and the constant memory file's; while a library program is
   selected (the product kind `c59.library-program`), the module cue card of
-  that program from the module file covers it, and its corners do nothing.
+  that program from the module file and the fitted card lie on top of each
+  other, the one put there last on top: a change of the selected program
+  puts the module card on top, a card fitted the fitted card (the
+  registers show only which program is selected, so selecting the same one
+  again changes nothing). While the module card covers it, the fitted
+  card's corners do nothing.
   A fitted magnetic card shows its own cue card or one titled with its name,
   the banks of its sides in the corners. A new machine has nothing fitted;
   a Reset, power cycle or Cold boot keep it.
@@ -531,9 +536,9 @@ The block: `docs/formats/cue-card.md` (a preset's and the constant memory file's
   (`cueCardLayout`). Only `SolidStateCard` has an ID and column dividers, and
   is printed gold (`0xC49223`); the others use the card's ink (black, pencil,
   sharpie). Only `MagnetCard` has bank badges.
-- **Which card shows** (`TIAppPart::refreshCueCard`): the running library program's
-  card, else a generic card for the module, else the user's card (card file,
-  preset, `ti58c.memory.yaml`).
+- **Which card shows** (`TIAppPart::refreshCueCard`): of the running library
+  program's card (else a generic card for the module) and the user's card
+  (card file, preset, `ti58c.memory.yaml`), the one put there last.
 - **Column spans** (`labelSpans`, `dividersBetween`). A grid row has 5
   cells. A `\blank` cell extends the preceding label's span; empty cells
   draw nothing.

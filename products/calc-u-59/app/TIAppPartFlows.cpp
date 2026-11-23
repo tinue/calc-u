@@ -126,6 +126,7 @@ void TIAppPart::fitOwnCueCard(const CueCardContent& card) {
     m_userCueCard = card;
     m_userCueCardGeneration = m_ms ? m_ms->generation() : 0;
     m_lastFit = Fitted::Own;   // in the place of the card fitted before
+    m_moduleOnTop = false;
     refreshCueCard();
 }
 
@@ -145,6 +146,9 @@ void TIAppPart::refreshCueCard() {
     int program = 0;
     if (calcu::machine::Machine* m = machine())
         if (auto* k = calcu::machine::first<LibraryProgram>(*m)) program = k->selected().value_or(0);
+    // A program selected now lies on top. The registers show only which one
+    // is selected, so selecting the same program again changes nothing.
+    if (program != m_activeProgram) m_moduleOnTop = true;
     m_activeProgram = program;
     // The fitted magnetic card: the media part's binding of the card reader.
     const calcu::media::Binding* b = nullptr;
@@ -158,6 +162,7 @@ void TIAppPart::refreshCueCard() {
         m_seenArm = b->armed;
         m_lastFit = Fitted::Card;
         m_userCueCard.reset();
+        m_moduleOnTop = false;
     }
     if (!b && m_lastFit == Fitted::Card) m_lastFit = Fitted::None;
     std::optional<CueCardContent> fitted;
@@ -166,7 +171,7 @@ void TIAppPart::refreshCueCard() {
     // The module cue card of the program selected, if the module file defines one.
     std::optional<CueCardContent> card = fitted;
     bool covered = false;
-    if (program > 0)
+    if (program > 0 && (m_moduleOnTop || !fitted))
         if (const auto it = m_moduleCards.find(program); it != m_moduleCards.end()) {
             card = it->second;
             covered = true;

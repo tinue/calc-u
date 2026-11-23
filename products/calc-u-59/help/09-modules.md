@@ -45,8 +45,12 @@ module, as on the real calculator, and shows its cue card above the
 keys: the pre-printed card of the module's program (the Master Library
 has 25, the Leisure Library 21), or a plain card titled with the
 module's name for a program without one ([Cue cards](09-cue-cards.md)).
-While a library program is selected its card covers a fitted magnetic
-card; **2nd Pgm 00** goes back to your own program and your card.
+A library program's card and a fitted magnetic card lie on top of each
+other, the one put there last on top: selecting a program brings its
+card over yours, fitting a card brings yours back over it. **2nd Pgm 00**
+goes back to your own program and your card. Selecting the program that
+is already selected changes nothing: the calculator does not tell it
+apart.
 
 If the cue card or the programs look unexpected, check which module is
 in the slot first.

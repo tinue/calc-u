@@ -65,9 +65,10 @@ if(CALCU_TESTS)
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
   if(NOT WIN32)
-    # One Playwright version in the three locks and the CI's Playwright container.
-    calcu_add_test(LibraryPlaywrightVersion frequent
-                   COMMAND bash ${CMAKE_SOURCE_DIR}/tools/check_playwright_version.sh ${CMAKE_SOURCE_DIR})
+    # One Playwright, Emscripten and Node version in the locks, the workflows
+    # and the local CI's images.
+    calcu_add_test(LibraryToolchainVersions frequent
+                   COMMAND bash ${CMAKE_SOURCE_DIR}/tools/check_toolchain_versions.sh ${CMAKE_SOURCE_DIR})
     calcu_add_test(LibraryWebPlaywright longer COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-tests.sh --reporter=line
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} PROPERTIES TIMEOUT 900)
   endif()

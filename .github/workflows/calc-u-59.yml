@@ -1,16 +1,12 @@
-# Calc-U-59 (products/calc-u-59/): the Qt6 builds for macOS, Windows and
+# Calc-U-59 (products/calc-u-59/): the Qt6 packages for macOS, Windows and
 # Linux, the web client (frontends/web/), the help, plus the C++ test suite.
 # Every run step works in the product directory.
 #
-# The Linux and Windows packages are made of `cmake --install` of
-# build/release (the layouts: library/qt6/CMakeLists.txt,
-# calcu_qt6_bundle_sync).
-#
 # Run by hand (workflow_dispatch) — ReleaseIt's `release` dispatches it for a
-# pre-release and attaches the artifacts (release.yaml). The macOS job embeds
-# the Qt frameworks (macdeployqt), then the repository's action
-# .github/actions/mac-sign-dmg signs, notarizes and staples the .app and its
-# .dmg (docs/macos-signing.md: the secrets and their rotation).
+# pre-release and attaches the artifacts (release.yaml). The Qt6 packages
+# are the repository's workflow qt-desktop.yml (the `desktop` job): each made
+# of `cmake --install` of build/release, the macOS DMG signed and notarized
+# (docs/macos-signing.md: the secrets and their rotation).
 #
 # ROMs are not in this repository: every job fetches them with
 # roms/fetch_roms.sh from tinue/TI-59-ROM and checks their md5; the Qt build
@@ -28,12 +24,6 @@ on:
 defaults:
   run:
     working-directory: products/calc-u-59
-
-env:
-  # The packaging jobs' tree and the Qt6 app's directory in it, relative to
-  # the product directory.
-  RELEASE_BUILD: ../../build/release
-  QT_BUILD: ../../build/release/products/calc-u-59/frontends/qt6
 
 jobs:
   core-tests:
@@ -71,7 +61,7 @@ jobs:
     # Microsoft's Playwright image: Chromium, WebKit and their system
     # libraries are in it (/ms-playwright), so no `playwright install
     # --with-deps`. Its tag is the Playwright version the three
-    # package-lock.json files lock (tools/check_playwright_version.sh).
+    # package-lock.json files lock (tools/check_toolchain_versions.sh).
     container:
       image: mcr.microsoft.com/playwright:v1.65.0-noble
     # In a container, run steps default to sh; bash as on the runner. A job's
@@ -95,8 +85,9 @@ jobs:
       - name: Install emsdk
         uses: mymindstorm/setup-emsdk@v16
         with:
-          # The release the build images run (7.x does not), the same as
-          # calc-u-1600.yml's and ci/linux's; not the local toolchain's.
+          # The release the build images run (7.x does not); one version
+          # everywhere (tools/check_toolchain_versions.sh), not the local
+          # toolchain's.
           version: 6.0.13
       - name: Install Node
         uses: actions/setup-node@v7
@@ -125,188 +116,16 @@ jobs:
           path: Calc-U-59-web-*.zip
           if-no-files-found: error
 
-  linux:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x86_64
-            runner: ubuntu-24.04
-          - arch: aarch64
-            runner: ubuntu-24.04-arm
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install Qt6 + build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build patchelf \
-            qt6-base-dev qt6-base-dev-tools qt6-wayland libgl1-mesa-dev qt6-gtk-platformtheme qt6ct
-      - name: Fetch ROMs
-        shell: bash
-        run: roms/fetch_roms.sh
-      - name: Configure (repository root)
-        run: >-
-          cmake -S ../.. -B $RELEASE_BUILD -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
-      - name: Build
-        run: cmake --build $RELEASE_BUILD --target CalcU59Qt calcu
-      - name: Run calcu (the harness CLI with Calc-U-59)
-        run: cmake -DCALCU=$RELEASE_BUILD/library/harness/cli/calcu -P tests/calcu_runs.cmake
-      - name: Build AppImage
-        env:
-          QMAKE: /usr/lib/qt6/bin/qmake6
-          APPIMAGE_EXTRACT_AND_RUN: "1"
-          # Wayland sessions (the default on current desktops) need these on top
-          # of the xcb plugin linuxdeploy-plugin-qt deploys by default.
-          EXTRA_PLATFORM_PLUGINS: "libqwayland-egl.so;libqwayland-generic.so"
-        run: |
-          set -euo pipefail
-          # The install rules lay out the AppDir: usr/bin/Calc-U-59,
-          # usr/share/calc-u-59 (the bundled examples), usr/share/doc/calc-u-59
-          # (the licences, Qt's LGPLv3 among them), the .desktop file and the
-          # icon, which linuxdeploy takes from usr/share.
-          cmake --install $RELEASE_BUILD --prefix "$PWD/AppDir/usr"
-          curl -fsSL -o linuxdeploy.AppImage \
-            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${{ matrix.arch }}.AppImage
-          curl -fsSL -o linuxdeploy-plugin-qt.AppImage \
-            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-${{ matrix.arch }}.AppImage
-          chmod +x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
-          export PATH="$PWD:$PATH"
-          ./linuxdeploy.AppImage --appdir=AppDir --executable=AppDir/usr/bin/Calc-U-59 --plugin=qt
-          QT_PLUGINS_DIR=$("$QMAKE" -query QT_INSTALL_PLUGINS)
-          # Wayland EGL rendering and the desktop's platform theme (dark/light, dialogs).
-          for dir in wayland-graphics-integration-client platformthemes styles; do
-            if [ -d "$QT_PLUGINS_DIR/$dir" ]; then
-              cp -r "$QT_PLUGINS_DIR/$dir" AppDir/usr/plugins/
-              ./linuxdeploy.AppImage --appdir=AppDir --deploy-deps-only=AppDir/usr/plugins/$dir
-            else
-              echo "::warning::$dir plugins not found in $QT_PLUGINS_DIR"
-            fi
-          done
-          # Default to the GTK platform theme unless the user picked one.
-          mv AppDir/AppRun AppDir/AppRun.qt
-          printf '%s\n' '#!/bin/sh' \
-            'export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-gtk3}"' \
-            'HERE="$(dirname "$(readlink -f "$0")")"' \
-            'exec "$HERE/AppRun.qt" "$@"' > AppDir/AppRun
-          chmod +x AppDir/AppRun
-          ./linuxdeploy.AppImage --appdir=AppDir --output=appimage
-      - name: Upload artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: Calc-U-59-linux-${{ matrix.arch }}
-          path: products/calc-u-59/Calc-U-59-*.AppImage
-          if-no-files-found: error
-
-  mac-aarch64:
-    # Apple Silicon (arm64). macOS 15 so Homebrew's Qt bottles (embedded by
-    # macdeployqt) are built for 15.x too, matching CMAKE_OSX_DEPLOYMENT_TARGET.
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install Qt6 + build tools
-        run: brew install qt cmake ninja
-      - name: Fetch ROMs
-        shell: bash
-        run: roms/fetch_roms.sh
-      - name: Configure (repository root)
-        run: >-
-          cmake -S ../.. -B $RELEASE_BUILD -G Ninja -DCMAKE_PREFIX_PATH=$(brew --prefix qt)
-          -DCMAKE_BUILD_TYPE=Release -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
-      - name: Build
-        # A real .app bundle (frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE).
-        run: cmake --build $RELEASE_BUILD --target CalcU59Qt calcu
-      - name: Run calcu (the harness CLI with Calc-U-59)
-        run: cmake -DCALCU=$RELEASE_BUILD/library/harness/cli/calcu -P tests/calcu_runs.cmake
-      - name: Embed Qt frameworks (macdeployqt)
-        # The bundle links Homebrew's Qt by absolute path until macdeployqt
-        # copies the frameworks into Contents/Frameworks and rewrites the
-        # rpaths; only then does it run on a Mac without that Qt.
-        run: $(brew --prefix qt)/bin/macdeployqt $QT_BUILD/Calc-U-59.app
-      # The repository secrets: docs/macos-signing.md.
-      - name: Sign, notarize and package the DMG
-        uses: ./.github/actions/mac-sign-dmg
-        with:
-          app: build/release/products/calc-u-59/frontends/qt6/Calc-U-59.app
-          dmg: build/release/products/calc-u-59/frontends/qt6/Calc-U-59.dmg
-          volume-name: Calc-U-59
-          certificate-p12-base64: ${{ secrets.APPLE_CERT_APPLICATION_P12_BASE64 }}
-          certificate-password: ${{ secrets.APPLE_CERT_P12_PASSWORD }}
-          api-key-p8-base64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
-          api-key-id: ${{ secrets.APPLE_API_KEY_ID }}
-          api-issuer-id: ${{ secrets.APPLE_API_ISSUER_ID }}
-      - name: Upload artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: Calc-U-59-mac-aarch64
-          path: build/release/products/calc-u-59/frontends/qt6/Calc-U-59.dmg
-          if-no-files-found: error
-
-  windows:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x86_64
-            runner: windows-latest
-            qt-host: windows
-            qt-arch: win64_msvc2022_64
-            msvc-arch: x64
-            iss-arch: x64
-            installer: Calc-U-59-Setup.exe
-          - arch: arm64
-            runner: windows-11-arm
-            qt-host: windows_arm64
-            qt-arch: win64_msvc2022_arm64
-            msvc-arch: arm64
-            iss-arch: arm64
-            installer: Calc-U-59-Setup-arm64.exe
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install Qt6 (MSVC)
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.8.2'
-          host: ${{ matrix.qt-host }}
-          target: 'desktop'
-          arch: ${{ matrix.qt-arch }}
-      - name: Set up MSVC dev environment
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: ${{ matrix.msvc-arch }}
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v6
-      - name: Fetch ROMs
-        shell: bash
-        run: roms/fetch_roms.sh
-      - name: Configure (repository root)
-        run: >-
-          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
-      - name: Build
-        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU59Qt calcu
-      - name: Run calcu (the harness CLI with Calc-U-59)
-        run: cmake "-DCALCU=${{ env.RELEASE_BUILD }}/library/harness/cli/calcu.exe" -P tests/calcu_runs.cmake
-      - name: Stage the app folder
-        # The install rules: build/release/install/Calc-U-59/ with
-        # Calc-U-59.exe, resources\ (the bundled examples), licenses\, and
-        # Qt's DLLs with the MSVC runtime (windeployqt --compiler-runtime,
-        # run by the install); the .iss packages that folder.
-        run: cmake --install ${{ env.RELEASE_BUILD }} --prefix ${{ env.RELEASE_BUILD }}/install
-      - name: Install Inno Setup
-        shell: pwsh
-        run: choco install innosetup -y
-      - name: Build installer
-        shell: pwsh
-        run: ISCC.exe /DAPP_ARCH=${{ matrix.iss-arch }} frontends\qt6\resources\windows\calc-u-59.iss
-      - name: Upload artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: Calc-U-59-windows-${{ matrix.arch }}
-          path: products/calc-u-59/${{ matrix.installer }}
-          if-no-files-found: error
+  desktop:
+    # The Qt6 app packaged for Linux, macOS and Windows; shared with
+    # calc-u-1600.yml.
+    uses: ./.github/workflows/qt-desktop.yml
+    with:
+      product: calc-u-59
+      app: Calc-U-59
+      target: CalcU59Qt
+      cmake-options: -DCALCU_PRODUCT_1600=OFF
+    secrets: inherit
 
   # The help asset Calc-U-59-help.zip: tools/help
   # (Python 3, standard library only; the runner's python3) checks the help

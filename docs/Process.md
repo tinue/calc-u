@@ -34,7 +34,7 @@ Calc-U-59 3.1.0 after 3.0.0; Calc-U-1600 works the same with
 3. **Pre-release**, as often as needed, on `main`:
    `release -C products/calc-u-59`. It sets or moves the tag
    `calc-u-59-v3.1.0-pre` to the current `main` and dispatches
-   `.github/workflows/calc-u-59.yml` for the macOS DMG, Windows, Linux,
+   `.github/workflows/calc-u-59.yml` (with `qt-desktop.yml`) for the macOS DMG, Windows, Linux,
    the web client and the help. The iOS app goes to TestFlight with
    `release ios`; in App Store Connect it is not offered on Macs (the
    Mac app is the Qt6 DMG).

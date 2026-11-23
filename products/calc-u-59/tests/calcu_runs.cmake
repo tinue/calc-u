@@ -2,7 +2,7 @@
 # process of its own, in the form of library/harness/tests/cli/cli_cases.cmake:
 #   cmake -DCALCU=<the calcu program> -P tests/calcu_runs.cmake
 # from products/calc-u-59 (the ROMs in roms/). The CTest CalcU59CalcuRuns
-# (Frequent) and every desktop job of .github/workflows/calc-u-59.yml run it.
+# (Frequent) and every desktop job of .github/workflows/qt-desktop.yml run it.
 # Case calcu_runs_calc_u_59: `wait 1s then display-text`, exit status 0 and
 # the display of the TI-59 at key readiness.
 

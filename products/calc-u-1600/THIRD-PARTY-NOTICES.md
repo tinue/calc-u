@@ -21,7 +21,8 @@ release is available free of charge from The Qt Company:
 
 The macOS/Linux/Windows builds published by this project's CI record the
 exact Qt version installed for that build in the GitHub Actions run log
-(`.github/workflows/calc-u-1600.yml` at the repository root).
+(`.github/workflows/calc-u-1600.yml` and its desktop jobs, `qt-desktop.yml`, at
+the repository root).
 
 ## Web client (`frontends/web/`)
 

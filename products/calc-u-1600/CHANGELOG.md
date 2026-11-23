@@ -11,6 +11,7 @@
 - **Modules and media:** choosing a module power-cycles the machine, as on the real device; modules, disks and cassettes have Name & Save and the same pickers on the desktop and the Web; a dropped or opened file goes where it belongs (program to its loader, module, disk or cassette into its place).
 - **Machine:** Pause and Resume; full speed runs a waiting machine at real time, so the prompt no longer spins; a held key stays down, so the ROM's own auto-repeat works. The paper panel is always shown and keeps its paper through detaching and model switches until Cut. Copy and Cut are icons at the right of the row below the paper.
 - **Control bar and menus:** on the PC-1600 a printer picker and a CE-158 button; every bar ends with More (⋯), which holds every menu item; Reset All is Cold boot. On a phone the installed Web app shows the paper in portrait and the calculator in landscape.
+- **Windows and Linux:** the installer shows the licence and offers to start Calc-U-1600 when it is done; on Linux the AppImage and an install bring the presets' file type (MIME), so a desktop that integrates the app opens them with Calc-U-1600.
 - **For developers:** automated tests with pytest (`tools/machine/`, `docs/testing/README.md`), developed together with spellbound.
 
 ### Fixed

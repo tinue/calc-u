@@ -129,7 +129,7 @@ frontends/web/build.sh          # → frontends/web/dist/ (gitignored): tested a
 frontends/web/run-tests.sh      # Playwright against dist/ on ports 8059 and 8060; build first
 ```
 
-`build.sh` needs `emcmake`/`cmake` (Homebrew `emscripten`; CI pins 6.0.13,
+`build.sh` needs `emcmake`/`cmake` (Homebrew `emscripten`; CI pins one release,
 the release the build images run, in the repository's
 `.github/workflows/calc-u-59.yml`, job `web`, as for Calc-U-1600),
 `ninja` and `node`. It runs `build.js`, which hands the product's values to

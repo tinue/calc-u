@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-qt
-description: Use this skill when working on the Qt6 desktop app of Calc-U-59 (frontends/qt6/, frontends/qt6/app/, frontends/qt6/resources/, `.github/workflows/calc-u-59.yml` (repository root), the repository's tools/run_qt.sh, tools/gen_qt_icons.sh). Covers the class map against the Swift views, threading (the library's app session on the GUI thread), building, packaging for macOS, Windows and Linux, and the parity rule with the Swift app. Trigger on any task that touches frontends/qt6/ or the Qt CI workflow.
+description: Use this skill when working on the Qt6 desktop app of Calc-U-59 (frontends/qt6/, frontends/qt6/app/, frontends/qt6/resources/, `.github/workflows/calc-u-59.yml` and `qt-desktop.yml` (repository root), the repository's tools/run_qt.sh, tools/gen_qt_icons.sh). Covers the class map against the Swift views, threading (the library's app session on the GUI thread), building, packaging for macOS, Windows and Linux, and the parity rule with the Swift app. Trigger on any task that touches frontends/qt6/ or the Qt CI workflow.
 user-invocable: true
 ---
 
@@ -142,7 +142,8 @@ cmake -S ../.. -B ../../build/all -G Ninja && cmake --build ../../build/all   # 
 
 All C++ builds go through the repository's root `CMakeLists.txt` (options `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600`, `CALCU_FRONTEND_QT`); the
 product directory and `frontends/qt6/` do not configure on their own. The
-packaging jobs in CI configure the root into `build/release`
+packaging jobs in CI (the repository's `.github/workflows/qt-desktop.yml`,
+the `desktop` job of `calc-u-59.yml`) configure the root into `build/release`
 (`-DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF`) and build `CalcU59Qt`; the
 `.iss` includes `Version.iss` from that tree.
 Qt comes from Homebrew on macOS (`/opt/homebrew/opt/qt`, found automatically).
@@ -154,19 +155,26 @@ The version is read from the Xcode project's `MARKETING_VERSION`.
   (macOS and Linux deploy no Qt; Windows runs `windeployqt` on the
   installed program). Without `--prefix`: `~/Applications` (the `.app`),
   `~/.local` (`bin/Calc-U-59`, `share/calc-u-59/`, `share/doc/calc-u-59/`,
-  the `.desktop` file and the 256×256 icon), `%LOCALAPPDATA%\Programs`
+  the `.desktop` file, the 256×256 icon and the presets' MIME type
+  `share/mime/packages/calc-u-59.xml`), `%LOCALAPPDATA%\Programs`
   (`Calc-U-59\Calc-U-59.exe` with `resources\`, `licenses\`). The
-  layouts and the rules are the library's `calcu_qt6_bundle_files` (places
-  `data[/<folder>]`, `licenses`) and `calcu_qt6_bundle_sync(<target>
-  DESKTOP_FILE … ICON …)` (`library/qt6/CMakeLists.txt`): each build also
-  brings the bundle's `Contents/Resources` (else `resources/` and
-  `licenses/` next to the program) to exactly those files, removing any
-  other. The app finds its data through the library's
+  layouts and the rules are the library's `calcu_qt6_app(<target> NAME
+  <App> VERSION <version>)` (`library/qt6/CMakeLists.txt`; the product's
+  own files before it with `calcu_qt6_bundle_files(<target> <place>
+  <files>…)`, places `data[/<folder>]`, `licenses`). By convention it
+  bundles `examples/bundle.yaml` and the files it lists, the five licence
+  files, the macOS icon and `Info.plist.in` of `resources/macos/` (bundle id
+  `ch.erzberger.<target>`), and installs `resources/linux/<app>.desktop`,
+  `.png` and `.xml`. Each build also brings the bundle's
+  `Contents/Resources` (else `resources/` and `licenses/` next to the
+  program) to exactly those files, removing any other. The app finds its data through the library's
   `calcu::qt6::bundledDataDir("calc-u-59")` (`AppPaths::bundledExamplesDir`;
-  Linux: `../share/calc-u-59` first). CTest `CalcUQtInstallLayout` installs
+  Linux: `../share/calc-u-59` first). CTest `LibraryQtInstallLayout` installs
   a Qt tree into a folder of its own and checks the layout.
-- **macOS** arm64 (`mac-aarch64`, macos-15, Homebrew's Qt, CI): the
-  build tree's `.app`, macdeployqt,
+- **macOS** arm64 (`mac-aarch64`, macos-15, Homebrew's Qt, CI): `cmake
+  --install build/release --prefix build/release/install`, macdeployqt on
+  the installed `.app` (never the build tree's: its next build takes
+  macdeployqt's `qt.conf` out of `Contents/Resources` again),
   then the repository's action `.github/actions/mac-sign-dmg` (Developer ID,
   hardened runtime, notarized and stapled `.app` and `.dmg`;
   `docs/macos-signing.md`). The bundle id is `ch.erzberger.CalcU59Qt`; the
@@ -175,13 +183,14 @@ The version is read from the Xcode project's `MARKETING_VERSION`.
   settings (App Nap, window restoration, press-and-hold) are the library's
   `qt6/MacHost`, applied in `main.cpp`.
 - **Linux** x86_64 / aarch64 (CI): `cmake --install build/release --prefix
-  AppDir/usr`, then linuxdeploy + Qt plugin → AppImage (the desktop file
-  and icon from `AppDir/usr/share`), with the
+  AppDir/usr`, then linuxdeploy + Qt plugin → AppImage (the desktop file,
+  icon and MIME type from `AppDir/usr/share`), with the
   Wayland and platform-theme plugins and a GTK-theme `AppRun` wrapper.
 - **Windows** x86_64 / arm64 (CI): `cmake --install build/release --prefix
   build/release/install` (with windeployqt) → Inno Setup
-  (`frontends/qt6/resources/windows/calc-u-59.iss` packages
-  `build\release\install\Calc-U-59`, preset associations).
+  (`frontends/qt6/resources/windows/calc-u-59.iss`: name, ProgID and the
+  preset extensions on the library's `library/qt6/windows/CalcUApp.iss`,
+  which packages `build\release\install\Calc-U-59`).
 - `LICENSE`, `NOTICE`, `THIRD-PARTY-NOTICES.md`, `LGPL-3.0.txt` (Qt) and
   `GPL-3.0.txt` ship in every package: in `licenses\` next to the Windows
   executable, in `usr/share/doc/calc-u-59/` inside the AppImage, in

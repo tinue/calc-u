@@ -19,7 +19,8 @@ available free of charge from The Qt Company:
 - <https://download.qt.io/official_releases/qt/>
 
 The builds published by this project's CI record the exact Qt version in the
-GitHub Actions run log (`.github/workflows/calc-u-59.yml` at the repository root).
+GitHub Actions run log (`.github/workflows/calc-u-59.yml` and its desktop jobs,
+`qt-desktop.yml`, at the repository root).
 
 The Swift app for iPhone and iPad does not use Qt.
 

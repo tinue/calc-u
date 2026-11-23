@@ -144,7 +144,8 @@ if(CALCU_TESTS)
   # The app layer reaches the machine through the interface only.
   calcu_add_test(CalcU59CoreSeam frequent COMMAND sh tools/check_core_seam.sh)
   # Open With offers the three preset extensions on macOS, Windows and Linux.
-  calcu_add_test(CalcU59OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
+  calcu_add_test(CalcU59OpenWithTypes frequent
+                 COMMAND sh ${CMAKE_SOURCE_DIR}/library/qt6/tests/check_open_with_types.sh Calc-U-59 "ti59 ti58 ti58c")
   # No thread in app/ but the session thread; the Swift bridge only through it.
   calcu_add_test(CalcU59SessionThread frequent COMMAND sh tools/check_session_thread.sh)
   # The three frontends draw from the control state.
@@ -158,7 +159,7 @@ if(CALCU_TESTS)
                               ROM_ALLOW app/ProductRoms.cpp app/ProductRoms.hpp core/TICatalogue.cpp
                                         frontends/qt6/app/QtResourceBundle.cpp)
   # `calcu --product c59` runs as a process
-  # of its own (tests/calcu_runs.cmake; also in every desktop job of the workflow).
+  # of its own (tests/calcu_runs.cmake; also in every desktop job of qt-desktop.yml).
   calcu_add_test(CalcU59CalcuRuns frequent COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu> -P tests/calcu_runs.cmake)
   if(Python3_FOUND)
     # `calcu` without one ROM file ends naming it.

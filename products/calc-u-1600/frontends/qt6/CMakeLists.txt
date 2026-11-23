@@ -27,10 +27,9 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Network)
 qt_standard_project_setup()
 
 # ---- App version (About dialog, macOS bundle Info.plist) ----
-# Single source of truth for the version number -- both the generated
-# Version.h below and the MACOSX_BUNDLE_*VERSION* properties further down
-# reference this instead of each hardcoding "0.1.0" separately, as does
-# the Windows installer (generated Version.iss below).
+# The one version: the generated Version.h below, the macOS bundle's
+# versions (calcu_qt6_app further down) and the Windows installer (the
+# generated Version.iss below) take it.
 set(APP_VERSION "0.9.0")
 
 message(STATUS "Calc-U-1600 version ${APP_VERSION}")
@@ -111,44 +110,6 @@ endif()
 
 target_link_libraries(CalcU1600Qt PRIVATE calcu1600_shared calcu_qt6)
 
-# ---- App icon (macOS bundle icon; Windows' equivalent is the WIN32
-# block's calc-u-1600.rc above, Linux's is resources/linux/calc-u-1600.png,
-# installed by calcu_qt6_bundle_sync below). The source is the Icon Composer bundle
-# resources/macos/AppIcon.icon (macOS 26+ masks, sizes and shades it). The CI runner's Xcode can't compile .icon, so its actool
-# output is committed, same as the vendored libsharpdx.a above: Assets.car
-# (macOS 26+) and AppIcon.icns (fallback for older macOS). Regenerate both
-# if the icon changes:
-#   xcrun actool Qt6/resources/macos/AppIcon.icon --compile Qt6/resources/macos
-#     --app-icon AppIcon --platform macosx --minimum-deployment-target 15.8
-#     --target-device mac --output-partial-info-plist /dev/null
-if(APPLE)
-  set(APP_ICON_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/AppIcon.icns
-    ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Assets.car)
-  calcu_qt6_bundle_files(CalcU1600Qt data ${APP_ICON_FILES})
-  # Explicit bundle identifier (same ch.erzberger.* namespace as
-  # SharpDataExchange's ch.erzberger.SharpDataExchange) -- needed for
-  # stable codesigning/notarization identity across CI runs, rather than
-  # whatever default CMake would otherwise synthesize.
-  set_target_properties(CalcU1600Qt PROPERTIES
-    MACOSX_BUNDLE_ICON_FILE AppIcon
-    MACOSX_BUNDLE_GUI_IDENTIFIER ch.erzberger.CalcU1600Qt
-    MACOSX_BUNDLE_BUNDLE_VERSION ${APP_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${APP_VERSION}
-    MACOSX_BUNDLE_BUNDLE_NAME "Calc-U-1600"
-    MACOSX_BUNDLE_COPYRIGHT "Copyright (C) 2026 Martin Erzberger"
-    # Qt's template plus the document types the Dock and Finder open here.
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Info.plist.in
-  )
-endif()
-
-# User-facing output name: "Calc-U-1600" everywhere (the .app bundle on
-# macOS, the plain executable on Linux/Windows) -- the CMake target
-# identifier above stays CalcU1600Qt (internal only, not user-visible;
-# renaming it would mean touching every target_* call in this file for
-# no user-facing benefit).
-set_target_properties(CalcU1600Qt PROPERTIES OUTPUT_NAME "Calc-U-1600")
-
 # ---- Memory-card resource files, and bundled ROMs (loose, NOT .qrc --
 # Core's scanMemoryCardDirectory() and the ROM lookup (DirectoryBundle)
 # read a real filesystem directory, so these must be real files on
@@ -178,46 +139,17 @@ set(BUNDLED_RESOURCE_FILES ${MODULE_FILES} ${FLOPPY_FILES} ${CASSETTE_FILES} ${B
 # calcu::qt6::bundledDataDir).
 calcu_qt6_bundle_files(CalcU1600Qt data ${BUNDLED_RESOURCE_FILES})
 
-# ---- Bundled example presets:
-# the bundle file examples/bundle.yaml and exactly the files it lists, each
-# `{ file: … }` (the presets and their files), loose in the data's examples/
-# (AppPaths::bundledExamplesDir(); the preset list reads them). The Web build
-# (frontends/web/build.js) takes the same list. ----
-set(EXAMPLES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../examples)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${EXAMPLES_SRC_DIR}/bundle.yaml)
-file(STRINGS ${EXAMPLES_SRC_DIR}/bundle.yaml EXAMPLE_FILE_LINES REGEX "{ *file: ")
-set(EXAMPLE_FILES "")
-foreach(line IN LISTS EXAMPLE_FILE_LINES)
-  string(REGEX REPLACE ".*{ *file: *([^ }]+) *}.*" "\\1" example_file "${line}")
-  list(APPEND EXAMPLE_FILES "${example_file}")
-endforeach()
-list(REMOVE_DUPLICATES EXAMPLE_FILES)
-
-calcu_qt6_bundle_files(CalcU1600Qt data/examples ${EXAMPLES_SRC_DIR}/bundle.yaml)
-foreach(example_file IN LISTS EXAMPLE_FILES)
-  get_filename_component(example_dir "${example_file}" DIRECTORY)
-  calcu_qt6_bundle_files(CalcU1600Qt data/examples/${example_dir} ${EXAMPLES_SRC_DIR}/${example_file})
-endforeach()
-
-# ---- License / third-party-notice files -- ships GPLv3 (this project)
-# and LGPLv3 (bundled Qt6) license text alongside the binary, so LGPLv3's
-# obligation to provide the license text travels with every distributed
-# build, not just the git repo. See ../../THIRD-PARTY-NOTICES.md.
-set(LICENSE_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../../../LICENSE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../NOTICE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../THIRD-PARTY-NOTICES.md
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../licenses/LGPL-3.0.txt
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../licenses/GPL-3.0.txt
-)
-
-# Resources/licenses in the bundle, else licenses next to the executable;
-# share/doc/calc-u-1600 when installed on Linux.
-calcu_qt6_bundle_files(CalcU1600Qt licenses ${LICENSE_FILES})
-# The app's bundled folders hold exactly the files above; the install rules
-# (library/qt6/CMakeLists.txt has the layouts).
-calcu_qt6_bundle_sync(CalcU1600Qt DESKTOP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/resources/linux/calc-u-1600.desktop
-                                  ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/linux/calc-u-1600.png)
+# ---- The app's name, the bundled files every app carries (the examples of
+# examples/bundle.yaml, the licences), the macOS bundle (the icon:
+# resources/macos/AppIcon.icon compiled by actool into the committed
+# Assets.car and AppIcon.icns; Info.plist.in with the document types) and
+# the install rules: the library's calcu_qt6_app (library/qt6/CMakeLists.txt
+# has the conventions and the layouts). Regenerate the icon files when the
+# icon changes:
+#   xcrun actool resources/macos/AppIcon.icon --compile resources/macos
+#     --app-icon AppIcon --platform macosx --minimum-deployment-target 15.8
+#     --target-device mac --output-partial-info-plist /dev/null
+calcu_qt6_app(CalcU1600Qt NAME Calc-U-1600 VERSION ${APP_VERSION})
 
 # CalcU1600QtTests, the window put together from the shell, its session on
 # the real ROMs (a bundle folder of the tests' own), offscreen; the

@@ -3,15 +3,17 @@
 Both products ship their Qt6 app for the Mac, signed with the same Apple
 Developer ID (team `7Q3QN9AV9J`): the **Developer ID Application**
 certificate and the hardened runtime, notarized and stapled, in a `.dmg`.
-Both are signed in CI, by the `mac-aarch64` job of the product's
-workflow, with the repository secrets below:
+Both are signed in CI, by the `mac-aarch64` job of
+[`.github/workflows/qt-desktop.yml`](../.github/workflows/qt-desktop.yml),
+which the product's workflow runs as its `desktop` job, with the
+repository secrets below:
 
 | Product | Mac app | Workflow | Bundle identifier |
 |---|---|---|---|
 | Calc-U-59 | `products/calc-u-59/frontends/qt6/` | [`.github/workflows/calc-u-59.yml`](../.github/workflows/calc-u-59.yml) | `ch.erzberger.CalcU59Qt` |
 | Calc-U-1600 | `products/calc-u-1600/frontends/qt6/` | [`.github/workflows/calc-u-1600.yml`](../.github/workflows/calc-u-1600.yml) | `ch.erzberger.CalcU1600Qt` |
 
-The bundle identifiers are set in each app's `frontends/qt6/CMakeLists.txt`.
+The bundle identifiers are `ch.erzberger.<CMake target>`, set by the library's `calcu_qt6_app` (`library/qt6/CMakeLists.txt`).
 Calc-U-59's iOS app (`products/calc-u-59/frontends/swift/`) goes to the App
 Store through Xcode's own signing (`release ios`), not with these
 certificates.
@@ -20,9 +22,10 @@ certificates.
 
 Each `mac-aarch64` job builds the `.app`, then:
 
-1. Runs `macdeployqt` on the `.app` (`frontends/qt6/CMakeLists.txt`'s
-   `MACOSX_BUNDLE`) to embed the Qt frameworks, so the bundle doesn't
-   depend on Homebrew's Qt on the machine that runs it.
+1. Installs it (`cmake --install build/release --prefix
+   build/release/install`, the library's `calcu_qt6_app`) and runs
+   `macdeployqt` on the installed `.app` to embed the Qt frameworks, so
+   the bundle doesn't depend on Homebrew's Qt on the machine that runs it.
 2. Runs the repository's action
    [`.github/actions/mac-sign-dmg`](../.github/actions/mac-sign-dmg/action.yml),
    which does the rest. It signs the `.app` with the Developer ID

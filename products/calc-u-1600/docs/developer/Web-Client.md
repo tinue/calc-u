@@ -73,7 +73,7 @@ frontends/web/build.sh        # emcmake build of the calcu1600_web target, then 
 frontends/web/run-tests.sh    # Playwright on ports 8160 and 8161: root, sub-path, offline (Chromium, WebKit), prerender
 ```
 
-`build.sh` needs `emcmake` (emsdk 6.0.13, as for the
+`build.sh` needs `emcmake` (the emsdk release the workflows pin, as for the
 [WebAssembly check](../../../../docs/Building.md#the-web-clients)), node and the ROMs. The
 engine is the CMake target `calcu1600_web` of the repository's root project,
 built in its `build/web` tree

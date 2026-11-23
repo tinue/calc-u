@@ -91,16 +91,19 @@ only). On macOS the `.app` is started through `open`, else the binary;
 arguments after the product go to the app. Calc-U-1600's
 `tools/make_screenshots.sh` builds through it.
 
-## check_playwright_version.sh: one Playwright version
+## check_toolchain_versions.sh: one version of each pinned toolchain
 
 ```sh
-tools/check_playwright_version.sh   # exit 1 and the list of places when they differ
+tools/check_toolchain_versions.sh   # exit 1 and the list of places when they differ
 ```
 
-Checks that the three `package-lock.json` files (Calc-U-59's and
-Calc-U-1600's Web frontends, `library/web/`) lock one Playwright version
-and that the Playwright container of both product workflows' `web` jobs
-and of the local CI's web image (`ci/linux/Containerfile`) is of that
-release: the container's browsers belong to one Playwright release.
-Reads files only. CTest `LibraryPlaywrightVersion` (Frequent; not on
-Windows).
+Checks that the pinned toolchains have one version everywhere:
+Playwright in the three `package-lock.json` files (Calc-U-59's and
+Calc-U-1600's Web frontends, `library/web/`), the Playwright container of
+both product workflows' `web` jobs and the local CI's web image
+(`ci/linux/Containerfile`), since the container's browsers belong to one
+Playwright release; Emscripten in both `web` jobs' setup-emsdk, the local
+CI's `EMSDK_VERSION` and the release `libsharpdx-wasm.a` was built with
+(its README, `docs/Building.md`); Node's major version in both `web` jobs'
+setup-node and the local CI's `NODE_VERSION`. Reads files only. CTest
+`LibraryToolchainVersions` (Frequent; not on Windows).

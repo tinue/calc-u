@@ -26,7 +26,7 @@ release:
     **Linux**: the downloaded .AppImage needs its executable bit set before it
     will run — GitHub Releases doesn't preserve file permissions on uploaded
     assets. Run `chmod +x Calc-U-1600-*.AppImage` once after downloading, then
-    launch it directly.
+    launch it directly. **Windows**: the installer is unsigned.
   # No examples zip: the help explains how to get every
   # example from the source repository.
 

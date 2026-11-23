@@ -1,8 +1,8 @@
 # The layout `cmake --install` gives the Qt6 apps of a tree
-# (calcu_qt6_bundle_sync, library/qt6/CMakeLists.txt): installs the tree
+# (calcu_qt6_app, library/qt6/CMakeLists.txt): installs the tree
 # into a folder of its own and looks for each app's program, bundled data
-# and licences, on Linux also the .desktop file and the icon, on Windows
-# Qt's DLLs. CTest CalcUQtInstallLayout (Frequent, Qt trees).
+# and licences, on Linux also the .desktop file, the icon and the presets'
+# MIME type, on Windows Qt's DLLs. CTest LibraryQtInstallLayout (Frequent, Qt trees).
 #
 #   cmake -DBUILD=<tree> -DPREFIX=<folder> -DAPPS=<App>,<App> -DIS_APPLE=… -DIS_WIN32=…
 #         -P library/qt6/tests/InstallLayout.cmake
@@ -48,6 +48,7 @@ foreach(App IN LISTS APPS)
     expect(share/doc/${app}/LICENSE)
     expect(share/applications/${app}.desktop)
     expect(share/icons/hicolor/256x256/apps/${app}.png)
+    expect(share/mime/packages/${app}.xml)
   endif()
 endforeach()
 

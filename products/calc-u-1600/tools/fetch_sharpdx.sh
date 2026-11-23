@@ -18,7 +18,8 @@
 #   SHARPDX_TAG       release tag to fetch (default: v0.3.5)
 #   SHARPDX_PLATFORM  override auto-detected platform: linux-x86_64,
 #                     linux-aarch64, windows-x86_64, or windows-aarch64
-#                     (the release archive names' spelling)
+#                     (the release archive names' spelling); macos-<arch>
+#                     fetches nothing (the committed binary)
 #
 # Writes:
 #   core/Basic/vendor/sharpdx/sharpdx.h                 (header)
@@ -67,8 +68,8 @@ detect_platform() {
       # PROCESSOR_ARCHITECTURE is what the *shell process* sees, not the
       # build target: an x64 Git Bash under emulation on Windows ARM64
       # (as on GitHub's windows-11-arm image) reports AMD64. So the
-      # windows-arm64 job in .github/workflows/calc-u-1600.yml sets
-      # SHARPDX_PLATFORM=windows-aarch64 explicitly; do the same when
+      # desktop jobs (.github/workflows/qt-desktop.yml) set
+      # SHARPDX_PLATFORM to the platform they build for; do the same when
       # cross-compiling.
       case "${PROCESSOR_ARCHITECTURE:-}${PROCESSOR_ARCHITEW6432:-}" in
         *ARM64*) echo windows-aarch64 ;;
@@ -88,6 +89,7 @@ PLATFORM=${SHARPDX_PLATFORM:-$(detect_platform)}
 case "$PLATFORM" in
   linux-x86_64|linux-aarch64)     EXT=tar.gz ;;
   windows-x86_64|windows-aarch64) EXT=zip ;;
+  macos-*) echo "fetch_sharpdx.sh: macOS links the committed libsharpdx.a; nothing to fetch"; exit 0 ;;
   *) echo "fetch_sharpdx.sh: unknown platform '$PLATFORM'" >&2; exit 1 ;;
 esac
 

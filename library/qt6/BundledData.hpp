@@ -3,7 +3,7 @@
 
 // Where a Qt6 app finds the files it carries (its examples, module
 // definitions, ROM images, media templates): the one rule both products'
-// AppPaths use. The places are the ones calcu_qt6_bundle_sync gives them
+// AppPaths use. The places are the ones calcu_qt6_app gives them
 // (library/qt6/CMakeLists.txt), in the build tree and in an install.
 
 namespace calcu::qt6 {

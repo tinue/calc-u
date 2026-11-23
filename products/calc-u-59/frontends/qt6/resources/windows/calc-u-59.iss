@@ -1,63 +1,16 @@
-; Inno Setup script for the Calc-U-59 Windows installer, run by
-; .github/workflows/calc-u-59.yml on the app folder that `cmake --install` of
-; build/release staged in build\release\install\Calc-U-59 (the program, its
-; bundled files and licences, Qt's DLLs from windeployqt).
-; /DAPP_ARCH=arm64 builds the ARM64 installer; the default is x64.
-; The version comes from the CMake build: the root project's build/release
-; tree, generated/Version.iss of the Qt6 app's directory in it,
+; The Calc-U-59 Windows installer: the library's installer of a Qt6 app
+; (library/qt6/windows/CalcUApp.iss) with the product's name, ProgID and
+; preset extensions. The version comes from the root project's
+; build/release tree, generated/Version.iss of the Qt6 app's folder in it,
 ; itself from the Xcode project's MARKETING_VERSION.
 
-#ifndef APP_ARCH
-  #define APP_ARCH "x64"
-#endif
-
+#define AppName "Calc-U-59"
+#define AppProgId "CalcU59.Preset"
 #include "..\..\..\..\..\..\build\release\products\calc-u-59\frontends\qt6\generated\Version.iss"
-
-[Setup]
-AppName=Calc-U-59
-AppVersion={#APP_VERSION}
-AppPublisher=Martin Erzberger
-AppPublisherURL=https://github.com/tinue/calc-u
-DefaultDirName={autopf}\Calc-U-59
-DefaultGroupName=Calc-U-59
-UninstallDisplayIcon={app}\Calc-U-59.exe
-LicenseFile=..\..\..\..\..\..\LICENSE
-#if APP_ARCH == "arm64"
-  OutputBaseFilename=Calc-U-59-Setup-arm64
-  ArchitecturesInstallIn64BitMode=arm64
-  ArchitecturesAllowed=arm64
-#else
-  OutputBaseFilename=Calc-U-59-Setup
-  ArchitecturesInstallIn64BitMode=x64compatible
-  ArchitecturesAllowed=x64compatible
-#endif
-OutputDir=..\..\..\..
-Compression=lzma2
-SolidCompression=yes
-ChangesAssociations=yes
-
-[Files]
-Source: "..\..\..\..\..\..\build\release\install\Calc-U-59\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
-
-[Run]
-; windeployqt --compiler-runtime places the matching VC++ redistributable here.
-Filename: "{app}\vc_redist.x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ Redistributable..."; Check: FileExists(ExpandConstant('{app}\vc_redist.x64.exe')); Flags: waituntilterminated
-Filename: "{app}\vc_redist.arm64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ Redistributable..."; Check: FileExists(ExpandConstant('{app}\vc_redist.arm64.exe')); Flags: waituntilterminated
-Filename: "{app}\Calc-U-59.exe"; Description: "Start Calc-U-59"; Flags: nowait postinstall skipifsilent
+#include "..\..\..\..\..\..\library\qt6\windows\CalcUApp.iss"
 
 [Registry]
 ; Open .ti59 / .ti58 / .ti58c presets with Calc-U-59.
-Root: HKA; Subkey: "Software\Classes\.ti59"; ValueType: string; ValueData: "CalcU59.Preset"; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\.ti58"; ValueType: string; ValueData: "CalcU59.Preset"; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\.ti58c"; ValueType: string; ValueData: "CalcU59.Preset"; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\CalcU59.Preset"; ValueType: string; ValueData: "Calc-U-59 Preset"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\CalcU59.Preset\DefaultIcon"; ValueType: string; ValueData: "{app}\Calc-U-59.exe,0"
-Root: HKA; Subkey: "Software\Classes\CalcU59.Preset\shell\open\command"; ValueType: string; ValueData: """{app}\Calc-U-59.exe"" ""%1"""
-
-[Icons]
-Name: "{group}\Calc-U-59"; Filename: "{app}\Calc-U-59.exe"
-Name: "{group}\Uninstall Calc-U-59"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\Calc-U-59"; Filename: "{app}\Calc-U-59.exe"; Tasks: desktopicon
-
-[Tasks]
-Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"; Flags: unchecked
+Root: HKA; Subkey: "Software\Classes\.ti59"; ValueType: string; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\.ti58"; ValueType: string; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\.ti58c"; ValueType: string; ValueData: "{#AppProgId}"; Flags: uninsdeletevalue

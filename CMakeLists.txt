@@ -173,20 +173,3 @@ endif()
 if(CALCU_PRODUCT_1600)
   add_subdirectory(products/calc-u-1600)
 endif()
-
-# The install layout of the tree's Qt6 apps (library/qt6/tests/InstallLayout.cmake):
-# `cmake --install` into the tree's own folder.
-set(CALCU_QT_APPS "")
-foreach(target CalcU59Qt CalcU1600Qt)
-  if(TARGET ${target})
-    get_target_property(name ${target} OUTPUT_NAME)
-    list(APPEND CALCU_QT_APPS ${name})
-  endif()
-endforeach()
-if(CALCU_TESTS AND CALCU_QT_APPS)
-  list(JOIN CALCU_QT_APPS "," apps)   # one argument of the test's command
-  calcu_add_test(CalcUQtInstallLayout frequent
-                 COMMAND ${CMAKE_COMMAND} -DBUILD=${CMAKE_BINARY_DIR} -DPREFIX=${CMAKE_BINARY_DIR}/install-layout
-                         -DAPPS=${apps} -DIS_APPLE=${APPLE} -DIS_WIN32=${WIN32}
-                         -P ${CMAKE_SOURCE_DIR}/library/qt6/tests/InstallLayout.cmake)
-endif()

@@ -1,8 +1,8 @@
 # Signs a Qt6 .app with the Developer ID Application certificate (hardened
 # runtime), notarizes and staples it, packages it into a .dmg with an
 # /Applications symlink for drag-install, and signs, notarizes and staples
-# the .dmg too. The Mac jobs of calc-u-59.yml and calc-u-1600.yml run it
-# after macdeployqt. docs/macos-signing.md (Developer ID, team 7Q3QN9AV9J)
+# the .dmg too. The mac-aarch64 job of qt-desktop.yml runs it after
+# macdeployqt. docs/macos-signing.md (Developer ID, team 7Q3QN9AV9J)
 # says how the secrets passed in are produced and rotated. Paths are
 # relative to the workspace.
 name: Sign, notarize and package a Mac app

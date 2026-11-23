@@ -47,7 +47,7 @@
 	     Presets are ours (double-click opens them here); for program files
 	     the app is only an alternative. Past the extension, the content decides
 	     (the session's `open`; app/SharpFileKinds). `.rom` is no name of a
-	     program file; tools/check_open_with_types.sh checks this list. -->
+	     program file; CalcU1600OpenWithTypes checks this list. -->
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

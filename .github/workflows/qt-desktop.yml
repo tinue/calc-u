@@ -1,0 +1,324 @@
+# The Qt6 desktop packages of one product: an AppImage per Linux
+# architecture, a signed and notarized DMG for Apple Silicon and an Inno
+# Setup installer per Windows architecture. Both product workflows
+# (calc-u-59.yml, calc-u-1600.yml) call it as their `desktop` job; the
+# product's release.yaml attaches the artifacts, <app>-linux-<arch>,
+# <app>-mac-aarch64 and <app>-windows-<arch>.
+#
+# Every job configures the repository's root CMake project with the one
+# product and without the tests into build/release, builds the app and the
+# harness `calcu`, runs the product's tests/calcu_runs.cmake where it has
+# one, and packages what `cmake --install` of that tree lays out (the
+# library's calcu_qt6_app, library/qt6/CMakeLists.txt): AppDir/usr for
+# linuxdeploy, build/release/install/<app>.app for macdeployqt and the
+# signing, build/release/install/<app>/ for Inno Setup. The run steps work
+# in the product directory.
+#
+# By convention a product has roms/fetch_roms.sh (the ROMs are not in the
+# repository; the apps bundle them) and the installer
+# frontends/qt6/resources/windows/<product>.iss, which includes
+# generated/Version.iss of build/release.
+
+name: Qt desktop
+
+on:
+  workflow_call:
+    inputs:
+      product:
+        description: the product's folder in products/, e.g. calc-u-59
+        type: string
+        required: true
+      app:
+        description: the app's name (its OUTPUT_NAME), e.g. Calc-U-59; packages and artifacts carry it
+        type: string
+        required: true
+      target:
+        description: the app's CMake target, e.g. CalcU59Qt
+        type: string
+        required: true
+      cmake-options:
+        description: configure options that leave the other products out, e.g. -DCALCU_PRODUCT_1600=OFF
+        type: string
+        required: true
+      apt-packages:
+        description: Debian packages the app needs beyond Qt6 Widgets (Linux)
+        type: string
+        default: ''
+      qt-modules:
+        description: Qt add-on modules the app needs (Windows, install-qt-action)
+        type: string
+        default: ''
+      prepare:
+        description: >-
+          a bash command run in the product directory before configuring, with
+          CALCU_PLATFORM the platform built for (linux-x86_64, linux-aarch64,
+          macos-aarch64, windows-x86_64, windows-aarch64)
+        type: string
+        default: ''
+    # docs/macos-signing.md: what they hold and how they are rotated.
+    secrets:
+      APPLE_CERT_APPLICATION_P12_BASE64:
+        required: true
+      APPLE_CERT_P12_PASSWORD:
+        required: true
+      APPLE_API_KEY_P8_BASE64:
+        required: true
+      APPLE_API_KEY_ID:
+        required: true
+      APPLE_API_ISSUER_ID:
+        required: true
+
+env:
+  # The packaging tree, relative to the product directory; the .iss files
+  # name it too.
+  RELEASE_BUILD: ../../build/release
+
+jobs:
+  # Ubuntu 24.04: the apps need Qt 6.3+ (qt_standard_project_setup), which
+  # 22.04's packaged 6.2.4 is not, so the AppImages run on systems with about
+  # 24.04's glibc or newer.
+  linux:
+    name: linux-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: products/${{ inputs.product }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Qt6 + build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build patchelf \
+            qt6-base-dev qt6-base-dev-tools qt6-wayland libgl1-mesa-dev qt6-gtk-platformtheme qt6ct \
+            ${{ inputs.apt-packages }}
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+      - name: Prepare
+        if: inputs.prepare != ''
+        shell: bash
+        env:
+          CALCU_PLATFORM: linux-${{ matrix.arch }}
+        run: ${{ inputs.prepare }}
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCALCU_TESTS=OFF ${{ inputs.cmake-options }}
+      - name: Build
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target ${{ inputs.target }} calcu
+      - name: Run calcu (the harness CLI with the product)
+        if: hashFiles(format('products/{0}/tests/calcu_runs.cmake', inputs.product)) != ''
+        run: cmake -DCALCU=${{ env.RELEASE_BUILD }}/library/harness/cli/calcu -P tests/calcu_runs.cmake
+      - name: Build AppImage
+        env:
+          APP: ${{ inputs.app }}
+          ARCH: ${{ matrix.arch }}
+          # linuxdeploy-plugin-qt looks for qmake; Ubuntu names it qmake6.
+          QMAKE: /usr/lib/qt6/bin/qmake6
+          # The runners lack FUSE, which the AppImages (linuxdeploy's own
+          # and the one it makes) need to mount themselves; extract instead.
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          # Wayland sessions (the default on current desktops) need these on
+          # top of the xcb plugin linuxdeploy-plugin-qt deploys by default;
+          # without them the app runs blurred through XWayland.
+          EXTRA_PLATFORM_PLUGINS: "libqwayland-egl.so;libqwayland-generic.so"
+        run: |
+          set -euo pipefail
+          # The install rules lay out the AppDir: usr/bin/<app>, usr/share/<app>
+          # (the bundled files), usr/share/doc/<app> (the licences, Qt's LGPLv3
+          # among them), the .desktop file, the icon and the presets' MIME
+          # type, which linuxdeploy takes from usr/share.
+          cmake --install "$RELEASE_BUILD" --prefix "$PWD/AppDir/usr"
+          curl -fsSL -o linuxdeploy.AppImage \
+            "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$ARCH.AppImage"
+          curl -fsSL -o linuxdeploy-plugin-qt.AppImage \
+            "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-$ARCH.AppImage"
+          chmod +x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
+          export PATH="$PWD:$PATH"
+          ./linuxdeploy.AppImage --appdir=AppDir --executable="AppDir/usr/bin/$APP" --plugin=qt
+          # Plugin folders the Qt plugin does not deploy, each with its own
+          # dependencies: libqwayland-egl.so's EGL integration; the platform
+          # themes, which tell Qt the desktop's palette (dark or light) and
+          # dialogs: qt6-gtk-platformtheme's gtk3 and qt6ct's (Raspberry Pi
+          # OS's PIXEL sets QT_QPA_PLATFORMTHEME=qt5ct, which qt6ct's plugin
+          # answers to); qt6ct's styles, which a native install loads with it.
+          QT_PLUGINS_DIR=$("$QMAKE" -query QT_INSTALL_PLUGINS)
+          for dir in wayland-graphics-integration-client platformthemes styles; do
+            if [ -d "$QT_PLUGINS_DIR/$dir" ]; then
+              cp -r "$QT_PLUGINS_DIR/$dir" AppDir/usr/plugins/
+              ./linuxdeploy.AppImage --appdir=AppDir --deploy-deps-only="AppDir/usr/plugins/$dir"
+            else
+              echo "::warning::$dir plugins not found in $QT_PLUGINS_DIR"
+            fi
+          done
+          # Qt loads a platform theme only when QT_QPA_PLATFORMTHEME names one,
+          # and the plugin's AppRun sets none: gtk3 unless the session names
+          # its own (qt5ct, kde, ...).
+          mv AppDir/AppRun AppDir/AppRun.qt
+          # shellcheck disable=SC2016 # the wrapper's expansions run in the wrapper
+          printf '%s\n' '#!/bin/sh' \
+            'export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-gtk3}"' \
+            'HERE="$(dirname "$(readlink -f "$0")")"' \
+            'exec "$HERE/AppRun.qt" "$@"' > AppDir/AppRun
+          chmod +x AppDir/AppRun
+          ./linuxdeploy.AppImage --appdir=AppDir --output=appimage
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ inputs.app }}-linux-${{ matrix.arch }}
+          path: products/${{ inputs.product }}/${{ inputs.app }}-*.AppImage
+          if-no-files-found: error
+
+  # Apple Silicon (arm64). macOS 15 so Homebrew's Qt bottles (embedded by
+  # macdeployqt) are built for 15.x too, matching CMAKE_OSX_DEPLOYMENT_TARGET.
+  mac-aarch64:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: products/${{ inputs.product }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Qt6 + build tools
+        run: brew install qt cmake ninja
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+      - name: Prepare
+        if: inputs.prepare != ''
+        shell: bash
+        env:
+          CALCU_PLATFORM: macos-aarch64
+        run: ${{ inputs.prepare }}
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+          -DCMAKE_BUILD_TYPE=Release -DCALCU_TESTS=OFF ${{ inputs.cmake-options }}
+      - name: Build
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target ${{ inputs.target }} calcu
+      - name: Run calcu (the harness CLI with the product)
+        if: hashFiles(format('products/{0}/tests/calcu_runs.cmake', inputs.product)) != ''
+        run: cmake -DCALCU=${{ env.RELEASE_BUILD }}/library/harness/cli/calcu -P tests/calcu_runs.cmake
+      - name: Stage the app
+        # The install rules: build/release/install/<app>.app, its bundled
+        # files in Contents/Resources, linked with Homebrew's Qt.
+        run: cmake --install ${{ env.RELEASE_BUILD }} --prefix ${{ env.RELEASE_BUILD }}/install
+      - name: Embed Qt frameworks (macdeployqt)
+        # The bundle links Homebrew's Qt by absolute path until macdeployqt
+        # copies the frameworks into Contents/Frameworks and rewrites the
+        # rpaths; only then does it run on a Mac without that Qt.
+        run: >-
+          "$(brew --prefix qt)/bin/macdeployqt" "${{ env.RELEASE_BUILD }}/install/${{ inputs.app }}.app"
+      - name: Sign, notarize and package the DMG
+        uses: ./.github/actions/mac-sign-dmg
+        with:
+          app: build/release/install/${{ inputs.app }}.app
+          dmg: build/release/${{ inputs.app }}.dmg
+          volume-name: ${{ inputs.app }}
+          certificate-p12-base64: ${{ secrets.APPLE_CERT_APPLICATION_P12_BASE64 }}
+          certificate-password: ${{ secrets.APPLE_CERT_P12_PASSWORD }}
+          api-key-p8-base64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          api-key-id: ${{ secrets.APPLE_API_KEY_ID }}
+          api-issuer-id: ${{ secrets.APPLE_API_ISSUER_ID }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ inputs.app }}-mac-aarch64
+          path: build/release/${{ inputs.app }}.dmg
+          if-no-files-found: error
+
+  # arm64 is a native build (host == target): Qt's win64_msvc2022_arm64 kit
+  # (aqt host windows_arm64), msvc-dev-cmd's arm64 toolchain, and the
+  # install's windeployqt deploys that kit's ARM64 DLLs.
+  windows:
+    name: windows-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: windows-latest
+            platform: windows-x86_64
+            qt-host: windows
+            qt-arch: win64_msvc2022_64
+            msvc-arch: x64
+            iss-arch: x64
+            installer: Setup
+          - arch: arm64
+            runner: windows-11-arm
+            platform: windows-aarch64
+            qt-host: windows_arm64
+            qt-arch: win64_msvc2022_arm64
+            msvc-arch: arm64
+            iss-arch: arm64
+            installer: Setup-arm64
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: products/${{ inputs.product }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Qt6 (MSVC)
+        uses: jurplel/install-qt-action@v4
+        with:
+          # In aqt's index; if this step fails, another 6.8.x or 6.9.x.
+          version: '6.8.2'
+          host: ${{ matrix.qt-host }}
+          target: 'desktop'
+          arch: ${{ matrix.qt-arch }}
+          modules: ${{ inputs.qt-modules }}
+      - name: Set up MSVC dev environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc-arch }}
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v6
+      # Git's bash on the runners: the scripts are POSIX sh.
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+      - name: Prepare
+        if: inputs.prepare != ''
+        shell: bash
+        env:
+          # Git's bash on windows-11-arm is an x64 build under emulation
+          # (PROCESSOR_ARCHITECTURE=AMD64): the platform from the matrix.
+          CALCU_PLATFORM: ${{ matrix.platform }}
+        run: ${{ inputs.prepare }}
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCALCU_TESTS=OFF ${{ inputs.cmake-options }}
+      - name: Build
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target ${{ inputs.target }} calcu
+      - name: Run calcu (the harness CLI with the product)
+        if: hashFiles(format('products/{0}/tests/calcu_runs.cmake', inputs.product)) != ''
+        run: cmake "-DCALCU=${{ env.RELEASE_BUILD }}/library/harness/cli/calcu.exe" -P tests/calcu_runs.cmake
+      - name: Stage the app
+        # The install rules: build/release/install/<app>/ with <app>.exe,
+        # resources\ (the bundled files), licenses\, and Qt's DLLs with the
+        # MSVC runtime's installer (windeployqt --compiler-runtime, run by
+        # the install); the .iss packages that folder.
+        run: cmake --install ${{ env.RELEASE_BUILD }} --prefix ${{ env.RELEASE_BUILD }}/install
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y
+      - name: Build installer
+        # The library's installer (library/qt6/windows/CalcUApp.iss) through
+        # the product's .iss; it writes <app>-<installer>.exe into the
+        # product directory.
+        shell: pwsh
+        run: ISCC.exe /DAPP_ARCH=${{ matrix.iss-arch }} frontends\qt6\resources\windows\${{ inputs.product }}.iss
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ inputs.app }}-windows-${{ matrix.arch }}
+          path: products/${{ inputs.product }}/${{ inputs.app }}-${{ matrix.installer }}.exe
+          if-no-files-found: error

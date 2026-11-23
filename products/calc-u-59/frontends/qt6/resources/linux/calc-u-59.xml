@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The presets' type that calc-u-59.desktop names (MimeType=), installed
+     into share/mime/packages (CalcU59OpenWithTypes checks the list). -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-calcu59-preset">
+    <comment>Calc-U-59 Preset</comment>
+    <sub-class-of type="text/plain"/>
+    <glob pattern="*.ti59"/>
+    <glob pattern="*.ti58"/>
+    <glob pattern="*.ti58c"/>
+  </mime-type>
+</mime-info>

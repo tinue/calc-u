@@ -10,6 +10,7 @@
 - **Calculator** Changing the module or the printer power-cycles the calculator, as on the real one; the TI-58C's constant memory brings back its partition and display format at a start. A key is held long enough for the ROM to read it, so Adv and R/S behave the same at every speed. The faceplate and the cue cards are drawn anew.
 - **Control bar** Every bar ends with More, which holds every menu item; the module is chosen with a picker on the bar. On iOS, traces go to Application Support by default instead of iCloud.
 - **Printer** The row below the paper is the same in every app: PRINT, T with the dot of the TRACE switch, ADV, and Copy and Cut as icons; in a narrow panel PRINT reads PRN.
+- **Linux** The AppImage and an install bring the presets' file type (MIME), so a desktop that integrates the app opens them with Calc-U-59. <!-- appstore: skip -->
 - **Web calculator** Menus in the wide layout, Import Media… and Saved Media… for the cards, and every model and module works offline. Site authors: the component is `CalcU59` (was `PlayCalculator`). <!-- appstore: skip -->
 
 ### Fixed

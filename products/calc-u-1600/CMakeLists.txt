@@ -275,7 +275,9 @@ if(CALCU_TESTS)
   calcu_product_source_checks(PREFIX CalcU1600 ROM_ALLOW core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp)
   # Open With offers the three preset extensions on macOS, Windows and
   # Linux; on macOS .bas, .bbin, .bin as Alternate, no .rom.
-  calcu_add_test(CalcU1600OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
+  calcu_add_test(CalcU1600OpenWithTypes frequent
+                 COMMAND sh ${CMAKE_SOURCE_DIR}/library/qt6/tests/check_open_with_types.sh Calc-U-1600
+                         "pc1500 pc1500a pc1600" "bas bbin bin")
   # The frontends take their colours from app/'s chrome (SharpChrome).
   calcu_add_test(CalcU1600ChromeColours frequent COMMAND sh ${CMAKE_SOURCE_DIR}/tools/check_chrome_colours.sh .)
   # The harness writes a PC-1600 trace,

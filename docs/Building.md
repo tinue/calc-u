@@ -9,7 +9,9 @@ Everything here is derived from the repository's own recipes: the root
 [`CMakeLists.txt`](../CMakeLists.txt), each product's `CMakeLists.txt`
 and `frontends/qt6/CMakeLists.txt`, and the CI workflows
 [`.github/workflows/calc-u-59.yml`](../.github/workflows/calc-u-59.yml)
-and [`.github/workflows/calc-u-1600.yml`](../.github/workflows/calc-u-1600.yml),
+and [`.github/workflows/calc-u-1600.yml`](../.github/workflows/calc-u-1600.yml)
+with their shared desktop packaging
+[`.github/workflows/qt-desktop.yml`](../.github/workflows/qt-desktop.yml),
 which are also where to look first if a step below stops matching
 reality. The Linux and Windows steps are transcribed from CI and not
 verified on a fresh machine; if something's off, please open an issue
@@ -94,7 +96,8 @@ it tells what a file is and tokenizes BASIC listings.
   SharpDataExchange GitHub release:
   `products/calc-u-1600/tools/fetch_sharpdx.sh`.
 - Under **Emscripten** the committed `libsharpdx-wasm.a` is used; it was
-  built with Emscripten 6.0.13 (`core/Basic/vendor/sharpdx/README.md`).
+  built with Emscripten 6.0.13 (`core/Basic/vendor/sharpdx/README.md`), the
+  release the workflows pin (`tools/check_toolchain_versions.sh`).
 
 CMake stops with an error if the library is missing. No Rust toolchain is
 needed.
@@ -203,18 +206,18 @@ cmake --install build/app-59 --prefix /tmp/try   # another folder
 | | default prefix | under the prefix |
 |---|---|---|
 | macOS | `~/Applications` | `Calc-U-59.app` as a whole (its files in `Contents/Resources`) |
-| Linux | `~/.local` | `bin/Calc-U-59`, `share/calc-u-59/` (the bundled files), `share/doc/calc-u-59/` (the licences), `share/applications/calc-u-59.desktop`, `share/icons/hicolor/256x256/apps/calc-u-59.png` |
+| Linux | `~/.local` | `bin/Calc-U-59`, `share/calc-u-59/` (the bundled files), `share/doc/calc-u-59/` (the licences), `share/applications/calc-u-59.desktop`, `share/icons/hicolor/256x256/apps/calc-u-59.png`, `share/mime/packages/calc-u-59.xml` (the presets' file type; `update-mime-database ~/.local/share/mime` makes it known) |
 | Windows | `%LOCALAPPDATA%\Programs` | `Calc-U-59\Calc-U-59.exe` with `resources\`, `licenses\` and Qt's DLLs beside it |
 
 On macOS and Linux an install uses the Qt the app was built with
 (Homebrew's, the distribution's); it is not deployed. Windows has no Qt of
 the system, so its install runs `windeployqt --compiler-runtime` on the
 installed program. The self-contained packages (DMG, AppImage, installer)
-are the workflows'. The layouts are the library's `calcu_qt6_bundle_sync`
-(`library/qt6/CMakeLists.txt`); the apps find their files through
-`calcu::qt6::bundledDataDir` (`library/qt6/BundledData`), and the CTest
-`CalcUQtInstallLayout` installs a Qt tree into a folder of its own and
-checks the layout.
+are the workflows', each made of such an install. The layouts are the
+library's `calcu_qt6_app` (`library/qt6/CMakeLists.txt`); the apps find
+their files through `calcu::qt6::bundledDataDir` (`library/qt6/BundledData`),
+and the CTest `LibraryQtInstallLayout` installs a Qt tree into a folder of
+its own and checks the layout.
 
 ### macOS
 
@@ -224,17 +227,20 @@ tools/run_qt.sh 1600 --build
 ```
 
 Homebrew's Qt is found automatically, and the app is a real `.app`
-bundle. To run an app outside this checkout (e.g. on another Mac), embed
-the Qt frameworks:
+bundle; it runs from the build directory and from an install (Installing,
+above) with Homebrew's Qt. To run it on a Mac without that Qt, install it
+and embed the Qt frameworks into the installed bundle, as the workflows
+do:
 
 ```sh
-$(brew --prefix qt)/bin/macdeployqt "$(tools/run_qt.sh 1600 --app-dir)/Calc-U-1600.app"
+cmake --install build/app-1600 --prefix /tmp/mac
+"$(brew --prefix qt)/bin/macdeployqt" /tmp/mac/Calc-U-1600.app
 ```
 
-Without that step the app still runs from the build directory (Qt is
-found via the Homebrew prefix), just not as a relocatable bundle.
-Signing, notarizing and the DMG are release packaging:
-[macos-signing.md](macos-signing.md).
+Not the build tree's `.app`: each build brings its `Contents/Resources`
+back to the bundled files (`calcu_qt6_app`), which takes macdeployqt's
+`qt.conf` away again. Signing, notarizing and the DMG are release
+packaging: [macos-signing.md](macos-signing.md).
 
 ### Linux (CI-derived)
 
@@ -251,10 +257,11 @@ tools/run_qt.sh 1600 --build
 sharpdx.) This produces a plain executable plus a `resources/` folder
 (and `licenses/`) that must stay next to it, or an install of it
 (Installing, above). That's enough to run on the machine that built it.
-The standalone `.AppImage` is built by the workflows' `linux` jobs:
-`cmake --install build/release --prefix AppDir/usr`, then `linuxdeploy`
-and its Qt plugin (the desktop file and icon from `AppDir/usr/share`,
-Wayland and platform-theme plugin handling included); copy their steps.
+The standalone `.AppImage` is built by the `linux` jobs of
+`qt-desktop.yml`: `cmake --install build/release --prefix AppDir/usr`,
+then `linuxdeploy` and its Qt plugin (the desktop file, icon and MIME type from
+`AppDir/usr/share`, Wayland and platform-theme plugin handling included);
+copy their steps.
 
 ### Windows (CI-derived)
 
@@ -273,14 +280,16 @@ first (a POSIX sh script: run it with Git's bash). This produces
 `Calc-U-1600.exe` plus a `resources\` and a `licenses\` folder that must
 stay next to it; `cmake --install build\app-1600` makes a runnable
 `%LOCALAPPDATA%\Programs\Calc-U-1600` with Qt's DLLs (Installing, above).
-The packaging jobs configure the root into `build/release` with
-`-DCALCU_TESTS=OFF` (no tests, so no zlib on the Windows runners) and the
-other product off, stage the app with
+The packaging jobs (`qt-desktop.yml`) configure the root into
+`build/release` with `-DCALCU_TESTS=OFF` (no tests, so no zlib on the
+Windows runners) and the other product off, stage the app with
 `cmake --install build/release --prefix build/release/install` (the
 install runs `windeployqt --release --compiler-runtime`) and package
-`build\release\install\Calc-U-<n>` with Inno Setup
-(`frontends/qt6/resources/windows/calc-u-<n>.iss`, which includes the
-generated `Version.iss` from that tree). The installers are unsigned.
+`build\release\install\Calc-U-<n>` with Inno Setup: the product's
+`frontends/qt6/resources/windows/calc-u-<n>.iss` (its name, ProgID and
+preset extensions; it includes the generated `Version.iss` from that
+tree) on the library's `library/qt6/windows/CalcUApp.iss`. The installers
+are unsigned.
 
 CI also builds native ARM64 installers (`windows-arm64`) on a
 `windows-11-arm` runner, the same way with Qt's `win64_msvc2022_arm64`

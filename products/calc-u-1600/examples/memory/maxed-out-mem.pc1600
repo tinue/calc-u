@@ -11,10 +11,12 @@ model: PC-1600
 slot-1: { name: CE-1600M }
 slot-2: { name: CE-1601M }
 
-# Hard trial-and-error plus ROM analysis yielded that a fresh card first
-# needs to be formatted fully, with option "F". Then it can be split with
-# either "M" (expansion memory) or "P" (program memory).
-# If the full format is missing, any file command gives ERROR 160
+# Both modules are expansion memory from the start (MEM 77370 without any
+# INIT). The CE-1601M's second 32 KB becomes the RAM disk S2: only once
+# the module is one: INIT "M" or "P" re-sizes a RAM disk the slot already
+# holds (INIT, bank 3b 6464H), and on a fresh module it makes none, so
+# every S2: file command gives ERROR 160. Hence "F" first (all 64 KB a
+# RAM disk), then "M" (32 KB expansion memory, the rest the RAM disk).
 keys:
   - key: mode
   - type: TITLE

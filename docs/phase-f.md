@@ -105,9 +105,7 @@ and `docs/Process.md` until the closing check at its end has passed.
   type `c1600`.
 - **Smaller findings**: Swift `xcodebuild` fails from a worktree under
   `.claude/worktrees/` (works from the main checkout); the Playwright drag
-  test is flaky locally; `examples/memory/maxed-out-mem.pc1600` says INIT "F" is needed
-  before "M"/"P", which the research says is not true; the Duo debug
-  header wraps mid-word.
+  test is flaky locally; the Duo debug header wraps mid-word.
 
 ## The coming period: pre-releases and testing
 

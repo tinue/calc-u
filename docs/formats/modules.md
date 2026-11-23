@@ -96,7 +96,7 @@ four independent dimensions; none can be inferred from another:
 | `compatible-hosts` | yes | A non-empty list from `PC-1500`, `PC-1500A`, `PC-1600-Slot-1`, `PC-1600-Slot-2`. The loader's only compatibility check |
 | `definition-terminology` | yes | One of the same four. The vocabulary every `chip-select` / `signal` / `line` name in the file is resolved against. Must be in `compatible-hosts` |
 | `regions` | yes | A list of one or more regions (§1.3) |
-| `battery` | no | `true` for battery-backed hardware. A battery-backed template offers Name & Save, which makes it a medium |
+| `battery` | no | `true` for battery-backed hardware. A battery-backed template offers Name & Save, which makes it a medium. A file without it (a ROM module, which keeps its bytes anyway) is plugged as the module it defines and never written |
 | `template` | no | `true`: a template, never written. Absent or `false`: an instance, autosaved in place. Name & Save and autosave never write it; a preset's `saveas: { as: template }` writes `template: true` (after `module-name`) |
 | `saved` | no | ISO-8601 UTC time of the last write, `YYYY-MM-DDTHH:MM:SSZ`. Written into every saved instance (after `module-name`, or its `template`). Informational |
 | `notes` | no | Free text, ignored by the loader |

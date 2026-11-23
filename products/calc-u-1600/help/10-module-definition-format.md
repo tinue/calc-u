@@ -33,7 +33,7 @@ is written, in its current version, `format-version: 1`.
 | `compatible-hosts` | yes | List, non-empty, drawn from `PC-1500`, `PC-1500A`, `PC-1600-Slot-1`, `PC-1600-Slot-2`. The loader's **only** compatibility check: a host not on this list is declined; a host on it gets no further test. |
 | `definition-terminology` | yes | Exactly one of the same four identifiers. Names the pin-name vocabulary every `chip-select` / `signal` / `line` field in the file is resolved against, once, at parse time. Must appear in `compatible-hosts`. |
 | `regions` | yes | List of one or more region maps (§2). |
-| `battery` | no | `true` for battery-backed hardware. A battery-backed template offers Name & Save, which makes the module a medium ([Media files](10-media-files.md#battery-backed-module)). |
+| `battery` | no | `true` for battery-backed hardware. A battery-backed template offers Name & Save, which makes the module a medium ([Media files](10-media-files.md#battery-backed-module)). A file without it, a ROM module for one, goes into its slot as it is and is never written; a ROM keeps its bytes without a battery. |
 | `template` | no | `true` marks a read-only **template** (§8): the product never writes the file, wherever it lies. Absent or `false` = an instance, autosaved in place. Name & Save and autosave never write it; a preset's `saveas: { as: template }` writes `template: true`. |
 | `saved` | no | The time of the last write (UTC, ISO 8601), written into every saved instance; for information. |
 | `notes` | no | Free text; ignored by the loader. |

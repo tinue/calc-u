@@ -86,6 +86,9 @@ public:
     /// while this is false, matching real power-on behavior.
     void setClockEnabled(bool enabled) { m_clockEnabled = enabled; }
     bool clockEnabled() const { return m_clockEnabled; }
+    /// A 0x3E command switches a controller's columns off; the panel shows
+    /// nothing only when both are off. Their RAM keeps what it holds.
+    bool anyControllerOn() const { return m_ic2.displayOn || m_ic3.displayOn; }
 
     /// Direct pixel readout for rendering (not part of the hardware
     /// interface): true = pixel on. Out-of-range (x,y) always returns

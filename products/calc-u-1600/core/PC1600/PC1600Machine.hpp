@@ -37,6 +37,7 @@
 struct PC1600DisplaySnapshot {
     bool pixels[PC1600Display::kHeight][PC1600Display::kWidth]{};
     bool clockEnabled{false};
+    bool controllerOn{false};   // IC2 or IC3 has its display on
     StatusLine statusLine;
 };
 

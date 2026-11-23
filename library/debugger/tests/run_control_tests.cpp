@@ -152,6 +152,18 @@ TEST(resume_sets_clocks_and_starts_afresh) {
     CHECK(r.ticks() > t0);
 }
 
+TEST(resume_leaves_a_clock_that_follows_no_host) {
+    DebugOptions o;
+    o.model = "test-dot";   // its rtc
+    o.clockFollowsHost = false;
+    DebugRig r(o);
+    r.send("pause", lv("cpu"));
+    CHECK(r.paused());
+    const int sets = r.machine()->clock()->setCalls;
+    r.send("resume");
+    CHECK_EQ(r.machine()->clock()->setCalls, sets);
+}
+
 TEST(paused_survives_suspend_and_continue) {
     DebugRig r;
     r.send("pause", lv("cpu"));

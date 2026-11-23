@@ -294,6 +294,24 @@ TEST(slot_rom_bytes_read_at_every_load) {
     }
 }
 
+TEST(rom_module_file_without_battery_is_plugged_never_saved) {
+    SKIP_UNLESS(roms(), "no ROMs in roms/");
+    HarnessPreset h;
+    // A ROM keeps its bytes without a battery: no medium, but a module.
+    h.write("rom.module.yaml",
+            "format: memory-module\nformat-version: 1\nmodule-name: \"test-rom\"\n"
+            "compatible-hosts: [PC-1600-Slot-1]\ndefinition-terminology: PC-1600-Slot-1\n"
+            "regions:\n  - name: rom\n    capacity: 0x4000\n    banking: none\n    content: rom\n"
+            "    addressing:\n      chip-select: RAM2\n      span: 0x4000\n      maps-to: 0x0000\n"
+            "    initial-content:\n      blocks:\n        - offset: 0x0000\n          encoding: addressed-hex\n"
+            "          bytes: |\n            $0000: 12 34 56 78\n            $0004: FF...\n");
+    CHECK(h.loadIdle("format-version: 2\nmodel: PC-1600\nslot-1: { file: rom.module.yaml }\n"));
+    calcu::machine::Machine* m = h.machine();
+    const ExpansionCard* card = m ? sharptest::moduleIn(*m, 1) : nullptr;
+    CHECK(card && card->debugImage().size() >= 4 && card->debugImage()[0] == 0x12 && card->debugImage()[3] == 0x78);
+    CHECK(h.line("saveas { place: slot-1, as: live, file: copy.module.yaml }").rfind("refused", 0) == 0);
+}
+
 TEST(no_module_twice_unreadable_wrong_size_refused) {
     SKIP_UNLESS(roms(), "no ROMs in roms/");
     PresetReadRig r;

@@ -68,13 +68,14 @@ public:
         ReadOutcome r;
         r.info.formatVersion = static_cast<int>(kCardFormatVersion);
         r.info.name = def.moduleName;
-        if (!def.battery) {   // a module that is not a medium: the catalogue lists it
+        r.info.description = def.description;
+        if (!def.battery) {   // a module that is not a medium: plugged, never saved
             r.status = ReadOutcome::Status::NotMedium;
             r.problem = "It is not a battery-backed module.";
+            r.info.content = std::make_shared<sharp::ModuleContent>(std::move(def));
             return r;
         }
         r.status = ReadOutcome::Status::Read;
-        r.info.description = def.description;
         r.info.isTemplate = def.isTemplate;
         r.info.hasWriteProtect = switchOf(def, &r.info.writeProtected);
         r.info.content = std::make_shared<sharp::ModuleContent>(std::move(def));

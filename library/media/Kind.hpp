@@ -35,11 +35,13 @@ struct MediumInfo {                 // all the library knows of a file
 struct ReadOutcome {
     // NotMedium: a file of the kind's suffix that is no medium of it (a
     // Calc-U-1600 module definition without a battery: a module that is not
-    // a medium). The shelf neither lists nor logs it; every other reader
-    // takes it as Unreadable, with the problem.
+    // a medium, a ROM module for one). The shelf neither lists nor logs it.
+    // For a kind held by a module slot, info.content is the module: a
+    // preset's `file:` and `open` plug it without a binding, so it is never
+    // saved. Every other reader takes it as Unreadable, with the problem.
     enum class Status { Read, Unreadable, NotMedium } status = Status::Unreadable;
     bool unreadable() const { return status == Status::Unreadable || status == Status::NotMedium; }
-    MediumInfo info;                // Read
+    MediumInfo info;                // Read; NotMedium: the module, if any
     std::string problem;            // Unreadable: why, one sentence
 };
 

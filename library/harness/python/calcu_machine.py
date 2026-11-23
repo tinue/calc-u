@@ -137,6 +137,22 @@ class Session:
         self.send(f"peek {target} {space} {address:#x} {count}{extra} file={out}")
         return out.read_bytes()
 
+    def poke(self, target: str, space: str, address: int, values: bytes, **qualifiers: Any) -> None:
+        """Writes the cells from address on, one per byte of values; qualifiers as peek."""
+        extra = "".join(f" {k}={v}" for k, v in qualifiers.items())
+        self.send(f"poke {target} {space} {address:#x} " + " ".join(f"{b:#x}" for b in values) + extra)
+
+    def registers(self, target: str) -> dict[str, int]:
+        """The registers of target, by name, as numbers."""
+        return {name: int(value, 0) for name, value in self.send(f"registers {target}").items()}
+
+    def set_register(self, target: str, name: str, value: int) -> None:
+        self.send(f"set-register {target} {name} {value:#x}")
+
+    def step(self, count: int = 1, level: str = "cpu") -> dict[str, Any]:
+        """Carries out count steps of the paused machine; returns the run state."""
+        return self.send(f"step {level} {count}")
+
     def expect_memory(self, target: str, space: str, address: int, values: bytes, **qualifiers: Any) -> None:
         """Raises MachineError if the cells do not hold values."""
         extra = "".join(f" {k}={v}" for k, v in qualifiers.items())
@@ -151,10 +167,14 @@ class Session:
     def run_to(self, target: str, address: int, timeout: float, **qualifiers: Any) -> float:
         """Runs until target reaches address; MachineError if not within timeout
         seconds of machine time. The machine stays paused there; returns the
-        seconds it took."""
+        seconds it took. A paused machine runs on first, so a run_to to where it
+        stands comes back there the next time round."""
         extra = "".join(f" {k}={v}" for k, v in qualifiers.items())
         self.send(f"break {target} {address:#x}{extra}")
         try:
+            # After the break: a resume passes the breakpoint it stands on.
+            if self._send("state run-state")["result"]["state"]["paused"]:
+                self._send("resume")
             waited = self._send(f"wait {timeout}s")["result"]
         finally:
             self._send(f"break off {target} {address:#x}")
@@ -179,8 +199,9 @@ class Session:
             self._send(f"wait {step}s")
             waited += step
 
-    def resume(self) -> "Session":
-        return self._step("resume")
+    def resume(self) -> dict[str, Any]:
+        """Runs the queue, then lets the paused machine run on; returns the run state."""
+        return self.send("resume")
 
     def close(self) -> None:
         if self._finalizer:

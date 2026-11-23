@@ -27,8 +27,9 @@ struct AppSessionSetup {
     pacing::WallClock clock;   // the host's; the pacer reads it within a call
     // The host time: local date and time in the products, a fixed instant
     // in the harness. The session sets the real-time clocks with it at build
-    // and at the end of every operation.
+    // and, while clockFollowsHost, at the end of every operation and resume.
     std::function<std::chrono::system_clock::time_point()> hostTime;
+    bool clockFollowsHost = true;
     std::vector<SessionPart*> parts;   // library features first, then the product's
     Hosting hosting = Hosting::Paced;
     std::optional<std::uint32_t> jitterSeed;   // same seed, same slice lengths; none: differs per run

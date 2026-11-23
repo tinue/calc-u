@@ -1019,7 +1019,8 @@ MediaPart::OpenedMedium MediaPart::readOpened(std::string_view name, const std::
         return out;
     }
     const ReadOutcome r = out.kind->codec->read(bytes, path.empty() ? MediumCodec::Companion{} : companionsBeside(path));
-    if (r.unreadable())
+    out.plainModule = r.status == ReadOutcome::Status::NotMedium && r.info.content && out.kind->heldBy == HeldBy::ModuleSlot;
+    if (r.unreadable() && !out.plainModule)
         out.refusal = "The " + out.kind->label + " file " + baseName(name) + " cannot be read" +
                       (r.problem.empty() ? "." : ": " + r.problem);
     out.isTemplate = r.info.isTemplate;
@@ -1070,6 +1071,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     const OpenedMedium o = readOpened(fileName, bytes, sessions::flagArg(a, "upload") ? std::string() : path);
     if (o.refusal) return Refused{*o.refusal};
     const KindDecl& k = *o.kind;
+    if (o.plainModule) return plugModuleFile(c, k, bytes, sessions::textArg(a, "place"));
     Binding b;
     Content content;
     MediumInfo info;
@@ -1119,6 +1121,21 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     }
     if (auto e = insert(c, word, std::move(b), std::move(content), p->sides.empty() ? 0 : p->sides[0])) return Refused{*e};
     return done();
+}
+
+// A module file that is no medium (a ROM module) goes into its slot as the
+// module it defines, without a binding: it is never saved, nor imported.
+CommandOutcome MediaPart::plugModuleFile(SessionContext& c, const KindDecl& k, const std::string& bytes,
+                                         const std::string& word) {
+    if (word.empty()) return Refused{"The " + k.label + " is no medium; it goes only into a slot."};
+    sync(c);
+    const Place* p = place(word);
+    if (!p) return Refused{noPlace(word)};
+    if (!p->slot || !p->kind || p->kind->id != k.id) return Refused{"The " + k.label + " does not go into " + word + "."};
+    const ReadOutcome r = k.codec->read(bytes, {});
+    auto req = k.moduleRequest ? k.moduleRequest(r.info, p->path) : std::nullopt;
+    if (!req) return Refused{"The " + k.label + " cannot be plugged in."};
+    return changeSlot(c, *p, std::move(req), std::nullopt);
 }
 
 // ── Choosing ────────────────────────────────────────────────────────────

@@ -52,6 +52,10 @@ public:
     // when the answer arrives. std::nullopt: nobody offers it, nothing asked.
     virtual std::optional<CallId> askHost(HostService, Value args, std::function<void(const ServiceAnswer&)> then) = 0;
     virtual std::chrono::system_clock::time_point hostTime() const = 0;   // local time; a fixed instant in the harness
+    // The real-time clocks follow the host time after every operation and
+    // resume; false (a fixed instant): only at a build and `sync-clock`, so a
+    // program that sets its clock keeps it.
+    virtual bool clockFollowsHost() const = 0;
     // The speed outside an operation, as the `speed` command sets it.
     // A part sets it for a speed its product asks for itself (a preset or a
     // start that ends at regular speed); like the command, it changes

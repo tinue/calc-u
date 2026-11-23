@@ -462,7 +462,8 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
   A module file is used as the app uses it: one with `template: true` is never written, one
   without (an instance, as `card()` saves it) gets the machine's writes back. Give a test project's
   module fixtures `template: true`, so tests run side by side never see each other's writes; read
-  what the machine wrote with `card(n)`.
+  what the machine wrote with `card(n)`. A module file without `battery: true` (a ROM module) is
+  plugged as the module it defines and never written.
   The other media are always paths: `floppy("$c1600/frontends/qt6/resources/cards/formatted.floppy.yaml")`,
   `floppy("disks/progs.floppy.yaml")`.
 - `host_drive` is a folder on your computer, found like any path; usually an absolute one or a
@@ -531,7 +532,13 @@ Reads:
 | `peek(target, space, address, count, bank=, vbank=)` | memory bytes, without side effects. On the PC-1600, `bank=3, vbank=1` reads the hidden ROM bank 3b and `vbank=0` bank 3, whatever port 3DH selects now; the banks are in [the harness's PC-1500/1600 commands](../developer/Harness.md) |
 | `expect_memory(target, space, address, values, …)` | raises unless the bytes match |
 | `save_state(path)`, `restore_state(path)` | the whole machine |
-| `run_to(target, address, timeout)` | runs until the CPU reaches the address; seconds taken |
+| `run_to(target, address, timeout)` | runs until the CPU reaches the address and stays paused there; seconds taken. A paused machine runs on first, so a `run_to` to where it stands comes back there the next time round |
+| `registers(target)` | the registers by name, as numbers |
+| `set_register(target, name, value)`, `poke(target, space, address, values, bank=, vbank=)` | write a register, memory bytes |
+| `step(count=1)`, `resume()` | steps the paused machine, lets it run on; the run state (`paused`, `reason`, …) |
+
+The real-time clock is set once, when the machine is built (2000-01-01 00:00:00), and then runs in
+machine time: a program that sets it keeps its time for the rest of the test.
 
 Key names: a letter, digit or `+ - * / = ( ) .`; `enter`, `space`, `cl`, `mode`, `shift`, `def`,
 `sml`, `rcl`, `rsv`, `off`, `up`, `down`, `left`, `right`, `f1`–`f6`, `on` (or `break`); on the

@@ -61,7 +61,7 @@ TEST(slots_one_chain_contact_level_power_cycle) {
         m->keyDown(KeyId{"off"});
         m->advance(frameTicks(*m) * 4);
         m->keyUp(KeyId{"off"});
-        CHECK(runUntil(*m, [&] { return !m->readDisplay().on; }, 3));
+        CHECK(runUntil(*m, [&] { return sharptest::switchedOff(*m); }, 3));
         CHECK(m->detach(place("slot-1"), PeripheralId{"CE-161"}, c).follows == AfterChange::Nothing);
         CHECK(sharptest::moduleIn(*m, 1) == nullptr);
     }
@@ -257,7 +257,7 @@ TEST(clock_runs_on_emulated_time) {
         m->keyDown(KeyId{"off"});
         m->advance(frameTicks(*m) * 4);
         m->keyUp(KeyId{"off"});
-        CHECK(runUntil(*m, [&] { return !m->readDisplay().on; }, 3));
+        CHECK(runUntil(*m, [&] { return sharptest::switchedOff(*m); }, 3));
         const int before = *clock->read().second;
         m->advance(secondsTicks(*m, 4.0));
         const int after = *clock->read().second;

@@ -63,6 +63,7 @@ public:
     const settings::HostDirs& hostDirs() const { return dirs_; }
     const settings::Paths& paths() const { return *paths_; }
     std::function<std::chrono::system_clock::time_point()> hostTime() const;
+    bool clockFollowsHost() const;
     // The text with the save folder's path written `<save folder>`, and the
     // run folder's `<run folder>` (the path appears in no reply).
     std::string scrub(std::string) const;

@@ -122,8 +122,8 @@ agree byte for byte between runs. Attach replaces no path.
 | `--settings <file>` | Use this settings file. Without it the defaults are used, and no settings file is read or written |
 | `--save-folder <dir>` | Use this save folder (made if missing). Without it an empty folder made for the run, removed at its end |
 | `--output-folder <dir>` | Traces and screenshots go here (made if missing). Without it, to the save folder |
-| `--clock <YYYY-MM-DDThh:mm:ss>` | The local date and time handed to a real-time clock (at a build, after each operation, at `sync-clock`). The year is 1970 or later |
-| `--clock host` | The host's date and time; a run is then not repeatable |
+| `--clock <YYYY-MM-DDThh:mm:ss>` | The local date and time handed to a real-time clock at a build and at `sync-clock`; in between the clock runs in emulated time, so a program that sets it keeps its time. The year is 1970 or later |
+| `--clock host` | The host's date and time, handed as the apps do: at a build, after each operation, at a `resume` and at `sync-clock`; a run is then not repeatable |
 | `--help`, `-h` | The usage, every command's usage line, the products' `serve` options and the products of the build |
 | `--dap <port>` | After `serve`, Calc-U-1600 only: §8 |
 
@@ -190,6 +190,11 @@ A usage error is `refused: usage: <the command's usage>`.
 | `state-save <file>` | — | — |
 | `state-restore <file>` | — | — |
 | `quit` | no reply | no reply |
+
+- `on` is false while the display shows nothing, its dots and indicators
+  all 0: it has no power or clock, or the program switched it off (the
+  PC-1500's DISP; on the PC-1600 both display controllers, `&3E`). Part
+  of a display switched off shows as dots that are 0.
 
 - **Keys.** `key-down` and `key-up` take the key ID, the ID in any case,
   or another spelling of the key in any case; an unknown key is refused

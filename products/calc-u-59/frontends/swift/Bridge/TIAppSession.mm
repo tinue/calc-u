@@ -269,13 +269,11 @@ cs::HostServices statedServices() {
     return services;
 }
 
-// The key ID of a matrix code (row × 10 + column), "" for none.
+#if DEBUG
+// The key ID of a matrix code (row × 10 + column), "" for none; for the
+// tests' raw keys.
 std::string keyIdOf(uint8_t code) { return cu59::keyIdAt(code).value_or(calcu::machine::KeyId{}).value; }
-
-std::vector<cs::Value::Member> argsWithBytes(std::vector<cs::Value::Member> m, NSData* raw) {
-    if (raw) m.push_back({"bytes", cs::Value(bytes(raw))});
-    return m;
-}
+#endif
 
 const std::string kPC100COwner = "PC-100C";
 const cs::TopicName kPaper = calcu::paper::paperTopic(kPC100COwner);
@@ -428,14 +426,6 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 }
 - (NSUInteger)hash { return _controlID.hash ^ (_on ? 1u : 0u); }
 @end
-
-static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
-    if (!done) return {};
-    return [done](const cs::ReplyMessage& r) {
-        const auto* f = cs::payloadAs<cu59::TIFlag>(r.result);
-        done(r.done && (!r.result || (f && f->value)) ? YES : NO);
-    };
-}
 
 @implementation TIAppSession {
     __weak id<TIAppSessionDelegate> _delegate;

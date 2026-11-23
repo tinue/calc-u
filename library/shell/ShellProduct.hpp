@@ -1,7 +1,9 @@
 #pragma once
+#include "sessions/Messages.hpp"
 #include "sessions/Value.hpp"
 #include <functional>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -29,13 +31,23 @@ struct ProductItem {
     // The item exists while the control state lists this media place, and
     // is enabled exactly when its `insert` is. Empty: none.
     std::string mediaPlace = {};
-    // A toggle: checkable, checked while this says so. It is the
-    // frontend's own state, so the frontend has the menus computed anew
-    // when it changes (the Qt6 Shell's productChanged()). None: an action.
-    std::function<bool()> checked = {};
-    // A submenu of these items in place of an action. Toggles and submenus
-    // are a native frontend's (their state is its own); the Web's form of
-    // the product has neither.
+    // A command of the session in place of `act`: sent when chosen, a
+    // refusal shown as a notice. The model carries it, so the item works on
+    // every frontend that draws the model.
+    sessions::CommandName command = {};
+    sessions::Value args = {};
+    // A toggle or a choice that follows a state topic of the session:
+    // checkable, checked while the topic's member `key` equals `equals`.
+    // Chosen while checked, it sends `checkedArgs` (a toggle turned off);
+    // without them nothing (a choice: it is what runs).
+    struct Check {
+        sessions::TopicName topic;
+        std::string key;
+        sessions::Value equals;
+        sessions::Value checkedArgs = {};
+    };
+    std::optional<Check> checkedBy = {};
+    // A submenu of these items in place of an action.
     std::vector<ProductItem> children = {};
 };
 
@@ -88,9 +100,14 @@ struct AboutModel {
 };
 AboutModel about(const ShellProduct&);
 
+// The state topics the product's items follow (their checkedBy), each once:
+// a frontend keeps their last values in ShellInputs::productTopics.
+std::vector<sessions::TopicName> productTopics(const ShellProduct&);
+
 // The problems of a product's shell data, for its tests: a model or
 // peripheral with variants in `catalogueControlState` and no label, an empty
-// name or help address, duplicate item ids, an item's `mediaPlace` that the
+// name or help address, duplicate item ids, an item that follows a topic and
+// sends no command, an item's `mediaPlace` that the
 // control state does not list (pass each model's control state). Empty when
 // sound.
 std::vector<std::string> checkShellProduct(const ShellProduct&, const sessions::Value& catalogueControlState);

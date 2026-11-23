@@ -2,6 +2,7 @@
 #include "sessions/Messages.hpp"
 #include "sessions/Value.hpp"
 #include <cstdint>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -22,6 +23,8 @@ struct ShellInputs {
     sessions::Value romsMissing;    // roms' `roms-missing`: {text}
     sessions::Value settings;       // the shell's `settings` (SettingsPart)
     sessions::Value media;          // media's `media`: {kinds, places}
+    // The topics the product's items follow (shell::productTopics), by name.
+    std::map<std::string, sessions::Value> productTopics;
     // A control state came. None comes when the product could not start:
     // then no control bar and no Machine menu, only the ROM message.
     bool started() const { return !controlState.isNull(); }

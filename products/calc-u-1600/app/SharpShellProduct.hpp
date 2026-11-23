@@ -37,8 +37,10 @@ inline constexpr const char* kHelpUrl = "https://calc-u.org/1600/";
 inline constexpr double kFaceplateHitDistance = 24;
 
 // `withHostFolders`: the Qt6 frontend's FileMedia items (Host Drive…,
-// Unmount); `withTrace`: its Machine items Trace and Log Level ▸. The Web
-// has neither.
+// Unmount); `withTrace`: its Machine items Trace and Log Level ▸, which
+// follow the topics `trace` and `log-level` and send their commands. The
+// Web has neither: a page has no folder to mount, cannot reach the trace
+// file and shows no log.
 calcu::shell::ShellProduct shellProduct(std::string version, std::string build, bool withHostFolders, bool withTrace);
 
 // The hit map of the model's faceplate in the art's own pixels (the scale

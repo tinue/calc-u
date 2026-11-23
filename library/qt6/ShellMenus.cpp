@@ -12,16 +12,6 @@ namespace {
 
 using shell::MenuItem;
 
-std::string describe(const std::vector<MenuItem>& items) {
-    std::string s;
-    for (const auto& i : items) {
-        s += std::to_string(static_cast<int>(i.kind)) + "|" + i.id + "|" + i.label + "|" + (i.enabled ? "1" : "0") +
-             (i.checked ? "1" : "0") + "|" + i.reason + "|" + i.command.value + "|" + sessions::toText(i.args) + "{" +
-             describe(i.children) + "};";
-    }
-    return s;
-}
-
 QAction::MenuRole role(MenuItem::Role r) {
     switch (r) {
     case MenuItem::Role::Preferences: return QAction::PreferencesRole;
@@ -70,13 +60,12 @@ void ShellMenus::set(const std::vector<shell::Menu>& model) {
         order_ = order;
     }
     for (const auto& m : model) {
-        const std::string text = describe(m.items);
-        if (shown_[m.id] == text) continue;   // only what changed
+        if (auto it = shown_.find(m.id); it != shown_.end() && it->second == m.items) continue;   // only what changed
         QMenu* menu = menus_[m.id];
         for (QMenu* sub : menu->findChildren<QMenu*>(QString(), Qt::FindDirectChildrenOnly)) delete sub;
         menu->clear();
         fill(*menu, m.items);
-        shown_[m.id] = text;
+        shown_[m.id] = m.items;
         ++rebuilds_;
     }
 }

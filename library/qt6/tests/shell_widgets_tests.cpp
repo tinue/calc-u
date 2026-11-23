@@ -4,6 +4,7 @@
 // SettingsPart, no code of a product.
 #include "TestHarness.hpp"
 #include "TestWindow.hpp"
+#include "qt6/MediaPicker.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
 #include "qt6/RunControlButtons.hpp"
@@ -207,7 +208,10 @@ TEST(bar_on_widgets) {
     auto* slot1 = w.find<QWidget>(names::barSlot("slot-1"));
     CHECK(slot1 != nullptr);
     CHECK(slot1->findChild<QLabel*>() && slot1->findChild<QLabel*>()->text() == QStringLiteral("1:"));
-    CHECK(slot1->findChild<QComboBox*>() != nullptr);   // without the media picker: the fallback
+    // The library's slot picker: the place's media picker, no Name & Save
+    // unless the product asks for it.
+    CHECK(slot1->findChild<qt6::MediaPicker*>(QStringLiteral("media-picker-slot-1")) != nullptr);
+    CHECK(slot1->findChild<QPushButton*>(QStringLiteral("media-save-slot-1")) == nullptr);
     CHECK(w.find<QToolButton>(names::barPlace("printer"))->text() == QStringLiteral("TD-20"));
     auto* aux = w.find<QComboBox>(names::barPlace("aux"));
     CHECK(aux && aux->count() == 3 && aux->itemText(0) == QStringLiteral("No aux"));
@@ -243,6 +247,19 @@ TEST(bar_on_widgets) {
     model->activated(1);
     w.settle();
     CHECK_EQ(arg(&w.part.last("model")->args, "name"), std::string("Model-B"));
+}
+
+// The product asks for Name & Save after a slot's picker: unusable while the
+// slot holds no medium that can be named and saved. More never draws the
+// platform's menu arrow.
+TEST(slot_picker_name_and_save_and_more_look) {
+    TestWindow w;
+    w.shell->setSlotPicker({true, QStringLiteral("Instance name:")});
+    w.settle();
+    auto* save = w.find<QPushButton>("media-save-slot-1");
+    CHECK(save != nullptr && !save->isEnabled());
+    auto* more = w.find<QToolButton>(names::kBarMore);
+    CHECK(more && more->styleSheet().contains(QStringLiteral("menu-indicator")));
 }
 
 TEST(button_attaches_and_detaches_on_widgets) {

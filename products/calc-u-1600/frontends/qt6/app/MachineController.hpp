@@ -56,10 +56,6 @@ public:
 
     using Reply = calcu::qt6::SessionHost::Reply;
     void send(const calcu::sessions::CommandName& name, calcu::sessions::Value args = {}, Reply done = {});
-    // A command waited for in a nested event loop while the host's timer
-    // goes on calling the session (a dialog that answers with the outcome:
-    // Name & Save, Save Cassette).
-    calcu::sessions::ReplyMessage sendAndWait(const calcu::sessions::CommandName& name, calcu::sessions::Value args = {});
     // A request, answered at once (requests do not wait).
     calcu::sessions::ReplyMessage ask(const calcu::sessions::RequestName& name, calcu::sessions::Value args = {});
     template <class P> const P* state(const calcu::sessions::TopicName& t) const {
@@ -93,7 +89,6 @@ public:
     bool hasLiveMachine() const { return app().hasLiveMachine(); }
     std::vector<std::string> inspectorView(inspect::View view) const { return app().inspectorView(view); }
     std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const { return app().inspectorMenu(dumps); }
-    bool traceActive() const;     // the library's `trace` topic
     calcu::sessions::LogLevel logLevel() const;   // the session's `log-level` topic
     bool machinePaused() const;   // the library's `run-state` topic
     std::vector<std::uint8_t> drainCE158PrinterOutput() { return app().drainCE158PrinterOutput(); }

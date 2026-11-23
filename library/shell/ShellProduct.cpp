@@ -1,6 +1,7 @@
 #include "shell/ShellProduct.hpp"
 #include "shell/Inputs.hpp"
 #include <algorithm>
+#include <functional>
 
 namespace calcu::shell {
 
@@ -18,6 +19,25 @@ AboutModel about(const ShellProduct& p) {
     return a;
 }
 
+namespace {
+
+void eachItem(const std::vector<ProductItem>& items, const std::function<void(const ProductItem&)>& f) {
+    for (const auto& i : items) {
+        f(i);
+        eachItem(i.children, f);
+    }
+}
+
+} // namespace
+
+std::vector<sessions::TopicName> productTopics(const ShellProduct& p) {
+    std::vector<sessions::TopicName> out;
+    eachItem(p.items, [&](const ProductItem& i) {
+        if (i.checkedBy && std::find(out.begin(), out.end(), i.checkedBy->topic) == out.end()) out.push_back(i.checkedBy->topic);
+    });
+    return out;
+}
+
 std::vector<std::string> checkShellProduct(const ShellProduct& p, const sessions::Value& cs) {
     std::vector<std::string> problems;
     if (p.name.empty()) problems.push_back("The product has no name.");
@@ -32,6 +52,9 @@ std::vector<std::string> checkShellProduct(const ShellProduct& p, const sessions
     std::set<std::string> ids;
     for (const auto& item : p.items)
         if (!ids.insert(item.id).second) problems.push_back("The item id " + item.id + " is given twice.");
+    eachItem(p.items, [&](const ProductItem& i) {
+        if (i.checkedBy && i.command.value.empty()) problems.push_back("The item " + i.id + " follows a topic and sends no command.");
+    });
     return problems;
 }
 

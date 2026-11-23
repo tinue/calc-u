@@ -14,8 +14,6 @@ class MediaPicker;
 // the library's topic `media` with the
 // library's MediaPicker and refreshes itself when the topic changes.
 //
-// - SlotControl: a module slot's picker and Name & Save (the shell's slot
-//   factory, Shell::registerSlotPicker).
 // - DiskControl: the CE-1600F's picker, the side and Name & Save, with the
 //   drive's lamp; shown while a PC-1600 has the CE-1600P (the product
 //   entry `c1600.disk-controls`), a product control at the end of the
@@ -40,12 +38,6 @@ public:   // refresh(): also after the shell put it on the bar
     std::string m_place;
     calcu::qt6::MediaPicker* m_picker = nullptr;
     QPushButton* m_save = nullptr;
-};
-
-class SlotControl : public MediaPlaceControl {
-    Q_OBJECT
-public:
-    SlotControl(MachineController&, std::string place, QWidget* parent);
 };
 
 class DiskControl : public MediaPlaceControl {

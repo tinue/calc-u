@@ -31,12 +31,16 @@ struct BarControl {
     std::vector<MenuItem> choices;
     sessions::Value entry;    // the place or media place entry, for the media components' and the products' factories
     std::string mediumKind;   // Media: the kind, which picks the factory
+
+    bool operator==(const BarControl&) const = default;
 };
 
 struct BarGroupModel {
     BarGroup group;
     std::vector<BarControl> controls;
     bool pushed = false;      // the room before it is taken up (End always; a spread bar's Media)
+
+    bool operator==(const BarGroupModel&) const = default;
 };
 
 // The bar's groups. End holds More alone, pushed to the right edge on every

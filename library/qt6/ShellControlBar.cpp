@@ -2,6 +2,7 @@
 #include "qt6/ChromeStyle.hpp"
 #include "qt6/MediaPicker.hpp"
 #include "qt6/Shell.hpp"
+#include "qt6/SlotPicker.hpp"
 #include "shell/ObjectNames.hpp"
 #include <QComboBox>
 #include <QEvent>
@@ -22,28 +23,6 @@ namespace {
 
 using shell::BarControl;
 using shell::MenuItem;
-
-std::string describe(const std::vector<MenuItem>& items) {
-    std::string s;
-    for (const auto& i : items)
-        s += std::to_string(static_cast<int>(i.kind)) + i.id + i.label + (i.enabled ? "1" : "0") + (i.checked ? "1" : "0") +
-             i.reason + i.command.value + sessions::toText(i.args) + "{" + describe(i.children) + "},";
-    return s;
-}
-
-std::string describe(const std::vector<shell::BarGroupModel>& groups) {
-    std::string s;
-    for (const auto& g : groups) {
-        s += g.pushed ? "[>" : "[";
-        for (const auto& c : g.controls) {
-            s += std::to_string(static_cast<int>(c.kind)) + c.id + "|" + c.label + (c.plugged ? "1" : "0") + "|" +
-                 c.shown + (c.shortShown ? "1" : "0") + "|" +
-                 sessions::toText(c.entry) + "|" + describe(c.choices) + ";";
-        }
-        s += "]";
-    }
-    return s;
-}
 
 // The More menu's items, as the menu bar has them but without shortcuts
 // (the menu bar's own); a disabled item's reason as its tooltip.
@@ -181,11 +160,18 @@ QWidget* ShellControlBar::moreButton(const BarControl& c, QWidget* parent) {
 
 void ShellControlBar::setChrome(const shell::Chrome* c) {
     chrome_ = c;
+    shown_.reset();   // the slot pickers' width is the chrome's
     styleMore();
 }
 
+// More as the bar draws its buttons, a pill where the product's bar has
+// pills, else in the bar's own style; never with the platform's menu arrow.
 void ShellControlBar::styleMore() {
-    if (!more_ || !chrome_ || !chrome_->sizes.barPills) return;
+    if (!more_) return;
+    if (!chrome_ || !chrome_->sizes.barPills) {
+        more_->setStyleSheet(QStringLiteral("QToolButton::menu-indicator { image: none; width: 0; }"));
+        return;
+    }
     const shell::ChromeColours& c = chrome_->colours(chrome::darkAppearance(this));
     more_->setStyleSheet(chrome::pills(c, chrome_->sizes, QStringLiteral("QToolButton")));
 }
@@ -197,9 +183,8 @@ void ShellControlBar::changeEvent(QEvent* e) {
 
 void ShellControlBar::fillMoreMenu() {
     if (!moreMenu_ || moreMenu_->isVisible()) return;
-    const std::string text = describe(moreItems_);
-    if (text == moreShown_) return;
-    moreShown_ = text;
+    if (moreShown_ == moreItems_) return;
+    moreShown_ = moreItems_;
     for (QMenu* sub : moreMenu_->findChildren<QMenu*>(QString(), Qt::FindDirectChildrenOnly)) delete sub;
     moreMenu_->clear();
     fillMore(*moreMenu_, moreItems_, [this](const MenuItem& i) { chooseMore(i); });
@@ -242,10 +227,10 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
         auto* l = new QHBoxLayout(w);
         l->setContentsMargins(0, 0, 0, 0);
         if (!c.label.empty()) l->addWidget(new QLabel(QString::fromStdString(c.label), w));
-        QWidget* picker = slotFactory_ ? slotFactory_(c.entry, w) : shellPicker(c.choices, choose(), w);
-        auto* media = qobject_cast<MediaPicker*>(picker);
-        if (!media && picker) media = picker->findChild<MediaPicker*>();
-        if (media) media->setShowShort(c.shortShown);
+        auto* picker = new SlotPicker(
+            shell_.host(), c.entry, slotOptions_, chrome_ ? chrome_->sizes.slotPickerEm : 0,
+            [this](const sessions::CommandName& n, sessions::Value args) { shell_.sendChecked(n, std::move(args)); }, w);
+        picker->picker()->setShowShort(c.shortShown);
         l->addWidget(picker);
         return w;
     }
@@ -266,9 +251,8 @@ QWidget* ShellControlBar::build(const BarControl& c, QWidget* parent) {
 }
 
 void ShellControlBar::set(const std::vector<shell::BarGroupModel>& model) {
-    const std::string text = describe(model);
-    if (text == shown_) return;
-    shown_ = text;
+    if (shown_ == model) return;
+    shown_ = model;
     for (std::size_t g = 0; g < groups_.size(); ++g) {
         for (auto& [id, w] : shellWidgets_[g]) {
             if (w == more_) continue;   // kept, see moreButton()

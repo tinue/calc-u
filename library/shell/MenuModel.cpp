@@ -52,11 +52,12 @@ void appendGroup(std::vector<MenuItem>& into, std::vector<MenuItem> group) {
 
 // A product item as the control state has it now, or none (its media
 // place is not there).
-std::optional<MenuItem> productItem(const ProductItem& item, const Value& controlState, const Value* entries) {
+std::optional<MenuItem> productItem(const ProductItem& item, const ShellInputs& in, const Value* entries) {
+    const Value& controlState = in.controlState;
     if (!item.children.empty()) {
         std::vector<MenuItem> children;
         for (const auto& c : item.children)
-            if (auto i = productItem(c, controlState, entries)) children.push_back(std::move(*i));
+            if (auto i = productItem(c, in, entries)) children.push_back(std::move(*i));
         return submenu(item.id, item.label, std::move(children));
     }
     MenuItem i = action(item.id, item.label);
@@ -71,9 +72,17 @@ std::optional<MenuItem> productItem(const ProductItem& item, const Value& contro
         const Value* e = entries ? entries->find(item.entry) : nullptr;
         applyAvailability(i, e ? availabilityOf(*e) : Availability{false, ""});
     }
-    if (item.checked) {
+    i.command = item.command;
+    i.args = item.args;
+    if (const auto& by = item.checkedBy) {   // the topic's member as it is now
         i.checkable = true;
-        i.checked = item.checked();
+        const auto t = in.productTopics.find(by->topic.value);
+        const Value* member = t != in.productTopics.end() ? t->second.find(by->key) : nullptr;
+        i.checked = member && *member == by->equals;
+        if (i.checked) {
+            if (by->checkedArgs.isNull()) i.command = {};
+            i.args = by->checkedArgs;
+        }
     }
     return i;
 }
@@ -86,7 +95,7 @@ std::vector<MenuItem> productItems(const ShellInputs& in, const ShellProduct& p,
     const Value* entries = in.controlState.find("product");
     for (const auto& item : p.items) {
         if (item.group != g) continue;
-        if (auto i = productItem(item, in.controlState, entries)) out.push_back(std::move(*i));
+        if (auto i = productItem(item, in, entries)) out.push_back(std::move(*i));
     }
     return out;
 }

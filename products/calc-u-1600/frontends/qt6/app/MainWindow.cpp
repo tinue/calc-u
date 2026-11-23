@@ -15,7 +15,6 @@
 #include "app/SharpFileKinds.hpp"
 #include "app/SharpShellProduct.hpp"
 #include "control/ControlState.hpp"
-#include "debugger/RunState.hpp"
 #include "opening/OpenRequest.hpp"
 #include "qt6/ChromeStyle.hpp"
 #include "qt6/FileOpening.hpp"
@@ -23,7 +22,6 @@
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
 #include "qt6/ShellSettingsDialog.hpp"
-#include "sessions/LibraryTopics.hpp"
 #include "shell/Inputs.hpp"
 #include "shell/ObjectNames.hpp"
 #include "shell/View.hpp"
@@ -126,11 +124,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // The pointer on the faceplate: the hit map in the art's
     // pixels, at the art's scale as shown.
     m_shell->setFaceplate(m_faceplate, cu1600::faceplateHitMap(calcu::machine::ModelId{"PC-1500A"}), faceplateGeometry());
-    // The library's media controls on the bar: the module slots and the cassette by the
-    // family rule; the disk controls are the product's.
-    m_shell->registerSlotPicker([this](const calcu::sessions::Value& entry, QWidget* p) -> QWidget* {
-        return new SlotControl(*m_controller, calcu::shell::read::text(entry, "place"), p);
-    });
+    // The library's media controls on the bar: the module slots (with Name &
+    // Save) and the cassette by the family rule; the disk controls are the product's.
+    m_shell->setSlotPicker({true, tr("Instance name:")});
     m_shell->registerMediaControls("cassette", [this](const calcu::sessions::Value&, QWidget* p) -> QWidget* {
         return new TapeControl(*m_controller, p);
     });
@@ -140,7 +136,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     connect(&host(), &calcu::qt6::SessionHost::topicChanged, this, &MainWindow::onTopic);
     connect(&host(), &calcu::qt6::SessionHost::called, this, [this] {
-        followTraceAndLog();
         if (m_ce158Printer->isVisible()) m_ce158Printer->onFrameTick();
         if (auto* d = m_shell->settingsDialog(); d && d->isVisible()) refreshSerialStatus();
     });
@@ -198,49 +193,8 @@ calcu::shell::ShellProduct MainWindow::product() {
         else if (item.id == cu1600::kItemLoadCode) item.act = [this] { chooseProgram(true); };
         else if (item.id == cu1600::kItemHostDrive) item.act = [this] { mountHostDirectory(); };
         else if (item.id == cu1600::kItemUnmountHostDrive) item.act = [this] { unmountHostDirectory(); };
-        else if (item.id == cu1600::kItemTrace) {
-            item.act = [this] { setTrace(!m_controller->traceActive()); };
-            item.checked = [this] { return m_controller->traceActive(); };
-        } else if (item.id == cu1600::kItemLogLevel) {
-            using calcu::sessions::LogLevel;
-            for (auto& level : item.children) {
-                const LogLevel l = level.id == cu1600::kItemLogInfo    ? LogLevel::Info
-                                   : level.id == cu1600::kItemLogDebug ? LogLevel::Debug
-                                                                       : LogLevel::Off;
-                level.act = [this, l] { setLogLevel(l); };
-                level.checked = [this, l] { return m_controller->logLevel() == l; };
-            }
-        }
     }
     return p;
-}
-
-// Machine ▸ Trace: `trace {button: true}` (the file is named after the
-// model, CALCU1600_TRACE.bin) or `trace {off: true}`; the library's trace
-// session limits and ends it, with its notice. A refusal is a notice.
-void MainWindow::setTrace(bool on) {
-    if (m_controller->traceActive() == on) return;
-    m_shell->sendChecked(calcu::debugger::kTraceCommand, on ? calcu::sessions::Value::object({{"button", true}})
-                                                            : calcu::sessions::Value::object({{"off", true}}));
-}
-
-// Machine ▸ Log Level ▸: the session's `log-level`; at Info the log tells
-// how a preset is carried out.
-void MainWindow::setLogLevel(calcu::sessions::LogLevel level) {
-    m_shell->sendChecked(calcu::sessions::kLogLevelCommand,
-                         calcu::sessions::Value::object({{"level", std::string(calcu::sessions::logLevelName(level))}}));
-}
-
-// The trace and the log level as their items show them: a trace the session
-// ended (its limit, a new machine) or a level set elsewhere (the attach)
-// shows at the next call.
-void MainWindow::followTraceAndLog() {
-    const bool trace = m_controller->traceActive();
-    const calcu::sessions::LogLevel level = m_controller->logLevel();
-    if (trace == m_traceShown && level == m_logShown) return;
-    m_traceShown = trace;
-    m_logShown = level;
-    m_shell->productChanged();
 }
 
 void MainWindow::onTopic(const QString& topic) {

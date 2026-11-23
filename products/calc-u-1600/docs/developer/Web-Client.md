@@ -161,7 +161,10 @@ Things that are only in the Qt app, or that a browser can't do:
 - the DAP debugger (`app/dap/` is not in the Emscripten build);
 - serial ports (PC-1600 RS-232C, CE-158 serial: host PTYs);
 - the host drive S3: (Host Drive…);
-- Machine ▸ Trace and Log Level ▸ (`SharpShellProduct`'s `withTrace`);
+- Machine ▸ Trace and Log Level ▸ (`SharpShellProduct`'s `withTrace`): the page cannot
+  reach the trace file and shows no log. The items are the model's (they
+  follow the topics `trace` and `log-level` and send their commands), so
+  the page would draw them as they are;
 - Quit, window size, folder settings.
 
 ## Input

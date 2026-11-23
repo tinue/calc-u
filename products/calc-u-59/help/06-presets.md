@@ -164,7 +164,8 @@ alone ([Constant memory](09-constant-memory.md)).
 
 The examples under **Examples ▸** are in three groups: Diagnostics (the
 diagnostic programs of the TI-59 and TI-58, a RAM test), Programs (the sum
-of 1 to N, the display's characters, fast mode under single steps) and
+of 1 to N, the display's characters, fast mode under single steps, the
+Game of Life with a glider an eater eats) and
 Printer pictures (four pictures the PC-100C prints). Each model's row of
 Startup presets also offers the startup preset Calc-U-59 bundles for it. Open an
 example to see how it is written. More programs, many of them historic, are in the

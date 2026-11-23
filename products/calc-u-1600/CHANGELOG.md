@@ -1,60 +1,24 @@
 # Changelog
 
 ## [0.9.0] - work in progress
-- **One code base.** Calc-U-1600 is rebuilt on a library it shares with
-  Calc-U-59 (one repository, tinue/calc-u), so menus, Settings, the
-  control bar, presets, the debugger and the media follow one structure
-  on the desktop and the Web. The consequences: presets are format 2 (a
-  preset of version 1 is refused), floppy disks are version 2 with the
-  sides 0 and 1 (were A and B), module definitions are `.module.yaml`
-  files, a cassette is a definition that names its WAV, and the settings
-  start at their defaults; the help's "Media files", "From 0.8" shows how
-  to convert your files. The command-line tools (`pc1500_cli`,
-  `pc1600_cli` and the probes) are replaced by the harness
-  `calcu --product c1600`. The VS Code extension's debug type is `c1600`
-  (was `calcu1600`): re-create a project's `launch.json` and
-  `tasks.json`, or edit them to the new names.
+- **One code base.** Calc-U-1600 is rebuilt on a library it shares with Calc-U-59 (one repository, tinue/calc-u), so menus, Settings, the control bar, presets, the debugger and the media follow one structure on the desktop and the Web. The consequences: presets are format 2 (a preset of version 1 is refused), floppy disks are version 2 with the sides 0 and 1 (were A and B), module definitions are `.module.yaml` files, a cassette is a definition that names its WAV, and the settings start at their defaults; the help's "Media files", "From 0.8" shows how to convert your files. The command-line tools (`pc1500_cli`, `pc1600_cli` and the probes) are replaced by the harness `calcu --product c1600`. The VS Code extension's debug type is `c1600` (was `calcu1600`): re-create a project's `launch.json` and `tasks.json`, or edit them to the new names.
 
 ### New and changed
 
-- **The help is the user guide,** shared with Calc-U-59 where the two
-  work alike, and shown on calc-u.org/1600.
-- **Presets** wait after each item until the machine is idle, are
-  checked before the running machine is given up, and gain `expect:`
-  and `not-expect:` (with regular expressions), `screenshot:` and
-  `cut-paper:`. Settings has a startup preset per model, and a fresh
-  install starts each model with its bundled one.
-- **New hardware:** the CE-150's cassette works on the PC-1600 (MODE 1,
-  PC-1500 tapes); two large Slot 2 modules, the 256K custom (256 KB,
-  initialised) and the superRAM r4 by spellbound (1 MB, blank; its
-  initialisation program SRAMINIT.BIN comes with the module, not with
-  Calc-U-1600).
-- **Modules and media:** choosing a module power-cycles the machine, as
-  on the real device; modules, disks and cassettes have Name & Save and
-  the same pickers on the desktop and the Web; a dropped or opened file
-  goes where it belongs (program to its loader, module, disk or cassette
-  into its place).
-- **Machine:** Pause and Resume; full speed runs a waiting machine at
-  real time, so the prompt no longer spins; a held key stays down, so the
-  ROM's own auto-repeat works. The paper panel is always shown and keeps
-  its paper through detaching and model switches until Cut.
-- **Control bar and menus:** on the PC-1600 a printer picker and a CE-158
-  button; every bar ends with More (⋯), which holds every menu item;
-  Reset All is Cold boot. On a phone the installed Web app shows the
-  paper in portrait and the calculator in landscape.
-- **For developers:** automated tests with pytest (`tools/machine/`,
-  `docs/testing/README.md`), developed together with spellbound.
+- **The help is the user guide,** shared with Calc-U-59 where the two work alike, and shown on calc-u.org/1600.
+- **Presets** wait after each item until the machine is idle, are checked before the running machine is given up, and gain `expect:` and `not-expect:` (with regular expressions), `screenshot:` and `cut-paper:`. Settings has a startup preset per model, and a fresh install starts each model with its bundled one.
+- **New hardware:** the CE-150's cassette works on the PC-1600 (MODE 1, PC-1500 tapes); two large Slot 2 modules, the 256K custom (256 KB, initialised) and the superRAM r4 by spellbound (1 MB, blank; its initialisation program SRAMINIT.BIN comes with the module, not with Calc-U-1600).
+- **Modules and media:** choosing a module power-cycles the machine, as on the real device; modules, disks and cassettes have Name & Save and the same pickers on the desktop and the Web; a dropped or opened file goes where it belongs (program to its loader, module, disk or cassette into its place).
+- **Machine:** Pause and Resume; full speed runs a waiting machine at real time, so the prompt no longer spins; a held key stays down, so the ROM's own auto-repeat works. The paper panel is always shown and keeps its paper through detaching and model switches until Cut.
+- **Control bar and menus:** on the PC-1600 a printer picker and a CE-158 button; every bar ends with More (⋯), which holds every menu item; Reset All is Cold boot. On a phone the installed Web app shows the paper in portrait and the calculator in landscape.
+- **For developers:** automated tests with pytest (`tools/machine/`, `docs/testing/README.md`), developed together with spellbound.
 
 ### Fixed
 
-- **macOS:** the desktop app fell behind real time while its window was
-  not in front (App Nap).
-- **After a Reset or a Cold boot** a plotter started again at the top of
-  the paper, over the earlier plot.
-- **A PC-1500 machine-code load** that met a byte that is not RAM wrote
-  the rest and then failed; it now writes nothing.
-- **A cassette or disk name with a `"`** was written, and the file could
-  not be read again; it is now refused.
+- **macOS:** the desktop app fell behind real time while its window was not in front (App Nap).
+- **After a Reset or a Cold boot** a plotter started again at the top of the paper, over the earlier plot.
+- **A PC-1500 machine-code load** that met a byte that is not RAM wrote the rest and then failed; it now writes nothing.
+- **A cassette or disk name with a `"`** was written, and the file could not be read again; it is now refused.
 
 ## [0.8.1] - 2026-11-14
 

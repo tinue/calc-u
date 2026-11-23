@@ -11,6 +11,9 @@
 # nothing only compares times. Every other file and folder under the
 # manifest's top folders (the first part of each place) is removed: a file
 # dropped from the source's lists leaves the app at its next build.
+
+# A script run (-P) has no project policies; IN_LIST needs this one.
+cmake_minimum_required(VERSION 3.21)
 if(NOT MANIFEST OR NOT ROOT)
   message(FATAL_ERROR "BundleSync.cmake: -DMANIFEST=<file> -DROOT=<folder> are needed")
 endif()

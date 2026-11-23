@@ -21,8 +21,11 @@ name: Calc-U-1600
 # action .github/actions/mac-sign-dmg Developer-ID-signs the .app
 # (hardened runtime), notarizes + staples it, and packages it into a
 # signed/notarized/stapled .dmg -- see docs/macos-signing.md for the
-# repository secrets this needs and how to rotate them. The windows jobs (one matrix) run
-# windeployqt so the staged folder is genuinely standalone-runnable (Qt
+# repository secrets this needs and how to rotate them. The Linux and
+# Windows jobs stage the app with `cmake --install` of build/release (the
+# layouts: library/qt6/CMakeLists.txt, calcu_qt6_bundle_sync). The windows
+# jobs (one matrix) run windeployqt (through the install) so the staged
+# folder is genuinely standalone-runnable (Qt
 # DLLs + MSVC runtime bundled alongside the .exe, since Windows has no
 # equivalent to Linux's "the system already has Qt installed" or macOS's
 # shared Homebrew prefix), then package that folder into an Inno Setup
@@ -285,9 +288,12 @@ jobs:
           EXTRA_PLATFORM_PLUGINS: "libqwayland-egl.so;libqwayland-generic.so"
         run: |
           set -euo pipefail
-          mkdir -p AppDir/usr/bin
-          cp $QT_BUILD/Calc-U-1600 AppDir/usr/bin/
-          cp -R $QT_BUILD/resources AppDir/usr/bin/resources
+          # The install rules lay out the AppDir: usr/bin/Calc-U-1600,
+          # usr/share/calc-u-1600 (the module definitions, ROM images, media
+          # templates and examples), usr/share/doc/calc-u-1600 (the
+          # licences, Qt's LGPLv3 among them), the .desktop file and the
+          # icon, which linuxdeploy takes from usr/share.
+          cmake --install ${{ env.RELEASE_BUILD }} --prefix "$PWD/AppDir/usr"
 
           curl -fsSL -o linuxdeploy.AppImage \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${{ matrix.arch }}.AppImage
@@ -299,8 +305,6 @@ jobs:
           ./linuxdeploy.AppImage \
             --appdir=AppDir \
             --executable=AppDir/usr/bin/Calc-U-1600 \
-            --desktop-file=frontends/qt6/resources/linux/calc-u-1600.desktop \
-            --icon-file=frontends/qt6/resources/linux/calc-u-1600.png \
             --plugin=qt
 
           # EXTRA_PLATFORM_PLUGINS above pulls in the Wayland platform
@@ -516,19 +520,13 @@ jobs:
         run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt calcu
 
       - name: Stage standalone-runnable folder
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path frontends/qt6/dist | Out-Null
-          Copy-Item $env:QT_BUILD/Calc-U-1600.exe frontends/qt6/dist/
-          # AppPaths::bundledCardResourcesDir() expects a "resources" folder
-          # (the *.module.yaml files and ROM images) next to the .exe --
-          # the build (calcu_qt6_bundle_sync) places one at $QT_BUILD/resources,
-          # but that doesn't end up in frontends/qt6/dist/ on its own.
-          Copy-Item $env:QT_BUILD/resources frontends/qt6/dist/resources -Recurse
-          # --compiler-runtime bundles the MSVC redistributable DLLs too,
-          # so this runs on a clean Windows machine without the VC++
-          # redistributable pre-installed, not just without a Qt install.
-          windeployqt --release --compiler-runtime frontends/qt6/dist/Calc-U-1600.exe
+        # The install rules: build/release/install/Calc-U-1600/ with
+        # Calc-U-1600.exe, resources\ (the module definitions, ROM images,
+        # media templates and examples), licenses\, and Qt's DLLs (the
+        # install runs windeployqt; its --compiler-runtime brings the MSVC
+        # redistributable's installer, so this runs on a clean Windows
+        # machine, not just one without a Qt install).
+        run: cmake --install ${{ env.RELEASE_BUILD }} --prefix ${{ env.RELEASE_BUILD }}/install
 
       - name: Install Inno Setup
         shell: pwsh
@@ -536,8 +534,8 @@ jobs:
 
       - name: Build installer
         shell: pwsh
-        # Packages the frontends/qt6/dist folder staged above into a Start Menu +
-        # optional-desktop-icon + uninstaller installer -- see
+        # Packages the build/release/install/Calc-U-1600 folder staged above
+        # into a Start Menu + optional-desktop-icon + uninstaller installer -- see
         # frontends/qt6/resources/windows/calc-u-1600.iss. Unsigned for now; produces
         # the matrix entry's installer in the product directory (OutputDir in the .iss).
         run: ISCC.exe ${{ matrix.iss-defines }} frontends\qt6\resources\windows\calc-u-1600.iss

@@ -29,6 +29,7 @@ add_library(calcu_qt6 STATIC
 target_sources(calcu_qt6 PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/SessionHost.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/HostFolders.cpp          # settings and folders on a Qt6 host
+  ${CMAKE_CURRENT_SOURCE_DIR}/BundledData.cpp          # where an app finds the files it carries
   ${CMAKE_CURRENT_SOURCE_DIR}/FileOpening.cpp          # opening files on a Qt6 host
   ${CMAKE_CURRENT_SOURCE_DIR}/Shell.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ShellMenus.cpp
@@ -74,23 +75,48 @@ function(calcu_qt6_moc_compat target)
 endfunction()
 calcu_qt6_moc_compat(calcu_qt6)
 
-# The files a Qt6 app carries beside its program: the macOS bundle's
-# Contents/Resources, else the folders next to the program. CMake's own
-# copies (MACOSX_PACKAGE_LOCATION, POST_BUILD copies) only add files, never
-# remove one; these keep the app's folders at exactly what the lists name,
-# at each build.
+# The files a Qt6 app carries beside its program, in the build tree and in
+# an install. CMake's own copies (MACOSX_PACKAGE_LOCATION, POST_BUILD
+# copies) only add files, never remove one; these keep the app's folders in
+# the build tree at exactly what the lists name, at each build.
 #
 #   calcu_qt6_bundle_files(<target> <place> <files>...)
-#     the files go into <place>, relative to the bundle's Contents on macOS,
-#     else to the program's folder ("Resources/examples", "resources").
-#   calcu_qt6_bundle_sync(<target> [INSTALL_DIR <dir>])
+#     <place> is `data` or `data/<folder>` (the app's bundled data:
+#     examples, module definitions, ROM images, the macOS icon) or
+#     `licenses` (the licence and notice files).
+#   calcu_qt6_bundle_sync(<target> DESKTOP_FILE <file> ICON <png>)
 #     after the last calcu_qt6_bundle_files: the target <target>_bundle,
-#     run before each build of the app (BundleSync.cmake), owns every top
-#     folder a place names (Resources, resources, licenses) and removes what
-#     is not listed there. Outside macOS each file is also installed at
-#     <dir>/<place> (the bundle installs as a whole).
+#     run before each build of the app (BundleSync.cmake), owns the build
+#     tree's folders of the places and removes what is not listed there;
+#     and the install rules of the app: the program, its bundled files and,
+#     on Linux, the .desktop file and the icon (a square PNG, its size read
+#     from the file).
+#
+# With <App> the target's OUTPUT_NAME and <app> the same in lower case:
+#
+#                 build tree              cmake --install, under the prefix
+#   macOS         <App>.app/Contents/     <App>.app as a whole
+#     data        Resources/
+#     licenses    Resources/licenses/
+#   Linux         <program's folder>/     bin/<App>
+#     data        resources/              share/<app>/
+#     licenses    licenses/               share/doc/<app>/
+#                                         share/applications/<DESKTOP_FILE>,
+#                                         share/icons/hicolor/<n>x<n>/apps/<ICON>
+#   Windows       <program's folder>\     <App>\<App>.exe with Qt's DLLs (windeployqt)
+#     data        resources\              <App>\resources\
+#     licenses    licenses\               <App>\licenses\
+#
+# The program finds its data through calcu::qt6::bundledDataDir
+# (library/qt6/BundledData). An install on macOS and Linux uses the Qt the
+# app was built with (its library folders are the installed program's
+# rpath); the packages (DMG, AppImage) bring their own. Windows has no Qt
+# of the system, so its install deploys Qt beside the program.
 function(calcu_qt6_bundle_files target place)
-  string(REGEX REPLACE "/+$" "" place "${place}")   # "examples/" of a file at the top
+  string(REGEX REPLACE "/+$" "" place "${place}")   # "data/examples/" of a file at the top
+  if(NOT place MATCHES "^(data(/.+)?|licenses)$")
+    message(FATAL_ERROR "calcu_qt6_bundle_files(${target}): the place ${place} is not data[/<folder>] or licenses")
+  endif()
   foreach(f IN LISTS ARGN)
     get_filename_component(f "${f}" ABSOLUTE)
     set_property(TARGET ${target} APPEND PROPERTY CALCU_BUNDLE_FILES "${place}|${f}")
@@ -98,10 +124,31 @@ function(calcu_qt6_bundle_files target place)
 endfunction()
 
 function(calcu_qt6_bundle_sync target)
-  cmake_parse_arguments(B "" "INSTALL_DIR" "" ${ARGN})
-  if(NOT B_INSTALL_DIR)
-    set(B_INSTALL_DIR .)
+  cmake_parse_arguments(B "" "DESKTOP_FILE;ICON" "" ${ARGN})
+  if(NOT B_DESKTOP_FILE OR NOT B_ICON)
+    message(FATAL_ERROR "calcu_qt6_bundle_sync(${target}): DESKTOP_FILE and ICON are needed")
   endif()
+  get_target_property(App ${target} OUTPUT_NAME)
+  if(NOT App)
+    set(App ${target})
+  endif()
+  string(TOLOWER "${App}" app)
+  # The build tree's and the install's folder of each top place.
+  if(APPLE)
+    set(build_data Resources)
+    set(build_licenses Resources/licenses)
+  else()
+    set(build_data resources)
+    set(build_licenses licenses)
+  endif()
+  if(WIN32)
+    set(install_data ${App}/resources)
+    set(install_licenses ${App}/licenses)
+  else()
+    set(install_data ${CMAKE_INSTALL_DATADIR}/${app})
+    set(install_licenses ${CMAKE_INSTALL_DATADIR}/doc/${app})
+  endif()
+
   get_property(entries TARGET ${target} PROPERTY CALCU_BUNDLE_FILES)
   set(manifest "")
   set(dests "")
@@ -109,14 +156,22 @@ function(calcu_qt6_bundle_sync target)
     string(REPLACE "|" ";" parts "${entry}")
     list(GET parts 0 place)
     list(GET parts 1 source)
-    get_filename_component(name "${source}" NAME)
-    if("${place}/${name}" IN_LIST dests)
-      message(FATAL_ERROR "calcu_qt6_bundle_sync(${target}): two files for ${place}/${name}")
+    if(place STREQUAL "licenses")
+      set(build_place ${build_licenses})
+      set(install_place ${install_licenses})
+    else()
+      string(REGEX REPLACE "^data" "" sub "${place}")
+      set(build_place ${build_data}${sub})
+      set(install_place ${install_data}${sub})
     endif()
-    list(APPEND dests "${place}/${name}")
-    string(APPEND manifest "${entry}\n")
-    if(NOT APPLE)
-      install(FILES ${source} DESTINATION ${B_INSTALL_DIR}/${place})
+    get_filename_component(name "${source}" NAME)
+    if("${build_place}/${name}" IN_LIST dests)
+      message(FATAL_ERROR "calcu_qt6_bundle_sync(${target}): two files for ${build_place}/${name}")
+    endif()
+    list(APPEND dests "${build_place}/${name}")
+    string(APPEND manifest "${build_place}|${source}\n")
+    if(NOT APPLE)   # the bundle installs as a whole
+      install(FILES ${source} DESTINATION ${install_place})
     endif()
   endforeach()
   # Written only when it changes; a list changes at configure time
@@ -137,8 +192,52 @@ function(calcu_qt6_bundle_sync target)
     COMMENT "Bundled files of ${target}"
     VERBATIM)
   add_dependencies(${target} ${target}_bundle)
+
+  # The program.
+  if(APPLE)
+    install(TARGETS ${target} BUNDLE DESTINATION .)
+  elseif(WIN32)
+    install(TARGETS ${target} RUNTIME DESTINATION ${App})
+  else()
+    install(TARGETS ${target} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  endif()
+  if(NOT WIN32)
+    # The installed program keeps the Qt it was linked with (Homebrew's,
+    # the distribution's lies in a default folder and needs none).
+    set_target_properties(${target} PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+  endif()
+  if(WIN32)
+    # The flags of the packaging before Inno Setup: the MSVC runtime's
+    # installer comes along (the .iss runs it).
+    find_program(CALCU_WINDEPLOYQT windeployqt HINTS "${QT6_INSTALL_PREFIX}/${QT6_INSTALL_BINS}" REQUIRED)
+    install(CODE "execute_process(COMMAND \"${CALCU_WINDEPLOYQT}\" $<IF:$<CONFIG:Debug>,--debug,--release> --compiler-runtime
+                    \"\${CMAKE_INSTALL_PREFIX}/${App}/$<TARGET_FILE_NAME:${target}>\" COMMAND_ERROR_IS_FATAL ANY)")
+  elseif(NOT APPLE)
+    install(FILES ${B_DESKTOP_FILE} DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    # The PNG's width, bytes 16 to 19 of its header.
+    file(READ ${B_ICON} width OFFSET 16 LIMIT 4 HEX)
+    math(EXPR size "0x${width}")
+    install(FILES ${B_ICON} DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps)
+  endif()
 endfunction()
 set(CALCU_QT6_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
+
+# Where `cmake --install` puts the apps when no --prefix is given: a
+# folder of the user's, without root. macOS ~/Applications (the .app),
+# Linux ~/.local (bin/, share/), Windows %LOCALAPPDATA%\Programs (one folder
+# per app).
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  if(APPLE)
+    set(prefix "$ENV{HOME}/Applications")
+  elseif(WIN32)
+    file(TO_CMAKE_PATH "$ENV{LOCALAPPDATA}/Programs" prefix)
+  else()
+    set(prefix "$ENV{HOME}/.local")
+  endif()
+  set(CMAKE_INSTALL_PREFIX "${prefix}" CACHE PATH "Where cmake --install puts the Qt6 apps" FORCE)
+endif()
+include(GNUInstallDirs)
+message(STATUS "Qt6 apps install into ${CMAKE_INSTALL_PREFIX}")
 
 if(CALCU_TESTS)
   # QTest's key and mouse clicks for the shortcut cases; a Qt

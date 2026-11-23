@@ -1,13 +1,12 @@
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
 
-#include <QCoreApplication>
-#include <QDir>
 #include <QtGlobal>
 
 #include <optional>
 
 #include "settings/SettingsFile.hpp"
+#include "qt6/BundledData.hpp"
 #include "qt6/MacHost.hpp"
 
 namespace AppPaths {
@@ -15,29 +14,12 @@ namespace AppPaths {
 namespace {
 
 // Where the bundled resources live -- *.module.yaml catalog AND ROM images
-// (disjoint filename extensions, one shared directory) -- resolved
-// relative to the running executable: macOS .app bundle's
-// Contents/Resources (via applicationDirPath()'s Contents/MacOS +
-// "../Resources"), or a "resources" folder next to the binary on
-// Windows/Linux (matching windeployqt's and AppImage's flat-next-to-binary
-// convention). Read-only bundled content -- never created if missing; a
-// missing/unreadable directory is tolerated by scanMemoryCardDirectory()
-// (an empty catalogue); the ROM lookup then names every file missing.
-QString bundledResourcesDir() {
-    const QString exeDir = QCoreApplication::applicationDirPath();
-#if defined(Q_OS_MACOS)
-    // applicationDirPath() == .../Calc-U-1600.app/Contents/MacOS
-    return QDir::cleanPath(QDir(exeDir).filePath(QStringLiteral("../Resources")));
-#else
-    // Windows: exeDir/resources (windeployqt lays extra files flat next
-    // to the .exe by convention). Linux/AppImage: exeDir/resources --
-    // AppRun launches the real binary from inside the AppDir, and a
-    // "resources" dir placed next to it (see CMakeLists.txt's install()
-    // rule) keeps this relative lookup correct whether running from a
-    // raw build dir, an installed prefix, or a mounted AppImage.
-    return QDir(exeDir).filePath(QStringLiteral("resources"));
-#endif
-}
+// (disjoint filename extensions, one shared directory) and examples/: the
+// app's data (calcu::qt6::bundledDataDir). Read-only bundled content --
+// never created if missing; a missing/unreadable directory is tolerated by
+// scanMemoryCardDirectory() (an empty catalogue); the ROM lookup then names
+// every file missing.
+QString bundledResourcesDir() { return calcu::qt6::bundledDataDir(QStringLiteral("calc-u-1600")); }
 
 QString q(const std::string& s) { return QString::fromStdString(s); }
 

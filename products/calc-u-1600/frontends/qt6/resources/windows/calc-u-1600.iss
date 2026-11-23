@@ -1,8 +1,9 @@
 ; Inno Setup script for Calc-U-1600. Compiled headlessly in CI via
 ; ISCC.exe (see .github/workflows/calc-u-1600.yml's windows-x86_64 and
-; windows-arm64 jobs) against the already-staged frontends\qt6\dist folder (exe +
-; Qt DLLs + MSVC runtime + resources\, produced by that job's "Stage
-; standalone-runnable folder" step). Unsigned for now.
+; windows-arm64 jobs) against the app folder build\release\install\Calc-U-1600
+; (exe + Qt DLLs + MSVC runtime + resources\ + licenses\, staged by that
+; job's "Stage standalone-runnable folder" step, `cmake --install`).
+; Unsigned for now.
 ;
 ; APP_ARCH selects which arch's installer this produces -- pass
 ; /DAPP_ARCH=arm64 on the ISCC command line for the arm64 build; the
@@ -37,11 +38,11 @@ SolidCompression=yes
 ChangesAssociations=yes
 
 [Files]
-Source: "..\..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "..\..\..\..\..\..\build\release\install\Calc-U-1600\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
-; windeployqt --compiler-runtime (see calc-u-1600.yml's "Stage standalone-
-; runnable folder" step) drops no loose msvcp140.dll/vcruntime140.dll etc.
-; into dist\ for this Qt/VS toolset, but the vc_redist bootstrapper
+; windeployqt --compiler-runtime (run by the install rules, see
+; library/qt6/CMakeLists.txt) drops no loose msvcp140.dll/vcruntime140.dll etc.
+; into the app folder for this Qt/VS toolset, but the vc_redist bootstrapper
 ; (vc_redist.x64.exe / vc_redist.arm64.exe), copied into {app} by the
 ; [Files] entry above, on the assumption the installer
 ; will run it. Without this [Run] entry the app fails to start on a clean

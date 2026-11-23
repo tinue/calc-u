@@ -1,12 +1,12 @@
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
-#include <QCoreApplication>
 #include <QDir>
 #include <QtGlobal>
 
 #include "settings/Paths.hpp"
 #include "settings/PlatformBase.hpp"
 #include "settings/SettingsFile.hpp"
+#include "qt6/BundledData.hpp"
 #include "qt6/MacHost.hpp"
 
 namespace AppPaths {
@@ -64,11 +64,7 @@ void useBundledExamplesDir(const QString& dir) { examplesOverride() = dir; }
 
 QString bundledExamplesDir() {
     if (!examplesOverride().isEmpty()) return examplesOverride();
-#if defined(Q_OS_MACOS)
-    return QCoreApplication::applicationDirPath() + QStringLiteral("/../Resources/examples");
-#else
-    return QCoreApplication::applicationDirPath() + QStringLiteral("/resources/examples");
-#endif
+    return calcu::qt6::bundledDataDir(QStringLiteral("calc-u-59")) + QStringLiteral("/examples");
 }
 
 } // namespace AppPaths

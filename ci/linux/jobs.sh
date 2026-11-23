@@ -10,7 +10,9 @@
 #   gcc        one tree with both products, the Qt frontends and the tests:
 #              the build of the workflows' library, core-tests and linux
 #              jobs, then the CTest entries those jobs run (not the Qt
-#              window tests, which no Linux job runs)
+#              window tests, which no Linux job runs); among them
+#              CalcUQtInstallLayout, the `cmake --install` layout the linux
+#              jobs make their AppImages of (no AppImage is made here)
 #   web-59     calc-u-59.yml `web` up to its tests (web image only; no zip)
 #   web-1600   calc-u-1600.yml `web` up to the release dist/ and its check,
 #              and the library's Web shell tests (web image only; no zip)

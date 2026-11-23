@@ -166,7 +166,7 @@ if(APPLE)
   set(APP_ICON_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/AppIcon.icns
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/macos/Assets.car)
-  calcu_qt6_bundle_files(CalcU59Qt Resources ${APP_ICON_FILES})
+  calcu_qt6_bundle_files(CalcU59Qt data ${APP_ICON_FILES})
   set_target_properties(CalcU59Qt PROPERTIES
     MACOSX_BUNDLE_ICON_FILE AppIcon
     MACOSX_BUNDLE_GUI_IDENTIFIER ch.erzberger.CalcU59Qt
@@ -182,10 +182,11 @@ set_target_properties(CalcU59Qt PROPERTIES OUTPUT_NAME "Calc-U-59")
 
 # ---- Bundled example presets: the bundle
 # file examples/bundle.yaml and exactly the files it lists, each `{ file: … }`,
-# under Resources/examples in the macOS bundle, else resources/examples beside
-# the program (AppPaths::bundledExamplesDir(); the preset list and the bundle
-# paths `examples:<path>` read them). The Web build (frontends/web/build.js)
-# and the Swift app take the same list. ----
+# in the app's data (Resources/examples in the macOS bundle, else
+# resources/examples beside the program, share/calc-u-59/examples when
+# installed on Linux; AppPaths::bundledExamplesDir(); the preset list and the
+# bundle paths `examples:<path>` read them). The Web build
+# (frontends/web/build.js) and the Swift app take the same list. ----
 set(EXAMPLES_SRC_DIR ${REPO_ROOT}/examples)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${EXAMPLES_SRC_DIR}/bundle.yaml)
 file(STRINGS ${EXAMPLES_SRC_DIR}/bundle.yaml EXAMPLE_FILE_LINES REGEX "{ *file: ")
@@ -195,33 +196,28 @@ foreach(line IN LISTS EXAMPLE_FILE_LINES)
   list(APPEND EXAMPLE_FILES "${example_file}")
 endforeach()
 list(REMOVE_DUPLICATES EXAMPLE_FILES)
-if(APPLE)
-  set(BUNDLED_EXAMPLES Resources/examples)
-else()
-  set(BUNDLED_EXAMPLES resources/examples)
-endif()
-calcu_qt6_bundle_files(CalcU59Qt ${BUNDLED_EXAMPLES} ${EXAMPLES_SRC_DIR}/bundle.yaml)
+calcu_qt6_bundle_files(CalcU59Qt data/examples ${EXAMPLES_SRC_DIR}/bundle.yaml)
 foreach(example_file IN LISTS EXAMPLE_FILES)
   get_filename_component(example_dir "${example_file}" DIRECTORY)
-  calcu_qt6_bundle_files(CalcU59Qt ${BUNDLED_EXAMPLES}/${example_dir} ${EXAMPLES_SRC_DIR}/${example_file})
+  calcu_qt6_bundle_files(CalcU59Qt data/examples/${example_dir} ${EXAMPLES_SRC_DIR}/${example_file})
 endforeach()
 
 # ---- License and third-party notice files: GPLv3 (this project) and
-# LGPLv3 (the bundled Qt6) travel with every distributed build. In the
-# macOS bundle under Resources/licenses; the Windows and Linux packaging
-# (.github/workflows/calc-u-59.yml) copies them itself. See
+# LGPLv3 (the bundled Qt6) travel with every distributed build
+# (Resources/licenses in the macOS bundle, licenses beside the program,
+# share/doc/calc-u-59 when installed on Linux). See
 # ../../THIRD-PARTY-NOTICES.md. ----
-if(APPLE)
-  set(LICENSE_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../LICENSE
-    ${REPO_ROOT}/NOTICE
-    ${REPO_ROOT}/THIRD-PARTY-NOTICES.md
-    ${REPO_ROOT}/licenses/LGPL-3.0.txt
-    ${REPO_ROOT}/licenses/GPL-3.0.txt)
-  calcu_qt6_bundle_files(CalcU59Qt Resources/licenses ${LICENSE_FILES})
-endif()
-# The app's bundled folders hold exactly the files above.
-calcu_qt6_bundle_sync(CalcU59Qt INSTALL_DIR bin)
+set(LICENSE_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../../../LICENSE
+  ${REPO_ROOT}/NOTICE
+  ${REPO_ROOT}/THIRD-PARTY-NOTICES.md
+  ${REPO_ROOT}/licenses/LGPL-3.0.txt
+  ${REPO_ROOT}/licenses/GPL-3.0.txt)
+calcu_qt6_bundle_files(CalcU59Qt licenses ${LICENSE_FILES})
+# The app's bundled folders hold exactly the files above; the install rules
+# (library/qt6/CMakeLists.txt has the layouts).
+calcu_qt6_bundle_sync(CalcU59Qt DESKTOP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/resources/linux/calc-u-59.desktop
+                                ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/linux/calc-u-59.png)
 
 # CalcU59QtTests: the app's widgets
 # on its EmulatorController, the session on the real ROMs (compiled in as
@@ -249,6 +245,3 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU59QtTests frequent COMMAND CalcU59QtTests)
   set_tests_properties(CalcU59QtTests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${QT_TEST_HOME}")
 endif()
-
-# ---- Install ----
-install(TARGETS CalcU59Qt BUNDLE DESTINATION . RUNTIME DESTINATION bin)

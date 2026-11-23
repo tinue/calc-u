@@ -1,5 +1,7 @@
 ; Inno Setup script for the Calc-U-59 Windows installer, run by
-; .github/workflows/calc-u-59.yml after windeployqt has staged frontends/qt6/dist.
+; .github/workflows/calc-u-59.yml on the app folder that `cmake --install` of
+; build/release staged in build\release\install\Calc-U-59 (the program, its
+; bundled files and licences, Qt's DLLs from windeployqt).
 ; /DAPP_ARCH=arm64 builds the ARM64 installer; the default is x64.
 ; The version comes from the CMake build: the root project's build/release
 ; tree, generated/Version.iss of the Qt6 app's directory in it,
@@ -35,7 +37,7 @@ SolidCompression=yes
 ChangesAssociations=yes
 
 [Files]
-Source: "..\..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "..\..\..\..\..\..\build\release\install\Calc-U-59\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 [Run]
 ; windeployqt --compiler-runtime places the matching VC++ redistributable here.

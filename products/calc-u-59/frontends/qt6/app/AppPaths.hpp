@@ -44,8 +44,9 @@ QString defaultDir();
 QString saveDir();
 
 /// The bundled examples (examples/bundle.yaml and the files it lists):
-/// Resources/examples in the macOS bundle, resources/examples beside
-/// the program elsewhere (frontends/qt6/CMakeLists.txt copies them).
+/// examples/ in the app's data (the library's calcu::qt6::bundledDataDir:
+/// Contents/Resources of the macOS bundle, share/calc-u-59 of a Linux
+/// install, else resources beside the program).
 QString bundledExamplesDir();
 /// Another folder of bundled examples for this run (CalcU59QtTests: the
 /// product's examples/); call before the window is made.

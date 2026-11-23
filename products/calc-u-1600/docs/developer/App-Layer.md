@@ -45,7 +45,10 @@ Both libraries are built by the product's [`CMakeLists.txt`](../../CMakeLists.tx
 - **The app layer never decides where files live.** The frontend hands it the
   host's folders (`calcu::settings::HostDirs`: home, the settings base of its
   platform, on the Web the save folder) and the bundled-resources folders
-  (`cu1600::BundleDirs`), and opens the settings file, `Calc-U-1600.ini`
+  (`cu1600::BundleDirs`; the Qt6 frontend's is the library's
+  `calcu::qt6::bundledDataDir`: `Contents/Resources` of the macOS bundle,
+  `share/calc-u-1600` of a Linux install, else `resources` beside the
+  program), and opens the settings file, `Calc-U-1600.ini`
   (`calcu::settings::SettingsFile` at `settingsFilePath()`); the
   library's `calcu::settings::Paths`, `cu1600::AppPaths` and
   `cu1600::Settings` (the declaration of every key, `settingsDecl()`) do the

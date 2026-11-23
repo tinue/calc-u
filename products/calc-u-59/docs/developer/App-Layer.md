@@ -411,7 +411,10 @@ Card file format: magnetic card format 3 (`docs/formats/media.md` §1;
 
 A preset (`docs/formats/preset.md`, format 2) is the library's: `load-preset
 {ref}` (Qt6: a file in its folder; a bundled example by its bundle path
-`examples:<path>`) or `load-preset {content, name}` (Swift, an upload or a
+`examples:<path>`, in `examples/` of the app's data, the library's
+`calcu::qt6::bundledDataDir`: `Contents/Resources` of the macOS bundle,
+`share/calc-u-59` of a Linux install, else `resources` beside the
+program) or `load-preset {content, name}` (Swift, an upload or a
 drop on the Web) is one operation of the session. The library's loader
 reads it all or nothing with Calc-U-59's rules (`TIPresetRules`: idle is key
 readiness, or the card wait of Write, without a break for 100 ms; `expect:`

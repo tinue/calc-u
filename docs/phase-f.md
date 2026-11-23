@@ -68,14 +68,6 @@ and `docs/Process.md` until the closing check at its end has passed.
     emulator" in the ROM articles and the agent prompt; the README's
     History paragraph; Calc-U-59 TODO's REST API and polling items; the
     pre-release-cleanup skill's `appstore` branch.
-- **External tester**: their superRAM suite's `test_title_in_s2_is_refused`
-  now fails every run. On the card as their suite ships it (blank, no
-  module header) `INIT"S2:","P"` leaves slot 2 a RAM disk (S2MTB FEH), so
-  the ROM refuses `TITLE"S2:"` with ERROR 101 (routine 1EEFH). It passed
-  only when an earlier test had written the card file: their seven cards
-  are module instances, so every test writes them back. Tell spellbound:
-  give the fixtures `template: true` (never written) and prepare the card
-  in that test.
 - **Calc-U-59 checks by hand**: a loaded ASM overlay on a model switch
   (removed or kept); the preset format's speed-dependent `Adv` text
   against the behaviour; the tutorial's iCloud advice; `.keystrokes.yaml`

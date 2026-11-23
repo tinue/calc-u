@@ -10,7 +10,7 @@ import SwiftUI
 /// entry is available now.
 struct ControlBarView: View {
     @Environment(EmulatorViewModel.self) var viewModel
-    /// The labels ("Crd") beside the icons; the column decides by
+    /// The labels ("Crd", "More") beside the icons; the column decides by
     /// the library's rule (TIBarFit).
     var labels: Bool = true
 
@@ -60,7 +60,7 @@ struct ControlBarView: View {
         case .media:
             CardControls(showLabels: labels)
         case .more:
-            moreMenu(control)
+            moreMenu(control, labels: labels)
         @unknown default:
             EmptyView()
         }
@@ -120,7 +120,8 @@ struct ControlBarView: View {
 
     // MARK: - More
 
-    private func moreMenu(_ control: TIBarControl) -> some View {
+    /// More: "⋯ More" where the bar fits its labels, the icon alone where not.
+    private func moreMenu(_ control: TIBarControl, labels: Bool) -> some View {
         Menu {
             MenuItems(items: control.choices, prefix: "more-item-") { item in
                 if !item.confirm.isEmpty { confirming = item; return }
@@ -128,8 +129,13 @@ struct ControlBarView: View {
                 viewModel.choose(item)
             }
         } label: {
-            Image(systemName: "ellipsis.circle")
-                .font(.system(size: 18))
+            Label {
+                Text(control.label).font(.callout.weight(.semibold))
+            } icon: {
+                Image(systemName: "ellipsis.circle").font(.system(size: 18))
+            }
+            .labelStyle(showLabel: labels)
+            .fixedSize()
         }
         .menuStyle(ChromeMenuStyle())
         // In the model's order, top to bottom: opened upwards from the bar,
@@ -189,42 +195,42 @@ struct MenuItems: View {
     }
 }
 
-/// The card controls on the bar: Arm Card and Arm Fresh Card
-/// while no side passes, Eject Card while one does; they follow the card
-/// reader's `insert` entry through the File menu's card items.
+/// The card controls on the bar, as the control state declares them
+/// (`c59.card-controls`): Arm Card and Arm Fresh Card (both "Crd") while no
+/// side passes, Eject Card while one does; disabled with the reason as their
+/// tooltip while they cannot be used.
 struct CardControls: View {
     @Environment(EmulatorViewModel.self) var viewModel
     var showLabels: Bool = true
 
     var body: some View {
-        let arm = viewModel.menuItem("arm-card")
-        let fresh = viewModel.menuItem("arm-fresh-card")
-        if viewModel.cardState == .noCard {
-            // Both read "Crd"; icon and screen-reader name differ.
-            Button("Crd", systemImage: "square.and.arrow.down") {
-                viewModel.cardPickerMode = .arm
+        ForEach(viewModel.cardControls, id: \.controlID) { control in
+            Button(control.label, systemImage: Self.symbol(control.controlID)) {
+                act(control.controlID)
             }
             .labelStyle(showLabel: showLabels)
             .controlSize(.regular)
-            .disabled(!(arm?.enabled ?? true))
-            .accessibilityLabel("Arm Card")
-            .accessibilityIdentifier("bar-media-card-reader")
-            .help("Arm Card: fit a saved magnetic card, to feed by a corner")
-            Button("Crd", systemImage: "plus.rectangle") {
-                viewModel.cardPickerMode = .armFresh
-            }
-            .labelStyle(showLabel: showLabels)
-            .controlSize(.regular)
-            .disabled(!(fresh?.enabled ?? true))
-            .accessibilityLabel("Arm Fresh Card")
-            .accessibilityIdentifier("bar-media-card-reader-fresh")
-            .help("Arm Fresh Card: fit a fresh magnetic card under a name")
-        } else {
-            Button("Eject Card", systemImage: "eject") {
-                viewModel.ejectIfSwiping()
-            }
-            .labelStyle(showLabel: showLabels)
-            .accessibilityIdentifier("bar-media-card-reader")
+            .disabled(!control.available)
+            .help(control.available ? control.name : control.reason)
+            .accessibilityLabel(control.name)
+            .accessibilityIdentifier(control.controlID == "arm-fresh-card" ? "bar-media-card-reader-fresh" : "bar-media-card-reader")
+        }
+    }
+
+    /// The SF Symbol of each control (the other GUIs draw the declared glyph).
+    private static func symbol(_ id: String) -> String {
+        switch id {
+        case "arm-card": "square.and.arrow.down"
+        case "arm-fresh-card": "plus.rectangle"
+        default: "eject"
+        }
+    }
+
+    private func act(_ id: String) {
+        switch id {
+        case "arm-card": viewModel.cardPickerMode = .arm
+        case "arm-fresh-card": viewModel.cardPickerMode = .armFresh
+        default: viewModel.ejectIfSwiping()
         }
     }
 }

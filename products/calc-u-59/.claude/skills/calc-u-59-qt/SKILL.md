@@ -36,8 +36,9 @@ template `implicit:Fresh card` (Arm Fresh Card; a refusal `asks: …` is the
 replace question, sent again with `confirmed`: `calcu::qt6::sendAsking`, `library/qt6/AskedSend`), `media.eject`, through
 `EmulatorController` (`cardReader`, `savedCards`, `armCard`, `armFreshCard`,
 `ejectCard`). `CardControls` (on the bar while the control state lists the
-card reader, the TI-59) shows the two "Crd" buttons (names "Arm Card",
-"Arm Fresh Card") or "Eject Card"; File ▸ Arm Card… and Arm Fresh Card… are
+card reader, the TI-59) draws the controls the control state declares
+(`c59.card-controls`, app/`TIControlRules`, `EmulatorController::cardControls`): the two "Crd" buttons (names "Arm Card",
+"Arm Fresh Card") or "Eject Card", disabled with the reason as their tooltip; File ▸ Arm Card… and Arm Fresh Card… are
 the product items `arm-card`, `arm-fresh-card` (`mediaPlace: card-reader`);
 `CardPickerDialog` draws the saved cards it is handed and reads no folder.
 A corner tap is `c59.tap-card` (the shell lets a press on a card on show

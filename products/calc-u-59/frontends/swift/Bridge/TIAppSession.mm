@@ -15,6 +15,7 @@
 #include <calcu59/app/KeyIds.hpp>
 #include <calcu59/app/Settings.hpp>
 #include <calcu59/app/TIShellProduct.hpp>
+#include <calcu59/app/TIControlRules.hpp>
 #include "typing/TypingTopics.hpp"
 #if DEBUG && TARGET_OS_SIMULATOR
 #include <calcu59/app/HarnessProduct.hpp>
@@ -374,6 +375,31 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
     }
     return self;
 }
+@end
+
+@interface TICardControl ()
+- (instancetype)initWithControl:(const cu59::CardControl&)control;
+@end
+
+@implementation TICardControl
+- (instancetype)initWithControl:(const cu59::CardControl&)c {
+    if ((self = [super init])) {
+        _controlID = ns(c.id);
+        _label = ns(c.label);
+        _name = ns(c.name);
+        _available = c.available ? YES : NO;
+        _reason = ns(c.reason);
+    }
+    return self;
+}
+// By value: the view model keeps a new list only when it differs.
+- (BOOL)isEqual:(id)other {
+    if (![other isKindOfClass:[TICardControl class]]) return NO;
+    TICardControl* o = other;
+    return [_controlID isEqualToString:o.controlID] && [_label isEqualToString:o.label] &&
+           [_name isEqualToString:o.name] && _available == o.available && [_reason isEqualToString:o.reason];
+}
+- (NSUInteger)hash { return _controlID.hash ^ (_available ? 1u : 0u); }
 @end
 
 @interface TIPaperControl ()
@@ -797,6 +823,12 @@ static calcu::shell::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 static const char* const kCardReaderPlace = "card-reader";
 
 - (BOOL)cardPassing { const auto* p = [self cardReader]; return p && p->passing ? YES : NO; }
+- (NSArray<TICardControl *> *)cardControls {
+    NSMutableArray<TICardControl *>* out = [NSMutableArray array];
+    if (const auto* c = [self controlState])
+        for (const auto& control : cu59::cardControlsOf(*c)) [out addObject:[[TICardControl alloc] initWithControl:control]];
+    return out;
+}
 - (BOOL)cardFitted { const auto* p = [self cardReader]; return p && p->holds ? YES : NO; }
 - (NSString *)fittedCardName { const auto* p = [self cardReader]; return p && p->holds ? ns(p->holds->name) : nil; }
 - (NSArray<TISavedCard *> *)savedCards {

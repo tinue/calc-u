@@ -69,6 +69,7 @@ TIAppPart::TIAppPart(TIAppSetup setup)
       m_bundle(m_setup.examplesFolder.empty() ? nullptr
                                               : std::make_unique<presets::DirectoryPresetBundle>(calcu::files::toPath(m_setup.examplesFolder))),
       m_debugPart(TIDebugSetup{m_setup.roms.set, m_setup.debugTabsShown}),
+      m_controlRules(m_debugPart),
       m_fileKinds(m_debugPart),
       m_lib(librarySetup()) {
     m_debugPart.bindDebugger(&m_lib.debugger());
@@ -91,7 +92,7 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.productName = "Calc-U-59";
     s.presetExtensions = tiPresetExtensions();   // no size limit
     s.fileKinds = m_fileKinds.kinds();
-    s.controlRules = &m_debugPart;   // the debug panel's product entries of the control state
+    s.controlRules = &m_controlRules;   // the debug panel's entries and the card controls
     // The magnetic card in the save folder, slot-1's modules.
     s.mediaKinds = {magneticCardKind()};
     s.mediaFiles = m_files.files();   // the host's, else the plain one

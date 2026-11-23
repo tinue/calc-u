@@ -86,8 +86,11 @@ public:
     const calcu::media::PlaceState* mediaPlace(const std::string& place) const;
     /// The card reader `card-reader` (TI-59 only); nullptr without one.
     const calcu::media::PlaceState* cardReader() const;
-    /// A card passes through the reader now (Eject Card instead of the Crd buttons).
+    /// A card passes through the reader now.
     bool cardPassing() const;
+    /// The card controls of the bar as the control state declares them
+    /// (`c59.card-controls`); empty without a card reader.
+    std::vector<cu59::CardControl> cardControls() const;
     /// The saved cards for Arm Card: the reader's picker without the
     /// empty entry and the implicit fresh card.
     std::vector<calcu::media::PickerEntry> savedCards() const;

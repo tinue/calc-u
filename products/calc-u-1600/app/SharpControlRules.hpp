@@ -36,7 +36,8 @@ public:
     explicit SharpControlRules(Inputs in) : m_in(std::move(in)) {}
 
     std::optional<std::string> unavailable(const calcu::control::EntryKey&, const calcu::machine::Machine&) const override;
-    void productEntries(const calcu::machine::Machine&, std::vector<calcu::control::ProductEntry>&) const override;
+    void productEntries(const calcu::machine::Machine&, const calcu::control::ControlState&,
+                        std::vector<calcu::control::ProductEntry>&) const override;
 
 private:
     Inputs m_in;

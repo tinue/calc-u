@@ -202,6 +202,9 @@ class EmulatorViewModel {
         case swiping     // A side is passing through; I/O in progress
     }
     var cardState: CardState = .noCard
+    /// The bar's card controls as the control state declares them (none
+    /// without a card reader).
+    private(set) var cardControls: [TICardControl] = []
     var cardPickerMode: CardPickerView.Mode? = nil
     /// The fitted card's name, nil when none.
     var fittedCardName: String?
@@ -635,6 +638,10 @@ class EmulatorViewModel {
         if c.contains(.control) || c.contains(.asm) {
             if canRunASM != controller.asmRunAvailable { canRunASM = controller.asmRunAvailable }
             if calculatorTabAvailable != controller.calculatorTabAvailable { calculatorTabAvailable = controller.calculatorTabAvailable }
+        }
+        if c.contains(.control) {
+            let cards = controller.cardControls
+            if cardControls != cards { cardControls = cards }
         }
     }
 

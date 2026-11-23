@@ -43,7 +43,8 @@ source).
    toolkit without a component set of its own) with Calc-U-59's data from
    `app/TIShellProduct` (`shellProduct`, `settingsSpec`, `faceplateHitMap`):
    the menus, the control bar (the model picker, the module slot's picker,
-   the card controls, the More button at its right edge with Load Preset…
+   the card controls as the control state's `c59.card-controls` declares
+   them, the More button at its right edge with Load Preset…
    and Settings…), the "PC-100C" button on the paper panel, the settings dialog,
    About, Help, notices and "Loading…" come from the control state and the
    library's commands. A new menu item goes into that menu model, never

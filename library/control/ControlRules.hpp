@@ -49,8 +49,9 @@ public:
     virtual std::optional<std::string> unavailable(const EntryKey&, const machine::Machine&) const {
         return std::nullopt;
     }
-    // The product's own entries, appended in order; names carry the product's prefix.
-    virtual void productEntries(const machine::Machine&, std::vector<ProductEntry>&) const {}
+    // The product's own entries, appended in order; names carry the product's
+    // prefix. The ControlState holds every other entry, as computed now.
+    virtual void productEntries(const machine::Machine&, const ControlState&, std::vector<ProductEntry>&) const {}
 
 protected:
     ~ControlRules() = default;

@@ -122,6 +122,16 @@ typedef struct {
 @property (nonatomic, readonly, copy) NSString *shortLabel;   ///< "PRN"
 @end
 
+/// A card control of the bar as the control state declares it
+/// (`c59.card-controls`): Arm Card, Arm Fresh Card or Eject Card.
+@interface TICardControl : NSObject
+@property (nonatomic, readonly, copy) NSString *controlID;   ///< "arm-card", "arm-fresh-card", "eject-card"
+@property (nonatomic, readonly, copy) NSString *label;       ///< the bar's label: "Crd", "Eject Card"
+@property (nonatomic, readonly, copy) NSString *name;        ///< the accessible name, the tooltip while available
+@property (nonatomic, readonly) BOOL available;
+@property (nonatomic, readonly, copy) NSString *reason;      ///< the tooltip while not available
+@end
+
 /// What the session is built with. The settings file is
 /// the session's (the library's SettingsPart on the session thread,
 /// one owner of the file; the startup model is read from it); the
@@ -276,6 +286,9 @@ typedef struct {
 // commands for the place `card-reader`) ──────────────────────────────────────
 /// A side of the fitted card passes through the reader now.
 @property (nonatomic, readonly) BOOL cardPassing;
+/// The bar's card controls as the control state declares them; none
+/// without a card reader.
+@property (nonatomic, readonly) NSArray<TICardControl *> *cardControls;
 /// A magnetic card is fitted (armed, or given back after a pass).
 @property (nonatomic, readonly) BOOL cardFitted;
 /// The fitted card's name, nil when none.

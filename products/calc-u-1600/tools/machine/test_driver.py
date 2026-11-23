@@ -109,8 +109,8 @@ def test_failed_expect_raises(tmp_path):
 
 
 def test_blank_card_is_returned(tmp_path):
-    image = Machine(tmp_path, slot_2="superRAM").card(2)
-    assert len(image) == 512 * 1024
+    image = Machine(tmp_path, slot_2="superRAM r4").card(2)
+    assert len(image) == 1024 * 1024
 
 
 def test_step_rejects_line_break(tmp_path):
@@ -234,7 +234,7 @@ def test_saved_card_comes_back(tmp_path):
 def test_template_card_file_stays_as_it_is(tmp_path):
     # A fixture with `template: true` is never written: the machine's writes stay in memory, so tests
     # that run side by side never see each other's writes. card() reads what the machine wrote.
-    Machine(tmp_path / "a", slot_2="superRAM").card(2)
+    Machine(tmp_path / "a", slot_2="superRAM r4").card(2)
     text = (tmp_path / "a" / "slot-2.module.yaml").read_text()
     mine = tmp_path / "mine.module.yaml"
     mine.write_text(text.replace("\nmodule-name:", "\ntemplate: true\nmodule-name:", 1))

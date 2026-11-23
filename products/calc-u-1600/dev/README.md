@@ -10,5 +10,5 @@ bundles the presets `examples/bundle.yaml` lists). User-facing demos and learnin
   LCD all-pixels-on sizing. Each `.asm` header explains the background and
   the expected results.
 - `presets/` — presets used while debugging or regression-checking the
-  emulator itself: preset-loader / memory-card tests, the superRAM card
+  emulator itself: preset-loader / memory-card tests, the 256K custom card
   setup, the Up/Down-key iterator, and the `- trace:` step demo.

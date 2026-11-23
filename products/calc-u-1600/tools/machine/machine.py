@@ -1,7 +1,7 @@
 """The PC-1500, PC-1500A and PC-1600 as a pytest test machine, on `calcu serve`
 (library/harness/python/calcu_machine.py). The user guide is docs/testing/README.md.
 
-    machine = Machine(tmp_path, slot_2="superRAM")
+    machine = Machine(tmp_path, slot_2="superRAM r4")
     machine.type('PRINT "=";6*7').wait(1)
     assert "= 42" in machine.lcd
     image = machine.card(2)
@@ -60,7 +60,7 @@ class Machine(Session):
                  model: str = "PC-1600", printer: Optional[str] = None,
                  bus_rom: Optional[list[dict[str, Any]]] = None, project=None, paths=None):
         """model: PC-1500, PC-1500A or PC-1600.
-        slot_1, slot_2: a bundled module's name (CE-1600M, superRAM, ...) or a module file: a
+        slot_1, slot_2: a bundled module's name (CE-1600M, superRAM r4, ...) or a module file: a
         Path, or a str ending in .module.yaml or holding a /. printer: CE-150 or CE-1600P[:old]. bus_rom: ROMs on the 60-pin bus, in plug order,
         each {"file", "address", "pv"}. project, paths: see Session.path()."""
         super().__init__(workdir, "c1600", project, paths)

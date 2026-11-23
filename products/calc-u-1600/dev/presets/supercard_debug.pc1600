@@ -1,9 +1,10 @@
-# PC-1600 debug set for the superRAM card in slot 2: formats and splits it,
-# then shows the free memory and the RAM disk's size.
+# PC-1600 debug set for the 256K custom card in slot 2: formats and splits
+# it (as its bundled contents were made), then shows the free memory and
+# the RAM disk's size (Memory: 44602  Disk: 220160).
 format-version: 2
 model: PC-1600
 
-slot-2: { name: superRAM }
+slot-2: { name: 256K custom }
 
 # init the card
 keys:

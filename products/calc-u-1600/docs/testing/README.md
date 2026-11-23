@@ -157,7 +157,7 @@ refuses it with `ERROR 110`, and so does more than one module's RAM.
 | CE-163F or CE-1638 | — | accepted: the ROM can't detect their RAM and ignores the module |
 | — | CE-161, CE-163F or CE-1638 | accepted (their banks are ignored) |
 | CE-1600M (32 KB) | — | ERROR 110 |
-| — | CE-1600M, CE-1601M or superRAM | ERROR 110 |
+| — | CE-1600M, CE-1601M, 256K custom or superRAM r4 | ERROR 110 |
 | CE-155 | CE-163F or CE-1638 | ERROR 110 |
 
 The CE-163F and CE-1638 are PC-1500 modules: they take their bank from the address bus, so the
@@ -177,7 +177,7 @@ CASES = {
     "CE-163F in 2":       ({"slot_2": "CE-163F"}, ACCEPTED),
     "CE-1600M in 1":      ({"slot_1": "CE-1600M"}, REFUSED),
     "CE-1600M in 2":      ({"slot_2": "CE-1600M"}, REFUSED),
-    "superRAM in 2":      ({"slot_2": "superRAM"}, REFUSED),
+    "superRAM in 2":      ({"slot_2": "superRAM r4"}, REFUSED),
     "CE-155 and CE-1638": ({"slot_1": "CE-155", "slot_2": "CE-1638"}, REFUSED),
     "a module file in 2": ({"slot_2": "$c1600/examples/dwx/CE-1601M - Progs.module.yaml"}, REFUSED),
 }
@@ -414,7 +414,7 @@ def test_ce158_csave_cload(make_machine, tmp_path):
 The driver brings no modules, media or programs of its own. A test runs on what Calc-U-1600
 ships, and on what the test project brings:
 
-- **Shipped:** the bundled modules by name (`CE-1600M`, `superRAM`); the bundled media and the
+- **Shipped:** the bundled modules by name (`CE-1600M`, `superRAM r4`); the bundled media and the
   examples as files of the checkout, by `$c1600`: the module definitions, `blank.floppy.yaml`,
   `formatted.floppy.yaml` and `blank.cassette.yaml` in `$c1600/frontends/qt6/resources/cards/`,
   the examples in `$c1600/examples/`, the test fixtures (such as the RENUM ROM) in
@@ -458,7 +458,7 @@ An environment variable `CALCU_PATH_<NAME>` wins over a name, for example on ano
 `CALCU_PATH_STICK=/media/me/STICK uv run pytest`. An unknown name raises `MachineError`.
 
 - A **slot** value without `/` and without `.module.yaml` is a bundled module's name (`CE-1600M`,
-  `superRAM`). Anything else is a path: `cards/my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
+  `superRAM r4`). Anything else is a path: `cards/my-ram.module.yaml`, `$cards/superram-full.module.yaml`.
   A module file is used as the app uses it: one with `template: true` is never written, one
   without (an instance, as `card()` saves it) gets the machine's writes back. Give a test project's
   module fixtures `template: true`, so tests run side by side never see each other's writes; read

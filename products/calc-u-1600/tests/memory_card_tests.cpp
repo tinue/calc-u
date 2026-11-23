@@ -445,8 +445,8 @@ TEST(test_compat_gate_via_file_if_present) {
           err.find("not compatible") != std::string::npos);
 }
 
-TEST(test_superram_card_yaml_if_present) {
-    const char* path = "frontends/qt6/resources/cards/superram.module.yaml";
+TEST(test_superram_r4_card_yaml_if_present) {
+    const char* path = "frontends/qt6/resources/cards/superRAMr4.module.yaml";
     std::ifstream probe(path);
     SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     // Slot 2 only.
@@ -459,26 +459,54 @@ TEST(test_superram_card_yaml_if_present) {
     auto card = makeSoftwareDefinedCard(path, CardHost::PC1600Slot2, &err);
     CHECK(card != nullptr);
     if (!card) return;
-    CHECK(card->debugBankCount() == 16);
+    CHECK(card->debugBankCount() == 32);   // 1 MB: a 5-bit (D0-D4) latch
 
     auto* sd = static_cast<SoftwareDefinedCard*>(card.get());
     PinState sel;
     sel.ioWrite = true;
     sel.forWrite = true;
     sel.address = 0x28;
-    CHECK(sd->respondsToWrite(sel, 12));  // D3+D2 -> bank 12
-    CHECK(sd->currentBank() == 12);
+    CHECK(sd->respondsToWrite(sel, 31));  // D4..D0 -> bank 31
+    CHECK(sd->currentBank() == 31);
 
     PinState w;
     w.pin[4] = true;   // RAM1
     w.forWrite = true;
     w.address = 0x8000;
     CHECK(sd->respondsToWrite(w, 0x42));
-    uint8_t v = 0;
+    uint8_t v = 0xAA;
     CHECK(sd->respondsToRead(w, v) && v == 0x42);
 
     sd->respondsToWrite(sel, 0);
-    CHECK(sd->respondsToRead(w, v) && v == 0xFF);  // bank 0 untouched
+    CHECK(sd->respondsToRead(w, v) && v == 0x00);  // blank: bank 0 untouched
+}
+
+TEST(test_256k_custom_card_yaml_if_present) {
+    const char* path = "frontends/qt6/resources/cards/256k-custom.module.yaml";
+    std::ifstream probe(path);
+    SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
+    std::string err;
+    CHECK(makeSoftwareDefinedCard(path, CardHost::PC1600Slot1, &err) == nullptr);   // Slot 2 only
+    auto card = makeSoftwareDefinedCard(path, CardHost::PC1600Slot2, &err);
+    CHECK(card != nullptr);
+    if (!card) return;
+    CHECK(card->debugBankCount() == 8);   // 256 KB: a 3-bit (D0-D2) latch
+
+    // Initialised as INIT"S2:","F" then "M" leave it: bank 0's cleared
+    // header (expansion memory), bank 1 the RAM disk's boot sector.
+    auto* sd = static_cast<SoftwareDefinedCard*>(card.get());
+    PinState sel;
+    sel.ioWrite = true;
+    sel.forWrite = true;
+    sel.address = 0x28;
+    PinState r;
+    r.pin[4] = true;   // RAM1
+    r.address = 0x8000;
+    uint8_t v = 0;
+    CHECK(sd->respondsToWrite(sel, 0));
+    CHECK(sd->respondsToRead(r, v) && v == 0xFF);
+    CHECK(sd->respondsToWrite(sel, 1));
+    CHECK(sd->respondsToRead(r, v) && v == 0x55);
 }
 
 // ── `rom` content ────────────────────────────────────────────────────

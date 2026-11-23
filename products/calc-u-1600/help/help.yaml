@@ -11,7 +11,7 @@ version-from: ../release.yaml
 # models and every peripheral of its catalogue and module definitions
 # (CalcU1600HelpTests checks them against the catalogue), and the makers'
 # and processors' names.
-names: [Calc-U-1600, Sharp, PC-1500, PC-1500A, PC-1600, CE-150, CE-158, CE-1600P, CE-1600F, CE-151, CE-155, CE-161, CE-163F, CE-1600M, CE-1601M, CE-1638, CE-502B, superRAM, host drive, bus ROM, LH5801, LH5803, Z80, Z-80]
+names: [Calc-U-1600, Sharp, PC-1500, PC-1500A, PC-1600, CE-150, CE-158, CE-1600P, CE-1600F, CE-151, CE-155, CE-161, CE-163F, CE-1600M, CE-1601M, CE-1638, CE-502B, 256K custom, superRAM r4, superRAM, host drive, bus ROM, LH5801, LH5803, Z80, Z-80]
 chapters:
   1: [01-introduction.md]
   2: [02-getting-started.md]

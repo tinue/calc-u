@@ -301,7 +301,8 @@ The model expresses these modules:
 | CE-163F | Y0, 16 KB window | Banks 0–7 Regular, 8–15 Flash | Trigger: pin 18, `A0`–`A3`, 16 banks | all four |
 | CE-1600M | RAM2 / RAM1 with `PVOUT` as half-select | Regular | Unbanked (the host's own banking) | PC-1600 Slot 1, Slot 2 |
 | CE-1601M | RAM1 | Regular | Trigger: `OUT (28H)`, `D0`–`D2` (data); bank window nests `PVOUT` | PC-1600 Slot 2 |
-| superRAM | RAM1 | Regular | Trigger: `OUT (28H)`, `D0`–`D3`, 16 banks | PC-1600 Slot 2 |
+| 256K custom | RAM1 | Regular | Trigger: `OUT (28H)`, `D0`–`D2`, 8 banks | PC-1600 Slot 2 |
+| superRAM r4 | RAM1 | Regular | Trigger: `OUT (28H)`, `D0`–`D4`, 32 banks | PC-1600 Slot 2 |
 | CE-1620M | as CE-1600M | ROM | Unbanked | PC-1600 Slot 1, Slot 2 |
 | CE-502B | Y0 | ROM: a program module (header at &0000, BASIC from &00C5) | Unbanked | PC-1500, PC-1500A |
 

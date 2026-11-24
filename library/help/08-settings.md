@@ -15,7 +15,7 @@ sections, each shown when the frontend has one of its settings:
 | Section | Settings |
 |---|---|
 | General | Startup model: "Last used" or one of the product's models |
-| Startup presets | one row per model: "None", the bundled startup presets for that model, or (on Windows and Linux) a file chosen with "Choose…" |
+| Startup presets | one row per model: "None", the bundled startup presets for that model, or a file chosen with "Choose…" (checked before it is set) |
 | Storage | the save folder, and the product's further folders |
 | Folders | the folder in which each file dialog starts |
 | Tracing | the trace folder and the largest trace file, in MB |

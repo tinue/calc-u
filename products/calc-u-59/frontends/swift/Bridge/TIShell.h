@@ -107,6 +107,9 @@ typedef NS_ENUM(NSInteger, TIDialogWidget) {
 @property (nonatomic, readonly, copy) NSArray<NSString *> *choiceLabels;
 /// A choice of `true` and `false`, drawn as a Toggle.
 @property (nonatomic, readonly) BOOL isToggle;
+/// A startup preset row: the label of its last entry ("Choose…"), which is
+/// no value but opens the file importer; empty: none.
+@property (nonatomic, readonly, copy) NSString *chooseLabel;
 @end
 
 @interface TIDialogSection : NSObject

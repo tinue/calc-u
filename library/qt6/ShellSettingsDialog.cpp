@@ -24,7 +24,6 @@ using Widget = DialogRow::Widget;
 
 QString q(const std::string& s) { return QString::fromStdString(s); }
 
-const QString kChoose = QStringLiteral("Choose…");   // Qt6 only
 
 std::string structureOf(const std::vector<shell::ShownSection>& ss) {
     std::string s;
@@ -84,13 +83,17 @@ QWidget* ShellSettingsDialog::rowWidget(const shell::ShownRow& r, QWidget* paren
         auto* box = new QComboBox(parent);
         box->setObjectName(name);
         for (const auto& [v, l] : r.choices) box->addItem(q(l), q(v));
-        if (row.widget == Widget::StartupPreset) box->addItem(kChoose, QString());
-        connect(box, &QComboBox::activated, this, [this, row, box](int index) {
-            if (row.widget == Widget::StartupPreset && box->itemText(index) == kChoose && index == box->count() - 1) {
+        const bool chooses = !r.chooseLabel.empty();
+        if (chooses) box->addItem(q(r.chooseLabel), QString());
+        connect(box, &QComboBox::activated, this, [this, row, box, chooses](int index) {
+            if (chooses && index == box->count() - 1) {
                 const QString file = shell_.choosers().file(this, QStringLiteral("Startup preset for %1").arg(q(row.key)),
                                                             shell_.startFolder("presets"), q(shell_.product().presetFilter));
-                if (!file.isEmpty()) send(row, file);
-                else update();   // cancelled: the row shows what is set
+                // Checked first: a preset that does not pass is a notice, the setting unchanged.
+                if (!file.isEmpty())
+                    shell_.sendChecked(shell::commands::kChooseStartupPreset,
+                                       sessions::Value::object({{"model", row.key}, {"ref", file.toStdString()}}));
+                update();   // the row shows what is set until the settings answer
                 return;
             }
             send(row, box->itemData(index).toString());

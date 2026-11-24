@@ -205,7 +205,45 @@ folder of its own.
 |---|---|
 | the folder cannot be made | "The files could not be put together in `<folder>`: `<reason>`" |
 | a file cannot be written | "`<file>` could not be written to `<folder>`: `<reason>`." |
-| a relative file the preset names is not in the folder | "The preset `<preset>` names the file `<path>`, which was not chosen with it: choose the preset together with every file it names." |
+| a relative file the preset names is neither in the folder nor in the file cache | "The preset `<preset>` names the file `<path>`, which was neither chosen with it nor earlier: choose the preset together with every file it names." |
+
+### The file cache (the Web)
+
+The Web host gives a file cache, `<mount>/cache` in the browser's kept
+storage (`OpenSetup::cacheFolder`, `files/FileCache.hpp`). Every file of an
+`open` with `upload` is written there by its name without folders, a newer
+file of a name replacing the older, except the preset an upload opens:
+a preset loaded once is not kept. The file picker's files (Import Media…)
+are kept there too. A relative file an uploaded preset names that is not in
+its folder is looked up in the cache by its last part; so a preset whose
+files were opened before can be opened, or chosen as a startup preset,
+alone. A file that cannot be kept is opened all the same; the app log says
+why at warn.
+
+## 5a. Choosing a startup preset
+
+`choose-startup-preset {model, ref}` or, on the Web, `{model, files:
+[{name, bytes}]}` is the settings row's "Choose…". The command needs the
+settings file and the presets (`OpenSetup::settings`); `model` must have a
+`[preset]` key.
+
+1. With `files` (only where there is a file cache), every file is written
+   into the cache, the preset as well, chosen among them as in §5 step 2;
+   `ref` is the preset's path in the cache.
+2. The preset is read as the startup load reads it (`PresetsPart::checkStartup`):
+   the files it names, and its model is `model`.
+3. Only when it passes is `[preset] <model>` set to `ref`; the settings topic
+   shows it. A file that cannot be written keeps the value for the run, with
+   the notice of `set-setting`.
+
+| Case | Sentence |
+|---|---|
+| no preset among the files | "None of the chosen files is a preset." |
+| the preset cannot be kept | "The preset `<name>` could not be kept in the file cache: `<reason>`." |
+| the check fails | "The preset `<name>` cannot be the startup preset of the `<model>`: `<reason>`" |
+
+Each is the refusal and a notice; the app log has the last at warn. A
+startup preset in the cache is read as an upload there at every start.
 
 ## 6. A file while the session is busy
 
@@ -223,6 +261,11 @@ refusal is then a notice only, and a question becomes the notice
 | `open-with` | macOS: a file opened from Finder or dropped onto the Dock icon, also at a cold launch | none | none |
 | `start` | the last argument after the program's name that does not start with `-` and names an existing file, opened once the window is shown | none | none |
 | `dialog` | the file chosen in Load Preset… | the file chosen in the file importer of Load Preset… | the files chosen in Load Preset… (the product's `presetUploads`: the presets and the files a preset can name), `upload: true` |
+
+The settings row's "Choose…" (§5a) is no `open`: Qt6 sends the chosen
+path, Swift the path picked in its file importer (and keeps a
+security-scoped bookmark of it, so that the next start can read it), the
+Web the files picked with the product's `presetUploads`.
 | `harness` | the harness's `open <path>` | — | — |
 
 A drag shows a pointer that accepts only one file the session would take

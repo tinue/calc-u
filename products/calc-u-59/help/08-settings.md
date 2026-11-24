@@ -18,7 +18,7 @@ preset sets them at a start.
 | Section | Setting | Where |
 |---|---|---|
 | General | **Startup model**: "Last used", TI-59, TI-58, TI-58C; and the version | everywhere |
-| Startup presets | one row per model: "None", the bundled startup preset of that model, or (macOS, Windows, Linux) a file | everywhere |
+| Startup presets | one row per model: "None", the bundled startup preset of that model, or a file of your own chosen with "Choose…" | everywhere |
 | Storage | **Save folder** | macOS, Windows, Linux |
 | Folders | the **Presets folder**, where Load Preset… starts, and the **ASM overlay folder**, where the ASM overlay's Select File starts; each the folder last used until you choose one, **Reset** goes back to it | macOS, Windows, Linux |
 | Tracing | **Save Location**, where traces go: Local or iCloud (iPhone, iPad); **Trace folder** (macOS, Windows, Linux); **Maximum file size** in MB (everywhere but the browser's portrait layout) | as named |

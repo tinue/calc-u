@@ -3,3 +3,7 @@
 # CalcU59NoPlatformSettings). One entry per line: `<path under
 # frontends/>: <text of the line>`.
 
+
+# The startup presets chosen with "Choose…": security-scoped bookmarks, the
+# sandbox's grant to read the file again; the setting itself is in the ini.
+swift/App/AppSettings.swift: startupPresetBookmarks

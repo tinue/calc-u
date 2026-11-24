@@ -27,7 +27,7 @@
 // finished when it took effect is done at once, with its result; the others
 // are an operation), `wait-idle` (an operation: until idle, at most an hour
 // of emulated time). Requests: `check-preset {ref | content, name}`,
-// `preset-list`.
+// `preset-list` (with `cacheFolder` on the Web).
 
 namespace calcu::presets {
 
@@ -49,12 +49,14 @@ struct PresetsSetup {
     const PresetBundle* bundle = nullptr;         // the product's bundled presets
     std::string home;                             // `~/` (README §3)
     std::function<std::optional<std::string>()> screenshotFolder;   // settings' Paths::screenshotFolder(); the harness: the run's
+    std::optional<std::string> cacheFolder;       // the Web's file cache (files/FileCache); none on the native hosts
 };
 
 // The reply of `preset-list`.
 struct PresetListReply final : sessions::PayloadOf<PresetListReply> {
     static constexpr sessions::PayloadKind kKind{"preset-list"};
     std::vector<PresetListEntry> entries;
+    std::string cacheFolder;   // the Web's file cache, for the dialog's labels; empty: none
     bool same(const PresetListReply& o) const { return toValue() == o.toValue(); }
     sessions::Value toValue() const override;
 };
@@ -81,6 +83,10 @@ public:
     sessions::Task<sessions::OperationResult> loadWithin(sessions::OperationContext&, std::string ref, bool buildOnly,
                                                          std::optional<machine::ModelId> forModel);
     void operationEnded(sessions::SessionContext&) override;   // regular speed at the end
+    // Whether `ref` would load as the startup preset of `model` (read as
+    // the startup load reads it): nullopt, or the sentence why not.
+    std::optional<std::string> checkStartup(const std::string& ref, const machine::ModelId& model) const;
+    const std::optional<std::string>& cacheFolder() const { return setup_.cacheFolder; }
 
     // startup::PresetLoader: a read error, another model
     // than forModel or a refused build: CannotLoad, nothing built; a failure

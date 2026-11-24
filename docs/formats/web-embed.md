@@ -200,7 +200,8 @@ with the wall time.
 `clipboard-text`, `clipboard-image`, `file-picker`, `keep-file`,
 `open-url`. The answer to `file-picker` is `[{name, bytes}, …]`, or
 `done: false, reason: "cancelled"`; the worker writes the bytes to
-`/uploads/<name>` and gives the session the paths.
+`/uploads/<name>`, keeps a copy in the file cache (`<mount>/cache/`) and
+gives the session the paths.
 
 ### 3.1 The library's topics
 
@@ -287,6 +288,7 @@ fetch that fails is a failed start.
 | `<mount>` | the persistent file system (§5) |
 | `<mount>/settings/<Product>/<Product>.ini` | the settings file |
 | `<mount>/<Product>/` | the save folder |
+| `<mount>/cache/` | the file cache: every file the page uploaded, by its name, and the startup presets chosen with "Choose…" (`opening.md` §5, §5a); the worker passes it as `dirs.cache` |
 
 `<mount>` is `/persist-calc-u-59` for Calc-U-59 and `/persist` for
 Calc-U-1600. Each product has its own: IDBFS names its IndexedDB

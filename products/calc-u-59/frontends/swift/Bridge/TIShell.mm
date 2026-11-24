@@ -88,6 +88,7 @@ NSString *const TIShellActionShowAppLog = @"show-app-log";
 @property (nonatomic, readwrite, copy) NSArray<NSString *> *choiceValues;
 @property (nonatomic, readwrite, copy) NSArray<NSString *> *choiceLabels;
 @property (nonatomic, readwrite) BOOL isToggle;
+@property (nonatomic, readwrite, copy) NSString *chooseLabel;
 @end
 @implementation TIDialogRow
 @end
@@ -268,6 +269,7 @@ static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup gro
             t.choiceValues = values;
             t.choiceLabels = labels;
             t.isToggle = r.row.widget == shell::DialogRow::Widget::Choice && r.choices.size() == 2 && truth && falsity;
+            t.chooseLabel = ns(r.chooseLabel);
             [rows addObject:t];
         }
         TIDialogSection *s = [[TIDialogSection alloc] init];

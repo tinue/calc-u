@@ -147,6 +147,8 @@ struct TIAppSetup {
     /// The Web: where several files of the preset picker's upload become one
     /// folder; unset: none.
     std::optional<std::string> uploadFolder;
+    /// The Web: the file cache, where every uploaded file is kept; unset: none.
+    std::optional<std::string> cacheFolder;
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     /// The harness: the debug panel's tabs computed as if
     /// shown, so that `state c59.calculator-debug` reads them (TIDebugSetup).

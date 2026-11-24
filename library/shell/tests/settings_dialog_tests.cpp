@@ -187,11 +187,17 @@ TEST(startup_preset_choices) {
     CHECK(r.fe.reply(call)->done);
     CHECK_EQ(std::string(find(shown(r), "preset.Model-A")->value), std::string("examples:startup/a2.test"));
     CHECK_EQ(find(shown(r), "preset.Model-A")->choices.size(), std::size_t{3});   // one of them: not added again
-    // A file set from a folder (Qt6's "Choose…") is added as it is set.
+    CHECK_EQ(a->chooseLabel, std::string("Choose…"));   // last, no value: the file chooser
+    // A chosen file is added as it is set.
     r.set("preset", "Model-B", r.home.str() + "/mine.test");
     auto b = find(shown(r), "preset.Model-B");
     CHECK_EQ(b->choices.back().first, r.home.str() + "/mine.test");
     CHECK_EQ(b->choices.back().second, std::string("~/mine.test"));
+    // One in the Web's file cache by its name alone.
+    r.set("preset", "Model-B", "/persist/cache/own.test");
+    const Value list = Value::object({{"entries", *st::presetList().find("entries")}, {"cacheFolder", "/persist/cache"}});
+    const auto cached = find(dialog(r.topic(), list, familySections(sett::test::testProduct())), "preset.Model-B");
+    CHECK_EQ(cached->choices.back().second, std::string("own.test"));
 }
 
 TEST(folder_row_home_change_reset) {

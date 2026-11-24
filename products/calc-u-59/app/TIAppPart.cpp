@@ -84,6 +84,7 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.paths = m_setup.paths;
     s.roms = m_setup.roms;
     s.uploadFolder = m_setup.uploadFolder;
+    s.cacheFolder = m_setup.cacheFolder;
     s.typing = &typingProduct();
     s.hosting = m_setup.hosting;
     s.presetRules = &m_rules;

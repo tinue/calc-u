@@ -81,6 +81,7 @@ struct OpenRigOptions {
     // Paced: operations run over host calls, so a case can open a file while one runs.
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     std::function<void(calcu::testing::TempFolder& save, calcu::testing::TempFolder& bundled)> prepare;
+    std::optional<std::string> cacheFolder;   // the file cache, of the presets and the open part
 };
 
 struct OpenRig {
@@ -93,13 +94,16 @@ struct OpenRig {
         f.start = o.start;
         f.hosting = o.hosting;
         f.prepare = o.prepare;
-        f.moreParts = [this, adjust = o.adjust](MediaFixture& m) -> std::vector<calcu::sessions::SessionPart*> {
+        f.cacheFolder = o.cacheFolder;
+        f.moreParts = [this, adjust = o.adjust, cache = o.cacheFolder](MediaFixture& m) -> std::vector<calcu::sessions::SessionPart*> {
             OpenSetup s;
             s.productName = "Test-Product";
             s.presets = m.presetsPart.get();
             s.presetExtensions = {".test-seg", ".TEST-DOT"};
             s.media = m.media.get();
             s.kinds = {&listing, &blob};
+            s.cacheFolder = cache;
+            s.settings = m.settings.get();
             if (adjust) adjust(s);
             part = std::make_unique<OpenPart>(std::move(s));
             return {part.get(), &tp};

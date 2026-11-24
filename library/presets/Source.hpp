@@ -55,8 +55,10 @@ public:
 std::unique_ptr<PresetSource> folderSource(std::filesystem::path file, std::string home);
 // A preset chosen with its files where there is no folder to look in (the
 // Web): they lie together in one upload folder, a file it names is looked up
-// there by its name alone, and one not chosen with it is refused so.
-std::unique_ptr<PresetSource> uploadSource(std::filesystem::path file, std::string home);
+// there by its name alone, then in the file cache (files::keepInCache), and
+// one found in neither is refused so.
+std::unique_ptr<PresetSource> uploadSource(std::filesystem::path file, std::string home,
+                                           std::optional<std::filesystem::path> cache = std::nullopt);
 std::unique_ptr<PresetSource> contentSource(std::string text, std::string name, std::string home);   // without a folder: no relative path
 std::unique_ptr<PresetSource> bundleSource(const PresetBundle&, std::string pathInBundle);
 
@@ -64,8 +66,10 @@ std::unique_ptr<PresetSource> bundleSource(const PresetBundle&, std::string path
 // (bundle.md §2) or is absolute.
 std::optional<std::string> normalBundlePath(std::string_view path);
 // A bundle path from the bundle (nullptr: none, refused when read), or
-// a path on disk.
-std::unique_ptr<PresetSource> sourceFor(std::string_view ref, const PresetBundle*, std::string home);
+// a path on disk; a path in the file cache `cache` (the Web's startup
+// preset) is read as an upload there.
+std::unique_ptr<PresetSource> sourceFor(std::string_view ref, const PresetBundle*, std::string home,
+                                        const std::optional<std::string>& cache = std::nullopt);
 
 // Whether the bytes are UTF-8.
 bool isUtf8(std::string_view);

@@ -349,6 +349,12 @@ typedef NS_ENUM(NSInteger, TIAppLogLevel) {
 - (void)openFile:(nullable NSData *)raw path:(nullable NSString *)path fileName:(NSString *)fileName
              way:(NSString *)way completion:(nullable void (^)(BOOL opened))done;
 
+/// `choose-startup-preset {model, ref: path}`: the settings row's
+/// "Choose…". The session checks the preset first (a refusal is its
+/// notice) and only then sets [preset] <model>. `done(YES)` when it was set.
+- (void)chooseStartupPreset:(NSString *)model path:(NSString *)path
+                 completion:(nullable void (^)(BOOL chosen))done NS_SWIFT_NAME(chooseStartupPreset(_:path:completion:));
+
 // ── Debugger ─────────────────────────────────────────────────────────────────
 - (void)setLiveDebugEnabled:(BOOL)on;
 - (void)setCpuDebugEnabled:(BOOL)on;

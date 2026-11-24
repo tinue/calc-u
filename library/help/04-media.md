@@ -156,8 +156,9 @@ the preset together with every file it names (its tape, card, disk,
 module or program files); the dialog offers those kinds of files too.
 They are taken as one folder, the preset among them is opened, and a
 file it names is found by its name alone, whatever folder the preset
-gives. A file it names that was not chosen is refused with a notice that
-names it.
+gives. A file it names that was not chosen is looked up among the files
+opened in this browser before, which are kept in its storage; one that is
+in neither is refused with a notice that names it.
 
 A file you open while an operation runs, or before the product has
 finished starting, is kept and opened as soon as the product is free.

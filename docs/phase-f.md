@@ -43,8 +43,6 @@ and `docs/Process.md` until the closing check at its end has passed.
   sense-bound ones. The user decides.
 - **Documentation sweep, for the user to decide** (the documents were
   left as they are):
-  - Swift Settings: no Choose… for a startup preset (the shared help
-    describes it).
   - Calc-U-1600: the Debug server (DAP) row shows `true`/`false`; the
     empty cassette's Name & Save (09-basic-programs); `pc1600-module-class`
     is not checked against its four values or the header bytes

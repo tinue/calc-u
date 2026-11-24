@@ -1,4 +1,5 @@
 #include "presets/Source.hpp"
+#include "files/FileCache.hpp"
 #include "files/Files.hpp"
 #include <fstream>
 #include <iterator>
@@ -51,12 +52,13 @@ std::string notRead(std::string_view path, const std::string& why) {
 
 // A preset in a folder on disk. An upload (the Web) is a preset chosen with
 // its files, all of them put into one folder by their names alone: a file it
-// names is looked up there by its name, and one not chosen with it is
-// refused with the advice to choose it too.
+// names is looked up there by its name, then in the file cache (a file
+// chosen earlier), and one found in neither is refused with the advice to
+// choose it too.
 class FolderSource final : public PresetSource {
 public:
-    FolderSource(fs::path file, std::string home, bool upload)
-        : file_(std::move(file)), home_(std::move(home)), upload_(upload) {}
+    FolderSource(fs::path file, std::string home, bool upload, std::optional<fs::path> cache = std::nullopt)
+        : file_(std::move(file)), home_(std::move(home)), upload_(upload), cache_(std::move(cache)) {}
     std::string name() const override { return upload_ ? files::fromPath(file_.filename()) : files::fromPath(file_); }
     std::string stem() const override { return stemOf(files::fromPath(file_.filename())); }
     std::optional<std::string> text() const override {
@@ -73,9 +75,13 @@ public:
         const fs::path p = resolve(path);
         std::string why;
         if (auto b = readFile(p, why)) return *b;
-        if (upload_ && chosenWith(path))
+        if (upload_ && chosenWith(path)) {
+            std::string unused;
+            if (cache_)
+                if (auto b = readFile(*cache_ / files::toPath(path).filename(), unused)) return *b;
             return "The preset " + name() + " names the file " + std::string(path) +
-                   ", which was not chosen with it: choose the preset together with every file it names.";
+                   ", which was neither chosen with it nor earlier: choose the preset together with every file it names.";
+        }
         return notRead(files::fromPath(p), why);
     }
     std::string resolvedName(std::string_view path) const override { return files::fromPath(resolve(path)); }
@@ -93,6 +99,7 @@ private:
     fs::path file_;
     std::string home_;
     bool upload_;
+    std::optional<fs::path> cache_;
     mutable std::string why_;
 };
 
@@ -178,8 +185,8 @@ std::unique_ptr<PresetSource> folderSource(fs::path file, std::string home) {
     return std::make_unique<FolderSource>(std::move(file), std::move(home), false);
 }
 
-std::unique_ptr<PresetSource> uploadSource(fs::path file, std::string home) {
-    return std::make_unique<FolderSource>(std::move(file), std::move(home), true);
+std::unique_ptr<PresetSource> uploadSource(fs::path file, std::string home, std::optional<fs::path> cache) {
+    return std::make_unique<FolderSource>(std::move(file), std::move(home), true, std::move(cache));
 }
 
 std::unique_ptr<PresetSource> contentSource(std::string text, std::string name, std::string home) {
@@ -224,7 +231,8 @@ std::optional<std::string> normalBundlePath(std::string_view path) {
     return out;
 }
 
-std::unique_ptr<PresetSource> sourceFor(std::string_view ref, const PresetBundle* bundle, std::string home) {
+std::unique_ptr<PresetSource> sourceFor(std::string_view ref, const PresetBundle* bundle, std::string home,
+                                        const std::optional<std::string>& cache) {
     if (ref.substr(0, 9) == "examples:") {
         const auto p = parseBundlePath(ref);
         if (bundle && p) return bundleSource(*bundle, *p);
@@ -232,6 +240,7 @@ std::unique_ptr<PresetSource> sourceFor(std::string_view ref, const PresetBundle
         static const DirectoryPresetBundle none{fs::path()};
         return bundleSource(bundle ? *bundle : none, p ? *p : std::string(ref.substr(9)));
     }
+    if (cache && files::liesIn(ref, *cache)) return uploadSource(files::toPath(ref), std::move(home));
     if (auto h = homePath(ref, home)) return folderSource(*h, std::move(home));
     return folderSource(files::toPath(ref), std::move(home));
 }

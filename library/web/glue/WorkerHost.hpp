@@ -38,6 +38,9 @@ struct WebStart {
     std::string product;                 // as the glossary writes it: "Calc-U-1600"
     settings::HostDirs dirs;             // FrontendKind::Web, settingsBase, saveFolder
     std::string bundleDir = "/bundle", presetsDir = "/presets", uploadsDir = "/uploads";
+    // The file cache in the persistent file system (files/FileCache): every
+    // uploaded file is kept there; empty: none.
+    std::string cacheDir;
     StorageMode storage = StorageMode::Kept;
     // A new settings file with the keys' first values (a fresh install's
     // startup presets); false: bare (the worker's `?bare=1`, the demo and

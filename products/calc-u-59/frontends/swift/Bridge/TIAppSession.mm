@@ -35,6 +35,7 @@
 #include "debugger/ButtonRule.hpp"
 #include "debugger/RunState.hpp"
 #include "control/ControlState.hpp"
+#include "opening/OpenPart.hpp"
 #include "opening/OpenRequest.hpp"
 #include "paper/PaperTopics.hpp"
 #include "peripherals/PeripheralsPart.hpp"
@@ -1000,6 +1001,14 @@ static const char* const kCardReaderPlace = "card-reader";
     calcu::shell::SessionThread::ReplyHandler reply;
     if (done) reply = [done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); };
     _thread->send(cs::Command{calcu::opening::kOpenCommand, q.toValue()}, std::move(reply));
+}
+
+- (void)chooseStartupPreset:(NSString *)model path:(NSString *)path completion:(void (^)(BOOL))done {
+    calcu::shell::SessionThread::ReplyHandler reply;
+    if (done) reply = [done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); };
+    _thread->send(cs::Command{calcu::opening::kChooseStartupPresetCommand,
+                              cs::Value::object({{"model", cpp(model)}, {"ref", cpp(path)}})},
+                  std::move(reply));
 }
 
 // ── Debugger ─────────────────────────────────────────────────────────────────

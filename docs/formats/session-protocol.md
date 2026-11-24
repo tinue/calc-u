@@ -265,7 +265,7 @@ Its members, in this order:
 | `run-step` | command | `{verb, value}` | — or `{text}` |
 | `wait-idle` | command, operation | — | — |
 | `check-preset` | request | `{ref}` or `{content, name?}` | `{ok: true}` |
-| `preset-list` | request | — | `{entries: [{bundlePath, model, name, description, kind: "startup" \| "example", group, files: [..]}]}` |
+| `preset-list` | request | — | `{entries: [{bundlePath, model, name, description, kind: "startup" \| "example", group, files: [..]}], cacheFolder}` (`cacheFolder`: the Web's file cache, else empty) |
 
 - `ref` is a path, or `examples:<path>` for a bundled preset. `content` is
   the preset's text; `name` names it in sentences (else `the preset`).
@@ -455,6 +455,7 @@ delete).
 |---|---|---|---|
 | `open` | command | `{files: [{name, path?, bytes?}], way?, upload?, confirmed?}` | `{as, file, detail}` |
 | `open-would-take` | request | `{name, size?}` | `{takes}` |
+| `choose-startup-preset` | command | `{model, ref}` or `{model, files: [{name, bytes}]}` (the Web) | — |
 
 - `way` is `drop` (the default), `open-with`, `start`, `dialog` or
   `harness`. Several files come only from a Web file dialog. `upload`:
@@ -471,6 +472,13 @@ delete).
   §9) is neither.
 - `open-would-take` answers, during a drag, whether a drop of that file
   would be taken.
+- `choose-startup-preset` is the settings row's "Choose…": the preset is
+  checked as a start reads it, and only then becomes `[preset] <model>`;
+  on the Web its files go into the file cache first, and every file of an
+  `open` with `upload` but the preset it opens is kept there too
+  (`opening.md` §5, §5a). A preset that does not pass is the refusal and
+  the notice `The preset <name> cannot be the startup preset of the
+  <model>: <reason>`.
 
 ## 13. Shell and settings
 
@@ -504,8 +512,10 @@ as values: `control-state`, `busy`, `run-state`, `roms-missing`,
 `settings`, `media` (topics) and the reply of `preset-list`. They send
 `model`, `variant`, `attach`, `detach`, `reset`, `cold-boot`,
 `load-preset`, `resume`, `paste`, `media.import`, `screen-key-down`,
-`screen-key-up`, `speed`, `set-setting`, `remember-folder`,
-`remember-window`.
+`screen-key-up`, `speed`, `set-setting`, `choose-startup-preset`,
+`remember-folder`, `remember-window`. A startup preset row of the
+settings dialog ends with `choose` ("Choose…"), an entry with no value:
+it opens the platform's file chooser and sends `choose-startup-preset`.
 
 ## 14. Startup and machine control
 

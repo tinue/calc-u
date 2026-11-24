@@ -89,6 +89,7 @@ struct FixtureOptions {
     std::function<void(std::vector<KindDecl>&)> kinds;
     std::shared_ptr<const FileAccess> files;
     bool start = true;   // false: no machine until the case sends `start`
+    std::optional<std::string> cacheFolder;   // the presets' file cache (the Web's)
 };
 
 class MediaFixture {
@@ -124,6 +125,7 @@ public:
         ps.rules = &rules;
         ps.home = saveRoot / "home";
         ps.control = &machineControl;
+        ps.cacheFolder = o.cacheFolder;
         presetsPart = std::make_unique<presets::PresetsPart>(ps);
         startupPart = std::make_unique<startup::StartupPart>(
             startup::StartupSetup{machineControl, *settings, presetsPart.get()});

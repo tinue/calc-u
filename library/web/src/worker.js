@@ -11,8 +11,8 @@
 //   importScripts(`${self.CALC_ROOT || ""}library-worker.js`);
 //
 // File system: /bundle and /presets (files.json), /uploads (picked files),
-// <mount> (the persistent file system: settings/<Product>/<Product>.ini and
-// the save folder <Product>/).
+// <mount> (the persistent file system: settings/<Product>/<Product>.ini,
+// the save folder <Product>/ and the file cache cache/).
 
 (function () {
   const CONFIG = self.CALCU_PRODUCT;
@@ -178,7 +178,9 @@
     calcuAppLog("debug", `storage: ${CONFIG.mount} opened as ${storage.mode}`);
     host = new Module[CONFIG.host]({
       product: CONFIG.name,
-      dirs: { settingsBase: `${CONFIG.mount}/settings`, saveFolder: `${CONFIG.mount}/${CONFIG.name}`, home: "" },
+      // cache: the file cache, every uploaded file kept for a preset chosen later without it.
+      dirs: { settingsBase: `${CONFIG.mount}/settings`, saveFolder: `${CONFIG.mount}/${CONFIG.name}`,
+              cache: `${CONFIG.mount}/cache`, home: "" },
       storage,
       // `?bare=1` on the worker's URL: a fresh install starts bare (the demo and test pages).
       bare: /[?&]bare=1\b/.test(self.location.search),

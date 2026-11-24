@@ -209,7 +209,7 @@ public:
             return sessions::replyGiven(sessions::valuePayload("tsp.sent", Value::object({{"sent", Value(std::move(list))}})));
         });
         for (const char* n : {"model", "variant", "attach", "detach", "load-preset", "resume", "paste", "media.import",
-                              "screen-key-down", "screen-key-up", "tsp.confirm"}) {
+                              "screen-key-down", "screen-key-up", "tsp.confirm", "choose-startup-preset"}) {
             const std::string name = n;
             if (!runControl_ && name == "resume") continue;
             if (!media_ && name == "media.import") continue;

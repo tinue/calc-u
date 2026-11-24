@@ -44,6 +44,9 @@ struct ShownRow {   // what a widget shows
     std::string value;   // the setting's value
     std::string shown;   // a folder in use with `~` for home; else the value
     std::vector<std::pair<std::string, std::string>> choices;   // value, label
+    // StartupPreset: the label of the last entry, which is no value but
+    // opens the platform's file chooser (then choose-startup-preset).
+    std::string chooseLabel;
     bool resettable = false;   // differs from its default
     std::optional<std::int64_t> min, max;
 };
@@ -53,6 +56,7 @@ struct ShownSection {
 };
 
 inline constexpr const char* kSettingsTitle = "Settings";
+inline constexpr const char* kChooseStartupPreset = "Choose…";
 
 // The sections with the rows the `settings` topic has; a section without a
 // row is left out.

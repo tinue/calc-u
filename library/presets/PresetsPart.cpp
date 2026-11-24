@@ -33,7 +33,7 @@ sessions::Value PresetListReply::toValue() const {
                                    {"group", e.group},
                                    {"files", Value(std::move(files))}}));
     }
-    return Value::object({{"entries", Value(std::move(a))}});
+    return Value::object({{"entries", Value(std::move(a))}, {"cacheFolder", cacheFolder}});
 }
 
 PresetsPart::PresetsPart(PresetsSetup s) : setup_(std::move(s)) {
@@ -60,8 +60,9 @@ std::unique_ptr<PresetSource> PresetsPart::sourceOf(const Value& args) const {
         return contentSource(*content->string(), std::move(name), setup_.home);
     }
     if (sessions::flagArg(args, "upload"))   // chosen with its files, without a folder of its own
-        return uploadSource(files::toPath(sessions::textArg(args, "ref")), setup_.home);
-    return sourceFor(sessions::textArg(args, "ref"), setup_.bundle, setup_.home);
+        return uploadSource(files::toPath(sessions::textArg(args, "ref")), setup_.home,
+                            setup_.cacheFolder ? std::optional(files::toPath(*setup_.cacheFolder)) : std::nullopt);
+    return sourceFor(sessions::textArg(args, "ref"), setup_.bundle, setup_.home, setup_.cacheFolder);
 }
 
 Task<OperationResult> PresetsPart::runLoad(OperationContext& op, std::shared_ptr<const LoadPlan> plan, LoadOptions o) {
@@ -72,12 +73,18 @@ Task<OperationResult> PresetsPart::runLoad(OperationContext& op, std::shared_ptr
 
 std::variant<std::shared_ptr<const LoadPlan>, std::string> PresetsPart::readFor(
     const std::string& ref, const std::optional<machine::ModelId>& forModel) const {
-    const auto source = sourceFor(ref, setup_.bundle, setup_.home);
+    const auto source = sourceFor(ref, setup_.bundle, setup_.home, setup_.cacheFolder);
     auto read = readPreset(*source, readSetup());
     if (auto* e = std::get_if<ReadError>(&read)) return e->message;
     auto plan = std::make_shared<const LoadPlan>(std::get<LoadPlan>(std::move(read)));
     if (forModel && plan->model != *forModel) return source->name() + " is a preset for the " + plan->model.value;
     return plan;
+}
+
+std::optional<std::string> PresetsPart::checkStartup(const std::string& ref, const machine::ModelId& model) const {
+    auto read = readFor(ref, model);
+    if (auto* why = std::get_if<std::string>(&read)) return *why;
+    return std::nullopt;
 }
 
 Task<startup::PresetLoad> PresetsPart::load(std::string ref, std::optional<machine::ModelId> forModel,
@@ -231,6 +238,7 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
         std::vector<std::string> left;
         auto reply = std::make_shared<PresetListReply>();
         reply->entries = presetList(*setup_.bundle, *setup_.rules, *setup_.catalogue, &left);
+        reply->cacheFolder = setup_.cacheFolder.value_or(std::string());
         for (auto& l : left) c.appLog().warn(l);   // the entries left out
         return sessions::replyGiven(std::move(reply));
     });

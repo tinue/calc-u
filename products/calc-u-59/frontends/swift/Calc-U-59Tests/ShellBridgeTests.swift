@@ -34,7 +34,7 @@ final class ShellBridgeTests: XCTestCase {
         let more = bar.first { $0.kind == .more }
         XCTAssertEqual(more?.choices.filter { $0.kind != .separator }.map(\.itemID),
                        ["heading-file", "load-preset", "examples", "arm-card", "arm-fresh-card", "settings",
-                        "heading-machine", "model", "peripherals", "reset", "cold-boot", "resume", "heading-help", "help"])
+                        "heading-machine", "model", "peripherals", "reset", "cold-boot", "resume", "heading-help", "help", "show-app-log"])
     }
 
     /// An entry that is not available now is disabled, with its reason.
@@ -86,7 +86,11 @@ final class ShellBridgeTests: XCTestCase {
         let t = try started()
         XCTAssertTrue(TestSession.until(5) { !t.session.shell.settingsDialog.isEmpty })
         let titles = t.session.shell.settingsDialog.map(\.title)
-        XCTAssertEqual(titles, ["General", "Startup presets", "Display", "Keyboard", "Layout", "Tracing"])
+        XCTAssertEqual(titles, ["General", "Startup presets", "Display", "Keyboard", "Layout", "Tracing", "App log"])
+        // Each startup preset row ends with "Choose…" (the file importer).
+        let presets = t.session.shell.settingsDialog.first { $0.title == "Startup presets" }?.rows ?? []
+        XCTAssertFalse(presets.isEmpty)
+        XCTAssertTrue(presets.allSatisfy { $0.chooseLabel == "Choose…" })
         XCTAssertEqual(t.session.shell.setting("display", "led-style"), "modernized")
         t.session.shell.setSetting("display", "led-style", value: "classic")
         XCTAssertTrue(TestSession.until(5) { t.session.shell.setting("display", "led-style") == "classic" })

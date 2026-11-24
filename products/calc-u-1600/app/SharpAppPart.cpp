@@ -133,6 +133,7 @@ calcu::parts::LibraryPartsSetup SharpAppPart::librarySetup() {
     s.fileKinds = {&m_basicKind, &m_codeKind};   // BASIC first
     s.openLimits = openLimits();
     s.uploadFolder = m_options.uploadFolder;
+    s.cacheFolder = m_options.cacheFolder;
     s.controlRules = &m_controlRules;
     return s;
 }

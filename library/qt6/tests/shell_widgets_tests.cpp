@@ -337,9 +337,15 @@ TEST(startup_preset_row_on_widgets) {
     row->activated(row->count() - 1);   // Choose…
     w.step();
     CHECK_EQ(w.fileAsks.size(), std::size_t{1});
-    CHECK_EQ(w.file.text("preset", "Model-A"), w.home.str() + "/own.test");
+    // Sent to be checked first (opening's OpenPart sets it); the row shows what is set.
+    CHECK_EQ(w.part.count("choose-startup-preset"), 1);
+    CHECK(w.part.sent.back().args == sessions::Value::object({{"model", "Model-A"}, {"ref", w.home.str() + "/own.test"}}));
+    CHECK(row->currentText() == QStringLiteral("None"));
+    // As set: shown with ~ for home.
+    w.command("set-setting", sessions::Value::object({{"section", "preset"}, {"key", "Model-A"}, {"value", w.home.str() + "/own.test"}}));
+    w.step();
     row = d->findChild<QComboBox*>(QString::fromStdString(names::setting("preset", "Model-A")));
-    CHECK(row->currentText() == QStringLiteral("~/own.test"));   // shown as set
+    CHECK(row->currentText() == QStringLiteral("~/own.test"));
 }
 
 TEST(folder_row_on_widgets) {

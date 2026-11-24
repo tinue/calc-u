@@ -112,7 +112,7 @@ test('the settings dialog', async ({ page }) => {
     const s = await topic(page, 'settings');
     return s.rows.find((r) => r.key === 'model' && r.section === 'startup').value;
   }).toBe('test-dot');   // applied and written at once
-  await expect(el(page, 'setting-preset-test-seg').locator('option')).toHaveText(['None']);
+  await expect(el(page, 'setting-preset-test-seg').locator('option')).toHaveText(['None', 'Choose…']);
   await el(page, 'settings-close').click();
   await expect(d).toHaveCount(0);
 });

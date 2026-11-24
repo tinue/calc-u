@@ -5,6 +5,7 @@
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "TestProductMachines.hpp"
+#include "formats/Png.hpp"
 #include "paper/PaperPart.hpp"
 #include "paper/Picture.hpp"
 #include "peripherals/PeripheralsPart.hpp"
@@ -19,6 +20,7 @@
 #include <QClipboard>
 #include <QElapsedTimer>
 #include <QImage>
+#include <QImageReader>
 #include <QLabel>
 #include <QMimeData>
 #include <QPlainTextEdit>
@@ -385,6 +387,30 @@ TEST(paper_copy_puts_image_and_text_on_clipboard) {
     CHECK(onClipboard.answer(ServiceAsk{2, HostService::ClipboardText, Value::object({{"text", "abc"}})}).given);
     const ServiceAnswer read = onClipboard.answer(ServiceAsk{3, HostService::ClipboardText, Value::object({})});
     CHECK(read.given && read.result.find("text") && *read.result.find("text")->string() == "abc");
+}
+
+TEST(clipboard_takes_the_largest_paper_picture) {
+    // The library's largest picture, white, under the 128 MB allocation
+    // limit of older Qt versions (newer ones have 256 MB), which is below
+    // its 4 bytes a pixel.
+    const int limit = QImageReader::allocationLimit();
+    QImageReader::setAllocationLimit(128);
+    const int w = paper::kMaxPictureSide;
+    const int h = static_cast<int>(paper::kMaxPicturePixels / w);
+    formats::PngWriter png(w, h, formats::pixelsPerMetre(300));
+    qt6::ClipboardService clip;
+    std::vector<std::unique_ptr<QMimeData>> entries;
+    clip.setSink([&](QMimeData* m) { entries.emplace_back(m); });
+    const ServiceAnswer a =
+        clip.answer(ServiceAsk{1, HostService::ClipboardImage, Value::object({{"bytes", png.finish()}, {"dotsPerInch", 300.0}})});
+    CHECK(a.given);
+    CHECK_EQ(entries.size(), std::size_t(1));
+    if (entries.size() == 1) {
+        const QImage img = qvariant_cast<QImage>(entries.front()->imageData());
+        CHECK_EQ(img.width(), w);
+        CHECK_EQ(img.height(), h);
+    }
+    QImageReader::setAllocationLimit(limit);
 }
 
 TEST(paper_cut_empties_and_disables) {

@@ -2,6 +2,8 @@
 #include "EmulatorController.hpp"
 #include "TIChrome.hpp"
 #include "TIFileKinds.hpp"
+#include "Version.h"
+#include "qt6/AppLogSink.hpp"
 #include "qt6/ChromeStyle.hpp"
 #include "qt6/FileOpening.hpp"
 #include "qt6/MacHost.hpp"
@@ -68,6 +70,7 @@ int runPacingProbe(QApplication& app, std::uint16_t port, double seconds) {
 } // namespace
 
 int main(int argc, char* argv[]) {
+    calcu::qt6::installAppLog("Calc-U-59", APP_VERSION, APP_BUILD_ID, argc, argv);
 #ifdef __APPLE__
     calcu::qt6::macDisableWindowRestoration(); // the app restores nothing: no reopen prompt
     calcu::qt6::macDisablePressAndHold();      // held letters stay held keys

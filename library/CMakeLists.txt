@@ -5,7 +5,7 @@
 # The C++ areas, once: their sources, their tests (<area>/tests/*.cpp) and the
 # tests' include folders all come from this list. (web/ is the Web shell's,
 # harness/cli/ and harness/attach/ are added below.)
-set(CALCU_LIBRARY_AREAS machine files settings pacing sessions peripherals roms formats control startup typing presets paper debugger media opening parts harness shell)
+set(CALCU_LIBRARY_AREAS applog machine files settings pacing sessions peripherals roms formats control startup typing presets paper debugger media opening parts harness shell)
 set(CALCU_LIBRARY_SOURCES "")
 foreach(area ${CALCU_LIBRARY_AREAS})
   file(GLOB area_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/*.cpp)
@@ -53,6 +53,21 @@ if(EMSCRIPTEN)
   list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/shell/SessionThread.cpp)
 endif()
 add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
+# A development build starts the app log at info, a release build at warn
+# (applog/AppLogLevel.cpp). Native: any build type but the release ones; the
+# Web engine is always built as Release, so there it follows the test aids,
+# which `--release` turns off.
+if(EMSCRIPTEN)
+  set(CALCU_DEV_BUILD_DEFAULT ${CALCU_WEB_TEST_AIDS})
+elseif(CMAKE_BUILD_TYPE MATCHES "^(Release|MinSizeRel|RelWithDebInfo)$")
+  set(CALCU_DEV_BUILD_DEFAULT OFF)
+else()
+  set(CALCU_DEV_BUILD_DEFAULT ON)
+endif()
+option(CALCU_DEV_BUILD "A development build: the app log starts at info" ${CALCU_DEV_BUILD_DEFAULT})
+if(CALCU_DEV_BUILD)
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/applog/AppLogLevel.cpp PROPERTIES COMPILE_DEFINITIONS CALCU_DEV_BUILD=1)
+endif()
 # The paper picture gives the same pixels on every
 # platform; no fused multiply-add (MSVC's /fp:precise, its default, keeps
 # them apart already).

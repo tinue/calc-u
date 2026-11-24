@@ -165,9 +165,6 @@ void Shell::message(const sessions::Message& m) {
                 if (p) noticeQueue_.push(shell::read::text(p->toValue(), "sentence"));
             if (!s->appended.empty()) QTimer::singleShot(0, this, [this] { showNotice(); });
         }
-        if (s->topic == sessions::kLogTopic && options_.logToPlatform)   // no view of its own
-            for (const auto& p : s->appended)
-                if (p) qInfo().noquote() << q(shell::read::text(p->toValue(), "text"));
     }
     if (const auto* s = std::get_if<sessions::StateMessage>(&m); s && s->topic == options_.names.busy) {
         const shell::Busy b = shell::busyOf(s->state ? s->state->toValue() : sessions::Value());

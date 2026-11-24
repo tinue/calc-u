@@ -29,6 +29,15 @@ std::string settingsBaseFor(HostOs os, const EnvLookup& env, const std::string& 
 // No other place is searched.
 std::string settingsFilePath(const ProductDecl& product, const HostDirs& dirs);
 
+// The app log's file, <Product>.log:
+//   macOS    <home>/Library/Logs/<Product>/ (Console.app lists it)
+//   iOS      `passedFolder`/<Product>/ (the sandbox's Library/Logs)
+//   Windows  %LOCALAPPDATA%\<Product>\ (<home>\AppData\Local when it is not set)
+//   Linux    $XDG_STATE_HOME/<Product>/, or <home>/.local/state/<Product>/
+//   Web      none (""): the page writes the browser's console
+std::string appLogFilePathFor(HostOs os, const EnvLookup& env, const std::string& home, const std::string& productName,
+                              const std::string& passedFolder = {});
+
 // `base` and `name` joined with the separator `base` already uses ('\'
 // for a path that has '\' and no '/', else '/').
 std::string joinPath(const std::string& base, const std::string& name);

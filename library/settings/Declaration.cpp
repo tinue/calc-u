@@ -143,6 +143,12 @@ KeyDecl traceLocation() {
     d.choices = {"app-support", "icloud"};
     return d;
 }
+KeyDecl appLogLevel() {
+    KeyDecl d = key("app-log", "level", ValueKind::Choice, "default",
+                    "How much the app log keeps: default (warn; info in a development build), error, warn, info or debug.");
+    d.choices = {"default", "error", "warn", "info", "debug"};
+    return d;
+}
 KeyDecl serialLinkFolder() {
     return key("serial", "link-folder", ValueKind::Path, "", "The folder for serial links; empty: the save folder.");
 }

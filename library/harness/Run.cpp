@@ -152,11 +152,31 @@ std::string RunSetup::scrub(std::string s) const {
 
 // ── Server ──────────────────────────────────────────────────────────────
 
+namespace {
+// The run's app log: each line as "app-log <level>: <text>" to the run's
+// output for it (the CLI: standard error), so replies stay on their own.
+class LinesAppLog final : public applog::AppLog {
+public:
+    LinesAppLog(applog::AppLogLevel l, std::function<void(const std::string&)> out)
+        : AppLog(l), out_(std::move(out)) {}
+
+protected:
+    void put(applog::AppLogLevel l, std::string_view text) override {
+        if (out_) out_("app-log " + std::string(applog::appLogLevelName(l)) + ": " + std::string(text) + "\n");
+    }
+
+private:
+    std::function<void(const std::string&)> out_;
+};
+} // namespace
+
 std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions& options, std::string* error) {
     std::unique_ptr<Server> s(new Server());
     s->product_ = &product;
+    s->appLog_ = std::make_unique<LinesAppLog>(options.appLogLevel, options.appLogOut);
     s->setup_ = RunSetup::make(options, product.settingsDecl(), error);
     if (!s->setup_) return nullptr;
+    if (!s->setup_->settings().problem().empty()) s->appLog_->warn("Settings: " + s->setup_->settings().problem());
     // The product's app layer on the run's settings and folders;
     // the ROM full set, or no start.
     const roms::LookupResult roms = product.prepare(*s->setup_);
@@ -176,6 +196,7 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     setup.hostTime = s->setup_->hostTime();
     setup.clockFollowsHost = s->setup_->clockFollowsHost();
     setup.hosting = sessions::Hosting::VirtualTime;
+    setup.appLog = s->appLog_.get();
     // The one order (LibraryParts): the control part, the run's state part
     // among the host's, the library's and the product's parts.
     setup.parts = product.sessionParts({s->state_.get()});

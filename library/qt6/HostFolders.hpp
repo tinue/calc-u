@@ -19,8 +19,8 @@
 // product passes (empty: ~/Library/Application Support). A run of its own
 // (tests, screenshot runs) names its folders before the first use.
 // The settings file is opened once, at the first use; a file that cannot
-// be read goes to the log as "Settings: <problem>" and the app runs on the
-// defaults. The library's settings places are over it. Each
+// be read goes to the app log as "Settings: <problem>" (shell::HostSession)
+// and the app runs on the defaults. The library's settings places are over it. Each
 // product keeps one HostFolders for its run (its AppPaths); on the GUI
 // thread.
 

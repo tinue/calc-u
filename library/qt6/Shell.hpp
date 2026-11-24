@@ -44,7 +44,6 @@ class ShellNotices;
 class ShellSettingsDialog;
 
 struct ShellOptions {
-    bool logToPlatform = true;   // each line of the log to qInfo()
     shell::Traits traits{true, true, false};
     shell::InputNames names{};
     std::function<void()> copyScreen;   // Edit ▸ Copy Screen, where the product has it

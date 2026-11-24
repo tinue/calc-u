@@ -74,9 +74,30 @@ public:
     std::string pendingNotice;
 };
 
+// The app log of the worker: each line to the page, which writes it to the
+// browser's console and keeps the last ones for Help ▸ Show App Log.
+class WorkerHost::PageLog final : public applog::AppLog {
+public:
+    explicit PageLog(val post) : post_(std::move(post)) {}
+
+protected:
+    void put(applog::AppLogLevel l, std::string_view text) override {
+        val m = val::object();
+        m.set("kind", "app-log");
+        m.set("level", std::string(applog::appLogLevelName(l)));
+        m.set("text", std::string(text));
+        post_(m, val::array());
+    }
+
+private:
+    val post_;
+};
+
 WorkerHost::WorkerHost(const AppSessionFactory& factory, val start)
-    : part_(std::make_unique<ShellPart>()), post_(start["post"]) {
+    : log_(std::make_unique<PageLog>(start["post"])), part_(std::make_unique<ShellPart>()), post_(start["post"]) {
     start_.product = text(start, "product");
+    start_.appLog = log_.get();
+    start_.appLogLevel = applog::appLogLevelNamed(text(start, "appLogLevel"));
     const val dirs = start["dirs"];
     start_.dirs.frontend = settings::FrontendKind::Web;
     start_.dirs.settingsBase = text(dirs, "settingsBase");
@@ -97,7 +118,7 @@ WorkerHost::WorkerHost(const AppSessionFactory& factory, val start)
         failure_ = "The session could not be built.";
     }
     if (failure_.empty() && !session_) failure_ = "The session could not be built.";
-    if (!failure_.empty()) return;
+    if (!failure_.empty()) return;   // the page logs the failure (shell.js failWith)
     part_->storage->set(std::make_shared<StorageState>(start_.storage, start_.storageSentence));
     part_->start->set(std::make_shared<StartState>("running", ""));
     part_->pendingNotice = start_.storageSentence;

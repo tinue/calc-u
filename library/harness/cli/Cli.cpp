@@ -26,6 +26,8 @@ std::string usageText(const std::vector<std::unique_ptr<HarnessProduct>>& produc
         "  --settings <file>         use this settings file (else the defaults; nothing read or written)\n"
         "  --save-folder <dir>       use this save folder (else an empty one, removed at the end)\n"
         "  --output-folder <dir>     traces and screenshots go here (else the save folder)\n"
+        "  --app-log-level <level>   error, warn (the default), info or debug: the app log's\n"
+        "                            lines at that level and above go to standard error\n"
         "  --clock <YYYY-MM-DDThh:mm:ss> | host\n"
         "                            the date and time handed to a real-time clock\n"
         "                            (else 2000-01-01T00:00:00)\n"
@@ -83,6 +85,15 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
             if (!(options.saveFolder = value("--save-folder"))) return 2;
         } else if (a == "--output-folder") {
             if (!(options.outputFolder = value("--output-folder"))) return 2;
+        } else if (a == "--app-log-level") {
+            auto v = value("--app-log-level");
+            if (!v) return 2;
+            const auto l = applog::appLogLevelNamed(*v);
+            if (!l) {
+                io.err("--app-log-level takes error, warn, info or debug: " + *v + "\n");
+                return 2;
+            }
+            options.appLogLevel = *l;
         } else if (a == "--clock") {
             auto v = value("--clock");
             if (!v) return 2;
@@ -140,6 +151,7 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
         }
         wanted.emplace_back(found, v);
     }
+    options.appLogOut = io.err;
     std::string error;
     std::unique_ptr<Server> server = Server::start(*product, options, &error);   // ROM full set missing: no start
     if (!server) {

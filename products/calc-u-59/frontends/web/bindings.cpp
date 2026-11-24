@@ -80,7 +80,8 @@ calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     host.after = {parts->web.get()};
     host.clock = &calcu::web::wallTimeNow;
     host.hostTime = [] { return std::chrono::system_clock::now(); };
-    host.logSettingsProblem = true;
+    host.appLog = start.appLog;
+    host.appLogLevel = start.appLogLevel;
     cu59::TIAppPart& app = *parts->app;
     host.owned = std::move(parts);
     return {calcu::shell::makeHostSession(app, std::move(host)).session, &cu59::TIWebPart::shellSetup};

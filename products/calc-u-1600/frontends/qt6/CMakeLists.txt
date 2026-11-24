@@ -52,8 +52,8 @@ file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
 # for a bundled target. WIN32 (plain CMake add_executable() keyword,
 # passed through by qt_add_executable): link with the Windows GUI
 # subsystem instead of the console one, so no terminal window opens
-# alongside the app -- see app/AppLogging.cpp for where qDebug/qWarning/
-# etc. go instead now that there's no console to print them to.
+# alongside the app; qDebug/qWarning and the app log go to the app log's
+# file (library/qt6/AppLogSink).
 # The window's sources; the app adds main.cpp, CalcU1600QtTests its tests.
 set(CALCU1600_QT_SOURCES
   app/MainWindow.cpp
@@ -64,7 +64,6 @@ set(CALCU1600_QT_SOURCES
   app/MediaControls.cpp
   app/Ce158PrinterWidget.cpp
   app/AppPaths.cpp
-  app/AppLogging.cpp
   app/MachineCodeLoadDialog.cpp
   app/AudioOutput.cpp
   app/debug/DapSocket.cpp

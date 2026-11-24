@@ -1,4 +1,5 @@
 #pragma once
+#include "applog/AppLog.hpp"
 #include "pacing/WallClock.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/SessionPart.hpp"
@@ -24,8 +25,8 @@
 // keeps the places over it; makeHostSession() makes the shell's SettingsPart
 // over them, puts it after the host's own parts in the product's
 // sessionParts() (the one order of parts::LibraryParts), lets the session
-// own what the host made, writes "Settings: <problem>" into the session's log
-// where the host says so and sends the startup's `start` where the host says so.
+// own what the host made, writes "Settings: <problem>" into the host's app log,
+// sets the app log's level and sends the startup's `start` where the host says so.
 // Single-threaded: on the session's thread.
 
 namespace calcu::shell {
@@ -69,10 +70,12 @@ struct HostSessionSetup {
     // places, the Web part): the session owns it and lets it go first, after
     // SettingsPart (AppSessionSetup::owned).
     std::shared_ptr<void> owned;
-    // The Web engine: "Settings: <problem>" into the session's log once the session
-    // is made (the Qt6 hosts write it to their own log when they open the
-    // file; the Swift bridge hands it to the app).
-    bool logSettingsProblem = false;
+    // The host's app log (SessionContext::appLog): it takes "Settings:
+    // <problem>" once the session is made and follows `[app-log] level`,
+    // also when the setting changes; null: no app log.
+    applog::AppLog* appLog = nullptr;
+    // The level for this run (a command line's): the setting is then not followed.
+    std::optional<applog::AppLogLevel> appLogLevel;
     // The startup's `start`, sent once when the session is made (the Swift bridge,
     // the tests); the Qt6 hosts send it after their timer starts, the Web page
     // itself.

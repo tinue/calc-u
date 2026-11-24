@@ -1,4 +1,5 @@
 #pragma once
+#include "applog/AppLog.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
@@ -39,6 +40,11 @@ struct RunOptions {
     std::optional<std::string> outputFolder;    // traces and screenshots; else the save folder
     ClockMode clock = ClockMode::Fixed;         // 2000-01-01T00:00:00 unless named
     LocalDateTime given;                        // ClockMode::Given
+    // The app log (how the run went, not the calculator's `log`): its lines
+    // at this level and above go to `appLogOut` ("app-log warn: <text>");
+    // without `appLogOut` they are dropped.
+    applog::AppLogLevel appLogLevel = applog::AppLogLevel::Warn;   // --app-log-level
+    std::function<void(const std::string&)> appLogOut;
 };
 
 // The run folder, the settings and the clock.
@@ -127,6 +133,7 @@ private:
     HarnessProduct* product_ = nullptr;
     std::unique_ptr<RunSetup> setup_;
     std::shared_ptr<int> clockReads_ = std::make_shared<int>(0);
+    std::unique_ptr<applog::AppLog> appLog_;   // before the session, which writes to it
     std::unique_ptr<MachineStatePart> state_;
     std::unique_ptr<sessions::AppSession> session_;
     std::unique_ptr<HarnessHost> host_;

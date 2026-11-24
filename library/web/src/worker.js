@@ -173,6 +173,8 @@
       storage,
       // `?bare=1` on the worker's URL: a fresh install starts bare (the demo and test pages).
       bare: /[?&]bare=1\b/.test(self.location.search),
+      // `?app-log-level=` (the page's, shell.js): the app log's level for this run.
+      appLogLevel: (/[?&]app-log-level=([a-z]+)/.exec(self.location.search) || [])[1] || "",
       post: (message, transfer) => postMessage(message, transfer),
     });
     const why = host.failure();

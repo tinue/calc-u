@@ -100,6 +100,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     void notice(std::string sentence) override { notices->append(std::make_shared<Notice>(std::move(sentence))); }
     void log(std::string line) override { logTopic->append(std::make_shared<LogLine>(std::move(line))); }
     LogLevel logLevel() const override { return level; }
+    applog::AppLog& appLog() override { return setup.appLog ? *setup.appLog : applog::nullAppLog(); }
     bool busy() const override { return running != nullptr; }
     bool hostOffers(HostService s) const override { return offerer(s) != nullptr; }
     std::optional<CallId> askHost(HostService, Value, std::function<void(const ServiceAnswer&)>) override;

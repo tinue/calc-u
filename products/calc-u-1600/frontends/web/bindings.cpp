@@ -51,7 +51,8 @@ calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     host.before = {start.shellPart};
     host.after = {parts->web.get()};
     host.clock = &calcu::web::wallTimeNow;
-    host.logSettingsProblem = true;
+    host.appLog = start.appLog;
+    host.appLogLevel = start.appLogLevel;
     cu1600::SharpAppPart& part = *parts->part;
     const cu1600::SharpWebPart& web = *parts->web;   // the session owns it
     host.owned = std::move(parts);

@@ -3,7 +3,9 @@
 #include "../app/KeyIds.hpp"
 #include "../app/TIAppPart.hpp"
 #include "../app/Settings.hpp"
+#include "applog/AppLog.hpp"
 #include "presets/PresetsPart.hpp"
+#include "shell/HostSession.hpp"
 #include "startup/StartupPart.hpp"
 #include "typing/TypingTopics.hpp"
 #include "Pump.hpp"
@@ -96,6 +98,7 @@ struct SessionRig {
     calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     calcu::sessions::test::TestFrontend fe;
     std::unique_ptr<calcu::settings::Paths> paths;
+    calcu::applog::MemoryAppLog appLog;   // every level
     calcu::sessions::ProductSession<cu59::TIAppPart> app;
     calcu::sessions::ListenerId me = 0;
 
@@ -115,8 +118,15 @@ struct SessionRig {
         cu59::TIAppSetup s = appSetup(file, o.model, *paths);
         if (!o.examplesFolder.empty()) s.examplesFolder = o.examplesFolder;
         s.files = std::move(o.files);
-        app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u,
-                                   std::move(o.before), std::move(o.after), o.start);
+        calcu::shell::HostSessionSetup host;
+        host.clock = [this] { return now += std::chrono::milliseconds(1); };
+        host.jitterSeed = 59u;
+        host.before = std::move(o.before);
+        host.after = std::move(o.after);
+        host.start = o.start;
+        host.appLog = &appLog;
+        host.appLogLevel = calcu::applog::AppLogLevel::Debug;
+        app = cu59::makeAppSession(std::move(s), std::move(host));
         me = session().listen(fe, std::move(o.services));
         // The library's start (makeAppSession sent it): until the machine is ready for keys.
         if (o.start) until([this] { return session().machineSession().machine() && !session().context().busy(); });

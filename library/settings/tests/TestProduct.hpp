@@ -47,11 +47,9 @@ inline const ProductDecl& testProduct() {
             family::serialLinkFolder(),
             family::openFolder("presets"),
             family::openFolder("programs"),
-            family::windowNumber("width", 900),
-            family::windowFlag(kPaperOwnWindowKey, "The paper in its own window."),
         };
-        for (KeyDecl& k : family::windowPlace(kPaperWindowPrefix, kPaperWindowWidth, kPaperWindowHeight))
-            d.keys.push_back(std::move(k));
+        for (KeyDecl& k : family::windowPlace("", 900, 700)) d.keys.push_back(std::move(k));
+        for (KeyDecl& k : family::paperWindow()) d.keys.push_back(std::move(k));
         KeyDecl flag = testKey("test", "flag", ValueKind::Boolean, "false");
         flag.help = "A boolean.";
         KeyDecl style = testKey("test", "style", ValueKind::Choice, "one", {"one", "two"});

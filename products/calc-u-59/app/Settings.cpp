@@ -1,6 +1,4 @@
 #include "Settings.hpp"
-#include <charconv>
-#include <system_error>
 
 namespace cu59::settings {
 
@@ -16,17 +14,6 @@ cs::KeyDecl choice(const char* section, const char* key, std::vector<std::string
     d.defaultValue = choices.front();
     d.choices = std::move(choices);
     d.help = std::move(help);
-    return d;
-}
-
-// A [window] number without a default: empty until the app writes it.
-cs::KeyDecl windowOptional(const char* key, const char* what) {
-    cs::KeyDecl d;
-    d.section = "window";
-    d.key = key;
-    d.kind = cs::ValueKind::Integer;
-    d.writtenByApp = true;
-    d.help = std::string("The ") + what + " (written by the app; Qt6).";
     return d;
 }
 
@@ -56,34 +43,13 @@ cs::ProductDecl makeDecl() {
         d.keys.push_back(cs::family::openFolder(openFolderKind(f)));
     for (cs::KeyDecl& k : cs::family::windowPlace("", WindowState{}.place.width, WindowState{}.place.height))
         d.keys.push_back(std::move(k));
-    d.keys.push_back(windowOptional("calculator-width", "calculator panel's width"));
-    d.keys.push_back(windowOptional("printer-width", "printer panel's width"));
-    d.keys.push_back(windowOptional("debug-width", "debug panel's width"));
-    cs::KeyDecl debugPage;
-    debugPage.section = "window";
-    debugPage.key = "portrait-debug-page";
-    debugPage.kind = cs::ValueKind::Boolean;
-    debugPage.defaultValue = "false";
-    debugPage.writtenByApp = true;
-    debugPage.help = "The debugger as a third page in portrait: true or false (Swift on iOS).";
-    d.keys.push_back(debugPage);
-    d.keys.push_back(cs::family::windowFlag(cs::kPaperOwnWindowKey,
-                                            "The printer's paper in a window of its own: true or false (Qt6)."));
-    for (cs::KeyDecl& k : cs::family::windowPlace(cs::kPaperWindowPrefix, cs::kPaperWindowWidth, cs::kPaperWindowHeight))
-        d.keys.push_back(std::move(k));
+    d.keys.push_back(cs::family::windowOptional("calculator-width", "The calculator panel's width (written by the app; Qt6)."));
+    d.keys.push_back(cs::family::windowOptional("printer-width", "The printer panel's width (written by the app; Qt6)."));
+    d.keys.push_back(cs::family::windowOptional("debug-width", "The debug panel's width (written by the app; Qt6)."));
+    d.keys.push_back(cs::family::windowFlag("portrait-debug-page",
+                                            "The debugger as a third page in portrait: true or false (Swift on iOS)."));
+    for (cs::KeyDecl& k : cs::family::paperWindow()) d.keys.push_back(std::move(k));
     return d;
-}
-
-std::optional<long> number(const cs::SettingsFile& f, const char* key) {
-    const std::string v = f.text("window", key);
-    long out = 0;
-    auto [p, ec] = std::from_chars(v.data(), v.data() + v.size(), out);
-    if (v.empty() || ec != std::errc() || p != v.data() + v.size()) return std::nullopt;
-    return out;
-}
-
-void setNumber(cs::SettingsFile& f, const char* key, std::optional<long> v) {
-    f.set("window", key, v ? std::to_string(*v) : std::string());
 }
 
 } // namespace
@@ -104,17 +70,17 @@ const char* openFolderKind(OpenFolder folder) {
 WindowState Settings::windowState() const {
     WindowState w;
     w.place = cs::windowPlace(m_file, "");
-    w.calculatorWidth = number(m_file, "calculator-width");
-    w.printerWidth = number(m_file, "printer-width");
-    w.debugWidth = number(m_file, "debug-width");
+    w.calculatorWidth = cs::windowNumber(m_file, "calculator-width");
+    w.printerWidth = cs::windowNumber(m_file, "printer-width");
+    w.debugWidth = cs::windowNumber(m_file, "debug-width");
     return w;
 }
 
 void Settings::setWindowState(const WindowState& w) {
     cs::setWindowPlace(m_file, "", w.place);
-    setNumber(m_file, "calculator-width", w.calculatorWidth);
-    setNumber(m_file, "printer-width", w.printerWidth);
-    setNumber(m_file, "debug-width", w.debugWidth);
+    cs::setWindowNumber(m_file, "calculator-width", w.calculatorWidth);
+    cs::setWindowNumber(m_file, "printer-width", w.printerWidth);
+    cs::setWindowNumber(m_file, "debug-width", w.debugWidth);
 }
 
 } // namespace cu59::settings

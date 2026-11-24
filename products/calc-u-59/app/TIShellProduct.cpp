@@ -87,7 +87,6 @@ shell::DialogSpec swiftSpec(const std::string& versionLine) {
     shell::DialogSection tracing{"Tracing", {location}};
     tracing.rows.push_back({W::Integer, "trace", "max-file-size-mb", "Maximum file size (MB)"});
     spec.sections.push_back(std::move(tracing));
-    shell::appLogSectionLast(spec);
     return spec;
 }
 
@@ -117,7 +116,6 @@ shell::DialogSpec settingsSpec(ShellFrontend f, const std::string& versionLine) 
         feedback.choices = {{"off", "Off"}, {"click", "Click Sound"}};
         spec.sections.push_back({"Keyboard", {feedback}});
     }
-    shell::appLogSectionLast(spec);
     return spec;
 }
 

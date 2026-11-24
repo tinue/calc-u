@@ -22,14 +22,6 @@ std::string windowName(std::string_view prefix) {
     return prefix.empty() ? std::string("window") : std::string(prefix.substr(0, prefix.size() - 1)) + " window";
 }
 
-std::optional<long> number(const SettingsFile& f, const std::string& key) {
-    const std::string v = f.text("window", key);
-    long out = 0;
-    auto [p, ec] = std::from_chars(v.data(), v.data() + v.size(), out);
-    if (v.empty() || ec != std::errc() || p != v.data() + v.size()) return std::nullopt;
-    return out;
-}
-
 } // namespace
 
 namespace family {
@@ -48,16 +40,39 @@ KeyDecl windowFlag(std::string_view key, std::string_view help) {
     return windowKey(std::string(key), ValueKind::Boolean, "false", std::string(help));
 }
 
+KeyDecl windowOptional(std::string_view key, std::string_view help) {
+    return windowKey(std::string(key), ValueKind::Integer, "", std::string(help));
+}
+
+std::vector<KeyDecl> paperWindow() {
+    std::vector<KeyDecl> keys{windowFlag(kPaperOwnWindowKey, "The printer's paper in a window of its own: true or false.")};
+    for (KeyDecl& k : windowPlace(kPaperWindowPrefix, kPaperWindowWidth, kPaperWindowHeight))
+        keys.push_back(std::move(k));
+    return keys;
+}
+
 } // namespace family
+
+std::optional<long> windowNumber(const SettingsFile& f, std::string_view key) {
+    const std::string v = f.text("window", key);
+    long out = 0;
+    auto [p, ec] = std::from_chars(v.data(), v.data() + v.size(), out);
+    if (v.empty() || ec != std::errc() || p != v.data() + v.size()) return std::nullopt;
+    return out;
+}
+
+SettingsFile::WriteResult setWindowNumber(SettingsFile& f, std::string_view key, std::optional<long> v) {
+    return f.set("window", key, v ? std::to_string(*v) : std::string());
+}
 
 WindowPlace windowPlace(const SettingsFile& f, std::string_view prefix) {
     const std::string p(prefix);
     WindowPlace w;
-    w.x = number(f, p + "x");
-    w.y = number(f, p + "y");
+    w.x = windowNumber(f, p + "x");
+    w.y = windowNumber(f, p + "y");
     // text() gives the declared default for a value that is not accepted.
-    w.width = number(f, p + "width").value_or(0);
-    w.height = number(f, p + "height").value_or(0);
+    w.width = windowNumber(f, p + "width").value_or(0);
+    w.height = windowNumber(f, p + "height").value_or(0);
     return w;
 }
 
@@ -65,7 +80,7 @@ SettingsFile::WriteResult setWindowPlace(SettingsFile& f, std::string_view prefi
     const std::string p(prefix);
     SettingsFile::WriteResult r;
     auto set = [&](const std::string& key, std::optional<long> v) {
-        SettingsFile::WriteResult one = f.set("window", key, v ? std::to_string(*v) : std::string());
+        SettingsFile::WriteResult one = setWindowNumber(f, key, v);
         if (!one.ok && r.ok) r = one;
     };
     set(p + "x", w.x);

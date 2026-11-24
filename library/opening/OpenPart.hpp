@@ -44,8 +44,6 @@ struct OpenSetup {
     settings::SettingsFile* settings = nullptr;    // [preset]; null: no choose-startup-preset
 };
 
-inline const sessions::CommandName kChooseStartupPresetCommand{"choose-startup-preset"};
-
 class OpenPart final : public sessions::SessionPart {
 public:
     explicit OpenPart(OpenSetup);

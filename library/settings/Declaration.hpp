@@ -65,7 +65,6 @@ KeyDecl traceLocation();                             // [trace] location = app-s
 KeyDecl appLogLevel();                               // [app-log] level = default
 KeyDecl serialLinkFolder();                          // [serial] link-folder
 KeyDecl openFolder(const std::string& kind);         // [folders] <kind> (app)
-KeyDecl windowNumber(const std::string& key, long defaultValue);  // [window] <key> (app)
 } // namespace family
 
 // Whether `value` is accepted for `decl`; a value that is not counts as

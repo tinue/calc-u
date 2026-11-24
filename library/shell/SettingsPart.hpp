@@ -37,6 +37,11 @@ namespace calcu::shell {
 
 inline const sessions::TopicName kSettingsTopic{"settings"};
 
+// A setting the user changed that did not reach the file: it holds for
+// this run, the user is told so, and the app log has why ("[s] key" as
+// `what`).
+void tellNotSaved(sessions::SessionContext&, std::string_view what, const settings::SettingsFile::WriteResult&);
+
 struct SettingsPartSetup {
     settings::SettingsFile* file = nullptr;     // the product's, on the session's thread (one owner)
     const settings::Paths* paths = nullptr;

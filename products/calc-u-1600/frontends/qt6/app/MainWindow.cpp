@@ -163,7 +163,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     QTimer::singleShot(0, this, [this] { m_controller->attachAudio(m_audio->sink()); });
 
     // The main window's place and normal size as it was closed.
-    calcu::qt6::applyWindowPlace(this, AppSettings::settings().windowPlace());
+    calcu::qt6::applyWindowPlace(this, calcu::settings::windowPlace(AppSettings::settings().file(), ""));
     connect(m_shell->panelArea(), &calcu::qt6::PanelArea::paperOwnWindowChanged, this, [this] { applyPanels(); });
     setFocus();
     setAcceptDrops(true);
@@ -188,7 +188,7 @@ MainWindow::~MainWindow() {
 void MainWindow::start() { m_controller->start(); }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    AppSettings::settings().setWindowPlace(calcu::qt6::windowPlaceOf(this));
+    calcu::settings::setWindowPlace(AppSettings::settings().file(), "", calcu::qt6::windowPlaceOf(this));
     // What a medium still has to save is written when the session closes
     // (MachineController's destructor: AppSession::close()).
     QMainWindow::closeEvent(event);

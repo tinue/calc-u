@@ -62,8 +62,6 @@ public:
     // below the faceplate).
     static constexpr int kDefaultWindowWidth = 900;
     static constexpr int kDefaultWindowHeight = 700;
-    calcu::settings::WindowPlace windowPlace() const { return calcu::settings::windowPlace(m_file, ""); }
-    void setWindowPlace(const calcu::settings::WindowPlace& p) { calcu::settings::setWindowPlace(m_file, "", p); }
 
     // [startup] model -- which model to boot into: "last" (the default)
     // reuses lastUsedModel(), or one of "PC-1500"/"PC-1500A"/"PC-1600"

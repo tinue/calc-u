@@ -23,11 +23,20 @@ namespace family {
 std::vector<KeyDecl> windowPlace(std::string_view prefix, long width, long height);
 // [window] <key> = false (app): a window's flag, such as paper-own-window.
 KeyDecl windowFlag(std::string_view key, std::string_view help);
+// [window] <key> (app): a number without a default, empty until the app writes it.
+KeyDecl windowOptional(std::string_view key, std::string_view help);
+// [window] paper-own-window and the paper window's place (prefix "paper-"),
+// written by every desktop window that gives the paper a window of its own.
+std::vector<KeyDecl> paperWindow();
 } // namespace family
 
 // The place as declared: a size that is not set has its default.
 WindowPlace windowPlace(const SettingsFile&, std::string_view prefix);
 SettingsFile::WriteResult setWindowPlace(SettingsFile&, std::string_view prefix, const WindowPlace&);
+
+// One [window] number: nullopt when it is empty or not a number.
+std::optional<long> windowNumber(const SettingsFile&, std::string_view key);
+SettingsFile::WriteResult setWindowNumber(SettingsFile&, std::string_view key, std::optional<long>);
 
 // [window] paper-own-window: the paper panel in a window of its own
 // (desktop), its place under the prefix "paper-".

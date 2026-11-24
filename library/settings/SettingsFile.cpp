@@ -138,7 +138,7 @@ SettingsFile::WriteResult SettingsFile::set(std::string_view section, std::strin
     if (doc_.get(section, key) == std::optional<std::string>(std::string(value))) return {};
     doc_.set(section, key, value);
     if (outcome_ == Outcome::DefaultsOnly) return {};
-    if (!writable_) return {false, "not saved: " + problem_};
+    if (!writable_) return {false, problem_};
     const std::pair<std::string, std::string> id{lowerAscii(section), lowerAscii(key)};
     if (std::find(pending_.begin(), pending_.end(), id) == pending_.end()) pending_.push_back(id);
     return writePending();
@@ -151,10 +151,10 @@ SettingsFile::WriteResult SettingsFile::writePending() {
     if (const std::optional<std::string> bytes = readWholeFile(path_)) {
         ParseResult parsed = IniDocument::parse(*bytes);
         if (!parsed.doc)
-            return {false, "not saved: " + path_ + " was changed while the product runs and cannot be read now (" +
+            return {false, path_ + " was changed while the product runs and cannot be read now (" +
                                parsed.problem + ")"};
         if (versionOutcome(*parsed.doc) != Outcome::Read)
-            return {false, "not saved: " + path_ + " was changed while the product runs and cannot be read now"};
+            return {false, path_ + " was changed while the product runs and cannot be read now"};
         disk = std::move(*parsed.doc);
         for (const auto& [s, k] : pending_)
             if (const auto v = doc_.get(s, k)) disk.set(s, k, *v);
@@ -163,6 +163,10 @@ SettingsFile::WriteResult SettingsFile::writePending() {
     if (!w.ok) return {false, w.problem};
     pending_.clear();
     return {};
+}
+
+std::string notSavedLine(std::string_view what, const SettingsFile::WriteResult& w) {
+    return "Settings: " + std::string(what) + " not saved: " + w.problem;
 }
 
 } // namespace calcu::settings

@@ -78,7 +78,7 @@ void StartupPart::machineChanged(SessionContext& c) {
     // Once: a write that fails fails the same way on every machine.
     if (!w.ok && setup_.settings.writable() && !lastModelWarned_) {
         lastModelWarned_ = true;
-        c.appLog().warn("Settings: [startup] last-model not saved: " + w.why());
+        c.appLog().warn(settings::notSavedLine("[startup] last-model", w));
     }
 }
 

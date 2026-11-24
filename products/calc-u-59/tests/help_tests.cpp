@@ -19,6 +19,7 @@
 #include "../app/Settings.hpp"
 #include "../core/TICatalogue.hpp"
 #include "settings/Declaration.hpp"
+#include "testing/SettingsKeysFile.hpp"
 
 namespace {
 
@@ -32,53 +33,8 @@ std::string readHelpFile(const char* path) {
     return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 }
 
-// The family's keys by section and name; a section whose names the product
-// gives ([preset] <model>, [folders] <kind>, [window] <key>) by its section.
-struct FamilyKeys {
-    std::set<std::string> fixed;          // "[section] key"
-    std::set<std::string> namedSections;  // "preset", "folders", "window"
-    std::string general(const std::string& section) const {
-        if (section == "preset") return "<model>";
-        if (section == "folders") return "<kind>";
-        return "<key>";
-    }
-};
-
-FamilyKeys familyKeys() {
-    FamilyKeys f;
-    for (const cs::KeyDecl& d : {cs::family::startupModel(), cs::family::startupLastModel(), cs::family::saveFolder(),
-                                 cs::family::cassetteFolder(), cs::family::traceFolder(), cs::family::traceMaxFileSizeMb(),
-                                 cs::family::traceLocation(), cs::family::appLogLevel(), cs::family::serialLinkFolder()})
-        f.fixed.insert("[" + d.section + "] " + d.key);
-    f.namedSections = {cs::family::presetFor("x").section, cs::family::openFolder("x").section,
-                       cs::family::windowNumber("x", 0).section};
-    return f;
-}
-
-// One line per key: `family [section] key` for the family's (a named
-// section once, in its general form), `product [section] key` for the
-// product's own and for the names it gives a named section.
 std::string keysFileText() {
-    const FamilyKeys family = familyKeys();
-    std::ostringstream out;
-    out << "# The settings keys Calc-U-59 declares (app/Settings.cpp, settingsDecl()),\n"
-           "# for tools/help's settings check: each `[section] key` is described\n"
-           "# in chapter 8, the family's in library/help/08-settings.md, the product's in\n"
-           "# help/08-settings.md. Written by CalcU59Tests with CALCU59_HELP_KEYS=1.\n";
-    std::set<std::string> generalDone;
-    for (const cs::KeyDecl& d : cu59::settings::settingsDecl().keys) {
-        const std::string name = "[" + d.section + "] " + d.key;
-        if (family.fixed.count(name)) {
-            out << "family " << name << "\n";
-        } else if (family.namedSections.count(d.section)) {
-            if (generalDone.insert(d.section).second)
-                out << "family [" << d.section << "] " << family.general(d.section) << "\n";
-            out << "product " << name << "\n";
-        } else {
-            out << "product " << name << "\n";
-        }
-    }
-    return out.str();
+    return calcu::testing::settingsKeysFileText(cu59::settings::settingsDecl(), "CalcU59Tests with CALCU59_HELP_KEYS=1");
 }
 
 // The `names:` list of help/help.yaml (one flow sequence on its line).

@@ -6,6 +6,8 @@
 #include "presets/PresetsPart.hpp"
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "shell/Inputs.hpp"
+#include "shell/SettingsPart.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -111,7 +113,7 @@ void OpenPart::attach(sessions::SessionSetup& s) {
         return open(*req, c);
     });
     if (setup_.settings && setup_.presets)
-        s.command(kChooseStartupPresetCommand, [this](const Value& a, SessionContext& c) { return chooseStartup(a, c); });
+        s.command(shell::commands::kChooseStartupPreset, [this](const Value& a, SessionContext& c) { return chooseStartup(a, c); });
     s.request(kWouldTakeRequest, [this](const Value& a, SessionContext&) {
         const Value* size = a.find("size");
         std::optional<std::uint64_t> bytes;
@@ -268,6 +270,12 @@ CommandOutcome OpenPart::chooseStartup(const Value& a, SessionContext& c) {
     const std::string model = sessions::textArg(a, "model");
     settings::SettingsFile& f = *setup_.settings;
     if (!f.product().find("preset", model)) return Refused{"There is no startup preset for " + model + "."};
+    // A choice that does not pass: the refusal, its notice and its app log line.
+    auto notChosen = [&](std::string sentence) -> CommandOutcome {
+        c.notice(sentence);
+        c.appLog().warn("Settings: [preset] " + model + " not chosen: " + sentence);
+        return Refused{std::move(sentence)};
+    };
     std::string ref = sessions::textArg(a, "ref");
     std::string name = files::plainFileName(ref);
     if (const Value* list = a.find("files"); list && list->elements()) {
@@ -276,26 +284,19 @@ CommandOutcome OpenPart::chooseStartup(const Value& a, SessionContext& c) {
         auto req = OpenRequest::fromValue(Value::object({{"files", *list}, {"way", "dialog"}, {"upload", true}}), &why);
         if (!req) return Refused{why};
         const OpenedFile* preset = presetAmong(req->files);
-        if (!preset) return refuse(c, "None of the chosen files is a preset.");
+        if (!preset) return notChosen("None of the chosen files is a preset.");
         name = plainName(*preset);
         keep(req->files, preset, c);
         const auto kept = files::keepInCache(files::toPath(*setup_.cacheFolder), name, preset->bytes->data(),
                                              preset->bytes->size(), &why);
-        if (!kept) return refuse(c, "The preset " + name + " could not be kept in the file cache: " + why + ".");
+        if (!kept) return notChosen("The preset " + name + " could not be kept in the file cache: " + why + ".");
         ref = files::fromPath(*kept);
     }
     if (ref.empty()) return Refused{"choose-startup-preset needs a ref or files."};
-    if (auto why = setup_.presets->checkStartup(ref, machine::ModelId{model})) {
-        const std::string sentence = "The preset " + name + " cannot be the startup preset of the " + model + ": " + *why;
-        c.notice(sentence);
-        c.appLog().warn(sentence);
-        return Refused{sentence};
-    }
+    if (auto why = setup_.presets->checkStartup(ref, machine::ModelId{model}))
+        return notChosen("The preset " + name + " cannot be the startup preset of the " + model + ": " + *why);
     const settings::SettingsFile::WriteResult w = f.set("preset", model, ref);
-    if (!w.ok) {   // kept for this run, as set-setting keeps a value
-        c.notice("The setting holds until you quit; it was " + w.problem + ".");
-        c.appLog().warn("The startup preset of the " + model + " was not saved: " + w.problem + ".");
-    }
+    if (!w.ok) shell::tellNotSaved(c, "[preset] " + model, w);   // kept for this run, as set-setting keeps a value
     return Done{};
 }
 

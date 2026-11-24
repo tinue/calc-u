@@ -86,7 +86,6 @@ public:
     // Whether `ref` would load as the startup preset of `model` (read as
     // the startup load reads it): nullopt, or the sentence why not.
     std::optional<std::string> checkStartup(const std::string& ref, const machine::ModelId& model) const;
-    const std::optional<std::string>& cacheFolder() const { return setup_.cacheFolder; }
 
     // startup::PresetLoader: a read error, another model
     // than forModel or a refused build: CannotLoad, nothing built; a failure

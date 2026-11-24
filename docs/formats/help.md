@@ -120,7 +120,7 @@ the same list.
 ### 1.6 `settings-keys.txt`
 
 The settings keys a product declares, written by a test of the product
-from its settings declaration. Blank lines and `#` lines are ignored.
+from its settings declaration (`library/testing/SettingsKeysFile.hpp`). Blank lines and `#` lines are ignored.
 Each other line:
 
 ```

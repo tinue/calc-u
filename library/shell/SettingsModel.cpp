@@ -40,7 +40,7 @@ std::string withTilde(const std::string& path, const std::string& home) {
 
 DialogSpec familySections(const settings::ProductDecl& decl, const std::vector<std::string>& keysShown) {
     DialogSection general{"General", {}}, presets{"Startup presets", {}}, storage{"Storage", {}},
-        folders{"Folders", {}}, tracing{"Tracing", {}}, appLog{"App log", {}};
+        folders{"Folders", {}}, tracing{"Tracing", {}}, appLog{kAppLogSection, {}};
     for (const auto& d : decl.keys) {
         if (!wanted(keysShown, d)) continue;
         if (d.section == "startup" && d.key == "model")
@@ -68,15 +68,6 @@ DialogSpec familySections(const settings::ProductDecl& decl, const std::vector<s
     for (auto* s : {&general, &presets, &storage, &folders, &tracing, &appLog})
         if (!s->rows.empty()) spec.sections.push_back(std::move(*s));
     return spec;
-}
-
-void appLogSectionLast(DialogSpec& spec) {
-    auto& s = spec.sections;
-    const auto at = std::find_if(s.begin(), s.end(), [](const DialogSection& d) { return d.title == "App log"; });
-    if (at == s.end()) return;
-    DialogSection moved = std::move(*at);
-    s.erase(at);
-    s.push_back(std::move(moved));
 }
 
 std::vector<ShownSection> dialog(const Value& settings, const Value& presetList, const DialogSpec& spec) {
@@ -117,7 +108,7 @@ std::vector<ShownSection> dialog(const Value& settings, const Value& presetList,
                     s.choices.emplace_back(s.value, files::liesIn(s.value, cache) ? files::plainFileName(s.value)
                                                                                  : withTilde(s.value, home));
                 }
-                s.chooseLabel = kChooseStartupPreset;
+                s.chooseLabel = kChooseLabel;
                 break;
             }
             case Widget::Folder:
@@ -143,6 +134,8 @@ std::vector<ShownSection> dialog(const Value& settings, const Value& presetList,
         }
         if (!shown.rows.empty()) out.push_back(std::move(shown));
     }
+    const auto appLog = std::find_if(out.begin(), out.end(), [](const ShownSection& s) { return s.title == kAppLogSection; });
+    if (appLog != out.end()) std::rotate(appLog, appLog + 1, out.end());
     return out;
 }
 

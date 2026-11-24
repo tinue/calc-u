@@ -159,12 +159,6 @@ KeyDecl openFolder(const std::string& kind) {
     d.writtenByApp = true;
     return d;
 }
-KeyDecl windowNumber(const std::string& name, long defaultValue) {
-    KeyDecl d = key("window", name, ValueKind::Integer, std::to_string(defaultValue),
-                    "The window's " + name + " (written by the app).");
-    d.writtenByApp = true;
-    return d;
-}
 
 } // namespace family
 

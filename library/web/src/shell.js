@@ -43,13 +43,17 @@ function createShell({ product, workerUrl, start, services }) {
     state = next;
     listeners.forEach((l) => l());
   };
+  // The reason of a call that cannot be carried out: a failed start, or a stop once running.
+  let unanswered = "The product could not start.";
   // `detail` goes to the app log only. A failure after the start is a stop.
   const failWith = (why, detail) => {
     if (state.start === "failed") return;
-    calcuAppLog("error", `${product} stopped: ${why}${detail ? `\n${detail}` : ""}`);
-    const sentence = state.start === "running" ? CALCU_SENTENCES.stopped : CALCU_SENTENCES.startFailed;
-    set({ ...state, start: "failed", failure: sentence(product, why) });
-    waiters.forEach((w) => w({ done: false, reason: "The product could not start.", value: null }));
+    const stop = state.start === "running";
+    const failure = (stop ? CALCU_SENTENCES.stopped : CALCU_SENTENCES.startFailed)(product, why);
+    calcuAppLog("error", `${failure}${detail ? `\n${detail}` : ""}`);
+    if (stop) unanswered = "The product stopped.";
+    set({ ...state, start: "failed", failure });
+    waiters.forEach((w) => w({ done: false, reason: unanswered, value: null }));
     waiters.clear();
   };
   const post = (message, transfer) => {
@@ -57,7 +61,7 @@ function createShell({ product, workerUrl, start, services }) {
   };
   const call = (kind, name, args) => new Promise((resolve) => {
     if (state.start === "failed" || destroyed) {
-      resolve({ done: false, reason: "The product could not start.", value: null });
+      resolve({ done: false, reason: unanswered, value: null });
       return;
     }
     const id = ++lastCall;

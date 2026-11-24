@@ -49,7 +49,7 @@ tools/  ci/  .github/workflows/
   no threads and no locks; failures are return values. Sessions are
   single-threaded. The one exception are the host adapters at a
   session's edge, which may hold threads and locks and say so in their
-  header: `shell/SessionThread`, `harness/attach/`, the pseudo-terminal
+  header: `shell/SessionThread`, `shell/HostAppLog`, `harness/attach/`, the pseudo-terminal
   link of `peripherals`, and `qt6`.
 - A product's code that implements a library interface stays in the
   product (`core/`, `app/`), in the product's style.

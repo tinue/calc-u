@@ -126,7 +126,7 @@ TEST(missing_entry_left_out_and_logged) {
     RigOptions o;
     o.bundle = &b;
     Rig r(o);
-    r.appLogLines();
+    r.appLog.clear();
     const auto l = listOf(r);
     CHECK(l.size() == 1 && l[0].bundlePath == "examples:good.test-seg");
     // How the app ran: the app log's, at warn; the calculator's log has none.

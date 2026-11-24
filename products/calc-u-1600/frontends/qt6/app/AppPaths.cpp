@@ -6,7 +6,7 @@
 #include <optional>
 
 #include "settings/SettingsFile.hpp"
-#include "qt6/AppLogSink.hpp"
+#include "shell/HostAppLog.hpp"
 #include "qt6/BundledData.hpp"
 #include "qt6/MacHost.hpp"
 
@@ -52,7 +52,7 @@ cu1600::AppPaths& paths() {
         cu1600::AppPaths made(AppSettings::settings(), folders().hostDirs(),
                               chosenBundleDirs() ? *chosenBundleDirs()
                                                  : cu1600::BundleDirs{bundledResourcesDir().toStdString(), {}});
-        made.useAppLog(calcu::qt6::appLog());
+        made.useAppLog(calcu::shell::hostAppLog());
         return made;
     }();
     return p;

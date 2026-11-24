@@ -30,6 +30,13 @@ function calcuAppLogStamp(d) {
     `${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
 }
 
+// A line's text as applog::formatLine writes it, since the page logs before
+// the worker exists: no carriage returns, the lines after the first indented
+// by two spaces, no trailing spaces or line breaks.
+function calcuAppLogBody(text) {
+  return String(text).replace(/\r/g, "").replace(/\n/g, "\n  ").replace(/[ \n]+$/, "");
+}
+
 function calcuErrorText(e) {
   if (e && typeof e === "object" && (e.name || e.message)) {
     const errno = typeof e.errno === "number" ? ` (errno ${e.errno})` : "";   // Emscripten's FS errors
@@ -53,8 +60,8 @@ function calcuAppLog(level, text, fromWorker) {
     postMessage({ kind: "app-log", level: lvl, text: String(text) });
     return;
   }
-  const body = String(text).replace(/\r/g, "").replace(/\n/g, "\n  ");
-  calcuAppLogLines.push(`${calcuAppLogStamp(new Date())} ${lvl.toUpperCase().padEnd(5)} ${body}`);
+  const body = calcuAppLogBody(text);
+  calcuAppLogLines.push(`${calcuAppLogStamp(new Date())} ${lvl.toUpperCase().padEnd(5)} ${body}`.replace(/ +$/, ""));
   if (calcuAppLogLines.length > CALCU_APP_LOG_KEEP) calcuAppLogLines.splice(0, calcuAppLogLines.length - CALCU_APP_LOG_KEEP);
   if (typeof console !== "undefined") {
     const out = console[lvl] || console.log;

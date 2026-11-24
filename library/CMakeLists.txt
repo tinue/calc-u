@@ -47,10 +47,12 @@ else()
   set(CALCU_HAS_PTY OFF)
   list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/PtyHostLink.cpp)
 endif()
-# The native threaded host (shell/SessionThread.cpp): never in a Web build,
-# whose session runs on its Worker.
+# The native threaded host (shell/SessionThread.cpp) and the native app log
+# (shell/HostAppLog.cpp): never in a Web build, whose session runs on its
+# Worker and whose page and worker log on their own.
 if(EMSCRIPTEN)
-  list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/shell/SessionThread.cpp)
+  list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/shell/SessionThread.cpp
+                                         ${CMAKE_CURRENT_SOURCE_DIR}/shell/HostAppLog.cpp)
 endif()
 add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
 # A development build starts the app log at info, a release build at warn

@@ -159,7 +159,7 @@ TEST(medium_log_names_kind_and_name_tag) {
     CHECK(!hasLine(lines, "Saved test disk"));   // how the app ran: the app log's
     CHECK(f.appLog.has(calcu::applog::AppLogLevel::Info, "Saved test disk “Work”."));
     for (const auto& l : lines) CHECK(l.find(f.saveRoot.str()) == std::string::npos);   // never the path
-    for (const auto& l : f.appLogLines())
+    for (const auto& l : f.appLog.take())
         if (l.rfind("Saved ", 0) == 0) CHECK(l.find(f.saveRoot.str()) == std::string::npos);
 }
 

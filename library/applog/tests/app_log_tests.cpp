@@ -63,24 +63,51 @@ TEST(app_log_line_format) {
     CHECK(formatLine(std::chrono::system_clock::now(), AppLogLevel::Debug, "x").find(" DEBUG x") != std::string::npos);
 }
 
+TEST(app_log_level_of_a_run) {
+    CHECK(!appLogLevelOfArguments({"app", "--dap", "5"}).level);
+    CHECK(appLogLevelOfArguments({"app", "--dap", "5"}).problem.empty());
+    CHECK(appLogLevelOfArguments({"app", "--app-log-level", "info", "--app-log-level", "debug"}).level ==
+          AppLogLevel::Debug);
+    const RunAppLogLevel bad = appLogLevelOfArguments({"app", "--app-log-level", "loud"});
+    CHECK(!bad.level);
+    CHECK_EQ(bad.problem, std::string("--app-log-level takes error, warn, info or debug, not loud."));
+    CHECK(!appLogLevelOfArguments({"app", "--app-log-level"}).level);   // no value: none given
+}
+
+TEST(app_log_header_line) {
+    const std::string line =
+        headerLine("Calc-U-59", "3.0.0", "abc1234", {{"OS", "iOS 27.2"}, {"Hardware", ""}, {"CPU", "arm64"}});
+    CHECK_EQ(line, std::string("Calc-U-59 3.0.0 (abc1234), OS: iOS 27.2, CPU: arm64"));
+    CHECK_EQ(headerLine("P", "1", "b", {}), std::string("P 1 (b)"));
+}
+
+TEST(app_log_memory_take) {
+    MemoryAppLog log(AppLogLevel::Debug);
+    log.warn("a");
+    log.debug("b");
+    const std::vector<std::string> expected{"a", "b"};
+    CHECK(log.take() == expected);
+    CHECK(log.lines().empty());
+}
+
 TEST(app_log_file_header_lines_and_mirror) {
     TempFolder dir;
     const std::string path = dir / "Logs/Product/Product.log";   // the folders are made
     std::string mirrored;
     {
-        AppLogFile log(path, "Product 1.0 (abc) macOS", AppLogLevel::Info,
+        AppLogFile log(path, "Product 1.0 (abc) macOS",
                        [&](AppLogLevel, const std::string& line) { mirrored += line + "\n"; });
         CHECK(log.problem().empty());
-        log.info("Saved the module \"A\".");
-        log.debug("left out");
+        log.write(AppLogLevel::Info, "Saved the module \"A\".");
+        log.write(AppLogLevel::Debug, "every line it is given");
     }
     const std::string text = read(path);
     CHECK(text.find("INFO  Product 1.0 (abc) macOS\n") != std::string::npos);
     CHECK(text.find("INFO  Saved the module \"A\".\n") != std::string::npos);
-    CHECK(text.find("left out") == std::string::npos);
+    CHECK(text.find("DEBUG every line it is given\n") != std::string::npos);
     CHECK_EQ(mirrored, text);
     {
-        AppLogFile again(path, "Product 1.0 (abc) macOS", AppLogLevel::Warn);   // a second run appends
+        AppLogFile again(path, "Product 1.0 (abc) macOS");   // a second run appends
     }
     CHECK_EQ(count(read(path), "Product 1.0 (abc) macOS"), std::size_t(2));
 }
@@ -90,12 +117,12 @@ TEST(app_log_file_rotates_at_start) {
     const std::string path = dir / "P.log";
     dir.write("P.1.log", "the oldest run\n");
     dir.write("P.log", std::string(200, 'x') + "\n");
-    { AppLogFile log(path, "run", AppLogLevel::Warn, {}, /*rotateAt=*/100); }
+    { AppLogFile log(path, "run", {}, /*rotateAt=*/100); }
     CHECK(read(dir / "P.1.log").find(std::string(200, 'x')) != std::string::npos);   // the older file replaced
     CHECK(read(dir / "P.1.log").find("the oldest run") == std::string::npos);
     CHECK(read(path).find(std::string(200, 'x')) == std::string::npos);
     CHECK(read(path).find("INFO  run") != std::string::npos);
-    { AppLogFile log(path, "small", AppLogLevel::Warn, {}, /*rotateAt=*/100'000); }
+    { AppLogFile log(path, "small", {}, /*rotateAt=*/100'000); }
     CHECK(read(path).find("INFO  small") != std::string::npos);   // under the limit: appended
     CHECK(read(path).find("INFO  run") != std::string::npos);
 }
@@ -104,9 +131,9 @@ TEST(app_log_file_that_cannot_be_written_says_why_and_still_mirrors) {
     TempFolder dir;
     dir.write("taken", "a file where the log's folder would be");
     int mirrored = 0;
-    AppLogFile log(dir / "taken/P.log", "run", AppLogLevel::Warn, [&](AppLogLevel, const std::string&) { ++mirrored; });
+    AppLogFile log(dir / "taken/P.log", "run", [&](AppLogLevel, const std::string&) { ++mirrored; });
     CHECK(!log.problem().empty());
     CHECK(log.problem().find("cannot be written") != std::string::npos);
-    log.warn("still seen");
+    log.write(AppLogLevel::Warn, "still seen");
     CHECK_EQ(mirrored, 2);   // the header and the line
 }

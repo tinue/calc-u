@@ -153,7 +153,7 @@ Messages of exit status 2:
 | Unknown option | `Unknown option <option>.` and the usage |
 | Option without its value | `<option> needs a value.` |
 | Bad `--clock` | `--clock takes YYYY-MM-DDThh:mm:ss or host: <value>` |
-| Bad `--app-log-level` | `--app-log-level takes error, warn, info or debug: <value>` |
+| Bad `--app-log-level` | `--app-log-level takes error, warn, info or debug, not <value>.` |
 | A product option of another product | `<product name> has no option <option>.` |
 | A `serve` option without `serve` | `<option> is an option of serve.` |
 | A folder | `There is no folder for temporary files: …`, `Cannot make the run folder …`, `Cannot use the save folder <dir>.`, `Cannot use the output folder <dir>.` |

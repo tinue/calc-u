@@ -193,13 +193,6 @@ public:
             if (const auto* l = sessions::payloadAs<sessions::LogLine>(p)) out.push_back(l->text);
         return out;
     }
-    // The app log's lines since the last call, every level.
-    std::vector<std::string> appLogLines() {
-        std::vector<std::string> out;
-        for (const auto& l : appLog.lines()) out.push_back(l.text);
-        appLog.clear();
-        return out;
-    }
     std::vector<std::string> notices() { return fe.noticeSentences(); }
     const sessions::BusyState* busy() const { return fe.busy(); }
     // The ticks of the machine's key events of `key` going down.

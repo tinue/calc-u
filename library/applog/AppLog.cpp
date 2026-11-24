@@ -48,4 +48,12 @@ std::string formatLine(std::chrono::system_clock::time_point at, AppLogLevel lev
     return out;
 }
 
+std::string headerLine(std::string_view product, std::string_view version, std::string_view build,
+                       const std::vector<std::pair<std::string, std::string>>& rows) {
+    std::string out = std::string(product) + ' ' + std::string(version) + " (" + std::string(build) + ')';
+    for (const auto& [label, value] : rows)
+        if (!value.empty()) out += ", " + label + ": " + value;
+    return out;
+}
+
 } // namespace calcu::applog

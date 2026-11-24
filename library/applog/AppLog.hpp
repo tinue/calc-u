@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 // Where the app log goes. A host makes one (a file, the console, a test's
@@ -60,6 +61,13 @@ public:
         return false;
     }
     void clear() { lines_.clear(); }
+    // The texts of the lines taken so far, at every level; the log is then empty.
+    std::vector<std::string> take() {
+        std::vector<std::string> out;
+        for (Line& line : lines_) out.push_back(std::move(line.text));
+        lines_.clear();
+        return out;
+    }
 
 protected:
     void put(AppLogLevel l, std::string_view text) override { lines_.push_back(Line{l, std::string(text)}); }
@@ -76,5 +84,10 @@ AppLog& nullAppLog();
 // indented by two spaces, so every line of the file starts a record or
 // continues one.
 std::string formatLine(std::chrono::system_clock::time_point, AppLogLevel, std::string_view text);
+
+// A native run's first line: `Calc-U-59 3.0.0 (abc1234), OS: macOS 27.2,
+// Hardware: Mac16,11`; a row without a value is left out.
+std::string headerLine(std::string_view product, std::string_view version, std::string_view build,
+                       const std::vector<std::pair<std::string, std::string>>& rows);
 
 } // namespace calcu::applog

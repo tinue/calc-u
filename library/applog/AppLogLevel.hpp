@@ -1,6 +1,8 @@
 #pragma once
 #include <optional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 // The app log's levels (the area `applog`: the standard library only). The
 // app log tells how the app ran; what the calculator ran is the session's
@@ -25,5 +27,16 @@ AppLogLevel defaultAppLogLevel();
 // The level a setting names: a level's name, or `default` (and anything
 // else) for defaultAppLogLevel().
 AppLogLevel appLogLevelOfSetting(std::string_view);
+
+// The level `--app-log-level <level>` fixes for a run: the level, or none and
+// the sentence that says why the value is not one.
+struct RunAppLogLevel {
+    std::optional<AppLogLevel> level;
+    std::string problem;   // "--app-log-level takes error, warn, info or debug, not loud."
+};
+RunAppLogLevel appLogLevelOfArgument(std::string_view value);
+// The same over a native host's launch arguments; the last `--app-log-level`
+// counts, none leaves the level open (the setting holds).
+RunAppLogLevel appLogLevelOfArguments(const std::vector<std::string>& args);
 
 } // namespace calcu::applog

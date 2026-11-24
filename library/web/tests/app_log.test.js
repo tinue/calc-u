@@ -77,6 +77,10 @@ test("multi_line_text_is_indented", () => {
   p.ctx.calcuAppLog("error", "first\r\nsecond\nthird");
   assert.match(p.ctx.calcuAppLogText(), /ERROR first\n  second\n  third\n$/);
   assert.equal(p.printed[0].text, "[Calc-U] first\n  second\n  third");
+  // As applog::formatLine: no trailing spaces or line breaks.
+  p.ctx.calcuAppLog("error", "ends here \n\n");
+  p.ctx.calcuAppLog("error", "");
+  assert.match(p.ctx.calcuAppLogText(), /ERROR ends here\n\S+ ERROR\n$/);
 });
 
 test("the_ring_keeps_the_last_2000_lines", () => {
@@ -113,18 +117,21 @@ test("a_failure_is_one_error_line_with_its_detail", () => {
   p.fromWorker({ kind: "state", topic: "web.start", value: { state: "failed", failure: "files.json could not be fetched (404)",
     detail: "while starting\nError: at fetchBytes" } });
   assert.deepEqual(p.printed.map((x) => x.level), ["error"]);
-  assert.equal(p.printed[0].text, "[Calc-U] Test stopped: files.json could not be fetched (404)\n  while starting\n  Error: at fetchBytes");
+  assert.equal(p.printed[0].text, "[Calc-U] Test could not start: files.json could not be fetched (404)\n  while starting\n  Error: at fetchBytes");
   assert.equal(p.shell.getState().failure, "Test could not start: files.json could not be fetched (404)");
   // A second failure adds nothing.
   p.fromWorker({ kind: "state", topic: "web.start", value: { state: "failed", failure: "again" } });
   assert.equal(p.printed.length, 1);
 });
 
-test("a_failure_once_running_is_a_stop", () => {
+test("a_failure_once_running_is_a_stop", async () => {
   const p = page("", { shell: true });
   p.fromWorker({ kind: "state", topic: "web.start", value: { state: "running", failure: "" } });
   p.fromWorker({ kind: "state", topic: "web.start", value: { state: "failed", failure: "the program stopped (abort)" } });
   assert.equal(p.shell.getState().failure, "Test stopped: the program stopped (abort)");
+  assert.equal(p.printed[p.printed.length - 1].text, "[Calc-U] Test stopped: the program stopped (abort)");
+  const answer = await p.shell.send("reset");
+  assert.equal(answer.reason, "The product stopped.");
 });
 
 // In the worker the line is filtered by the worker's URL and posted to the page.

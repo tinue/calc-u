@@ -13,7 +13,7 @@
 #include "app/dap/DapPart.hpp"
 #include "debug/DapSocket.hpp"
 #include "debugger/RunState.hpp"
-#include "qt6/AppLogSink.hpp"
+#include "shell/HostAppLog.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "typing/TypingTopics.hpp"
 
@@ -24,8 +24,8 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
     // through the session; a change the product applies at once.
     cu1600::SharpSessionOptions options;
     options.settings = &AppPaths::folders().settings();
-    options.appLog = &calcu::qt6::appLog();
-    options.appLogLevel = calcu::qt6::appLogLevelOfRun();
+    options.appLog = &calcu::shell::hostAppLog();
+    options.appLogLevel = calcu::shell::hostAppLogLevelOfRun();
     options.settingsChanged = [this](std::string_view section, std::string_view) {
         if (section == "serial") app().refreshSerialLinkDirectory();
     };

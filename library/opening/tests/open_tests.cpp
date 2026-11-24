@@ -262,7 +262,7 @@ TEST(kept_before_machine_built) {
 TEST(second_kept_file_replaces_first) {
     OpenRig r;
     r.runOperation(200'000);
-    r.fixture.appLogLines();
+    r.fixture.appLog.clear();
     r.open(file("first.lst", "x"));
     const CallId second = r.open(file("second.lst", "x"));
     CHECK(isAs(r.replyOf(r.fixture.fe.reply(second)), OpenedAs::Kept));

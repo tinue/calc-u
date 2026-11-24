@@ -4,8 +4,7 @@
 #import "TIFileFormats+Cpp.h"
 #import <UIKit/UIKit.h>
 #include <os/log.h>
-#include <mutex>
-#include "applog/AppLogFile.hpp"
+#include "shell/HostAppLog.hpp"
 #include <calcu59/core/PC100C.hpp>
 #include <calcu59/core/PC100CPaper.hpp>
 #include <calcu59/core/TICatalogue.hpp>
@@ -195,8 +194,6 @@ NSArray<TIInspectorEntry*>* inspectorEntries(const std::vector<cu59::InspectorEn
 
 namespace cs = calcu::sessions;
 
-calcu::applog::AppLog& theAppLog();
-
 /// The card and constant-memory files as the app had them: read
 /// and written through NSFileCoordinator (the media part's file access too);
 /// a card that iCloud has not
@@ -222,13 +219,13 @@ public:
         if (!exists && [[NSFileManager defaultManager] fileExistsAtPath:placeholder]) {
             NSError* downloadErr = nil;
             if (![[NSFileManager defaultManager] startDownloadingUbiquitousItemAtURL:url error:&downloadErr])
-                theAppLog().warn("The iCloud download of " + path + " cannot start: " + cpp(downloadErr.localizedDescription));
+                calcu::shell::hostAppLog().warn("The iCloud download of " + path + " cannot start: " + cpp(downloadErr.localizedDescription));
             return {std::nullopt, true};
         }
         // A file that is there but does not read: the caller's notice has no cause.
         if (exists) {
             NSError* why = err ? err : readErr;
-            theAppLog().warn(path + " cannot be read: " + (why ? cpp(why.localizedDescription) : std::string("no reason given.")));
+            calcu::shell::hostAppLog().warn(path + " cannot be read: " + (why ? cpp(why.localizedDescription) : std::string("no reason given.")));
         }
         return {std::nullopt, exists};
     }
@@ -356,48 +353,17 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 }
 
 
-// The app log: the library's file, every line also in the system log
-// (warn and error are kept there; info and debug only while someone looks).
-// Written from the main thread and the session thread: a lock guards it.
-class BridgeAppLog final : public calcu::applog::AppLog {
-public:
-    BridgeAppLog(std::string path, const std::string& header, calcu::applog::AppLogLevel level)
-        : AppLog(level), file_(std::move(path), header, calcu::applog::AppLogLevel::Debug, &mirror) {}
-    const calcu::applog::AppLogFile& file() const { return file_; }
-
-protected:
-    void put(calcu::applog::AppLogLevel l, std::string_view text) override {
-        const std::lock_guard<std::mutex> hold(lock_);
-        file_.write(l, text);
-    }
-
-private:
-    static void mirror(calcu::applog::AppLogLevel l, const std::string& line) {
-        static os_log_t log = os_log_create("Calc-U-59", "app-log");
-        using L = calcu::applog::AppLogLevel;
-        const os_log_type_t type = l == L::Error ? OS_LOG_TYPE_ERROR
-                                   : l == L::Warn ? OS_LOG_TYPE_DEFAULT
-                                   : l == L::Info ? OS_LOG_TYPE_INFO
-                                                  : OS_LOG_TYPE_DEBUG;
-        os_log_with_type(log, type, "%{public}s", line.c_str());
-    }
-    std::mutex lock_;
-    calcu::applog::AppLogFile file_;
-};
-
-std::unique_ptr<BridgeAppLog>& installedAppLog() {
-    static std::unique_ptr<BridgeAppLog> log;
-    return log;
+// The app log's mirror: every line also in the system log (warn and error
+// are kept there; info and debug only while someone looks).
+void systemLogMirror(calcu::applog::AppLogLevel l, const std::string& line) {
+    static os_log_t log = os_log_create("Calc-U-59", "app-log");
+    using L = calcu::applog::AppLogLevel;
+    const os_log_type_t type = l == L::Error ? OS_LOG_TYPE_ERROR
+                               : l == L::Warn ? OS_LOG_TYPE_DEFAULT
+                               : l == L::Info ? OS_LOG_TYPE_INFO
+                                              : OS_LOG_TYPE_DEBUG;
+    os_log_with_type(log, type, "%{public}s", line.c_str());
 }
-std::optional<calcu::applog::AppLogLevel>& runAppLogLevel() {
-    static std::optional<calcu::applog::AppLogLevel> level;
-    return level;
-}
-calcu::applog::AppLog& theAppLog() {
-    auto& log = installedAppLog();
-    return log ? static_cast<calcu::applog::AppLog&>(*log) : calcu::applog::nullAppLog();
-}
-std::optional<calcu::applog::AppLogLevel> appLogLevelOfRun() { return runAppLogLevel(); }
 } // namespace
 
 @implementation TIRomSet {
@@ -501,14 +467,9 @@ std::optional<calcu::applog::AppLogLevel> appLogLevelOfRun() { return runAppLogL
 @implementation TIAppLog
 
 + (void)installInFolder:(NSString *)folder arguments:(NSArray<NSString *> *)arguments {
-    if (installedAppLog()) return;
-    std::string badLevel;
+    std::vector<std::string> args;
 #if DEBUG
-    for (NSUInteger i = 0; i + 1 < arguments.count; ++i)
-        if ([arguments[i] isEqualToString:@"--app-log-level"]) {
-            runAppLogLevel() = calcu::applog::appLogLevelNamed(cpp(arguments[i + 1]));
-            if (!runAppLogLevel()) badLevel = cpp(arguments[i + 1]);
-        }
+    for (NSString* a in arguments) args.push_back(cpp(a));
 #else
     (void)arguments;
 #endif
@@ -516,23 +477,20 @@ std::optional<calcu::applog::AppLogLevel> appLogLevelOfRun() { return runAppLogL
     NSString* version = info[@"CFBundleShortVersionString"] ?: @"?";
     NSString* build = info[@"CFBundleVersion"] ?: @"?";
     UIDevice* device = UIDevice.currentDevice;
-    const std::string header = "Calc-U-59 " + cpp(version) + " (" + cpp(build) + ") " + cpp(device.systemName) + " " +
-                               cpp(device.systemVersion) + ", " + cpp(device.model);
+    const std::string header = calcu::applog::headerLine(
+        "Calc-U-59", cpp(version), cpp(build),
+        {{"OS", cpp(device.systemName) + " " + cpp(device.systemVersion)}, {"Hardware", cpp(device.model)}});
     const std::string path = calcu::settings::appLogFilePathFor(calcu::settings::HostOs::IOS, {}, cpp(NSHomeDirectory()),
                                                                 "Calc-U-59", cpp(folder));
-    installedAppLog() = std::make_unique<BridgeAppLog>(path, header,
-                                                       runAppLogLevel().value_or(calcu::applog::defaultAppLogLevel()));
-    if (!badLevel.empty()) theAppLog().warn("--app-log-level takes error, warn, info or debug, not " + badLevel + ".");
-    if (!installedAppLog()->file().problem().empty())
-        os_log_error(OS_LOG_DEFAULT, "%{public}s", installedAppLog()->file().problem().c_str());
+    calcu::shell::installHostAppLog(path, header, args, &systemLogMirror);
 }
 
 + (void)write:(NSString *)text level:(TIAppLogLevel)level {
-    theAppLog().write(static_cast<calcu::applog::AppLogLevel>(level), cpp(text));
+    calcu::shell::hostAppLog().write(static_cast<calcu::applog::AppLogLevel>(level), cpp(text));
 }
 
 + (NSString *)filePath {
-    return installedAppLog() ? ns(installedAppLog()->file().path()) : @"";
+    return ns(calcu::shell::hostAppLogPath());
 }
 
 @end
@@ -615,8 +573,8 @@ std::optional<calcu::applog::AppLogLevel> appLogLevelOfRun() { return runAppLogL
                 host.clock = cu59::steadyWallTime;
                 host.hostTime = [] { return std::chrono::system_clock::now(); };
                 host.start = true;
-                host.appLog = &theAppLog();
-                host.appLogLevel = appLogLevelOfRun();
+                host.appLog = &calcu::shell::hostAppLog();
+                host.appLogLevel = calcu::shell::hostAppLogLevelOfRun();
                 auto app = cu59::makeAppSession(setup, std::move(host));
                 *libraryParts = &app.part->libraryParts();
                 return std::move(app.session);
@@ -798,11 +756,11 @@ std::optional<calcu::applog::AppLogLevel> appLogLevelOfRun() { return runAppLogL
     static std::unique_ptr<calcu::harness::HarnessProduct> product = cu59::makeHarnessProduct();
     const std::string problem = _thread->openAttach(*product, port, [parts = _libraryParts]() -> calcu::parts::LibraryParts& { return **parts; });
     if (problem.empty()) {
-        theAppLog().info("Harness attach on 127.0.0.1:" + std::to_string(port) + ".");
+        calcu::shell::hostAppLog().info("Harness attach on 127.0.0.1:" + std::to_string(port) + ".");
         return YES;
     }
     // The app runs on; the app log says why.
-    theAppLog().warn("Attach is not available on port " + std::to_string(port) + ": " + problem + ".");
+    calcu::shell::hostAppLog().warn("Attach is not available on port " + std::to_string(port) + ": " + problem + ".");
     return NO;
 }
 #endif

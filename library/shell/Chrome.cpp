@@ -31,6 +31,11 @@ Colour ChromeColours::named(std::string_view name) const {
     return c ? *c : Colour{255, 0, 255, 255};
 }
 
+void ChromeColours::setNamed(std::string_view name, Colour colour) {
+    for (auto& [n, c] : more)
+        if (n == name) c = colour;
+}
+
 double Chrome::textScale(double faceplateWidth) const {
     if (sizes.textScaleWidth <= 0) return 1;
     return std::clamp(faceplateWidth / sizes.textScaleWidth, 1.0, std::max(1.0, sizes.textScaleMax));

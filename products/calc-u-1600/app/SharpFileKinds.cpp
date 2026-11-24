@@ -5,6 +5,7 @@
 
 #include "Loaders.hpp"
 #include "ProgramFile.hpp"
+#include "app/SharpLoaderPart.hpp"
 #include "opening/Classify.hpp"
 #include "sessions/LibraryTopics.hpp"
 
@@ -86,8 +87,7 @@ CommandOutcome ProgramFileKind::open(const OpenedFile& f, Way way, SessionContex
     const auto image = sharp::loaders::image(bytes, 0, &why);
     if (!image) return Refused{sharp::loaders::refusal(name, why)};
     if (m_which == ProgramKind::Basic) {
-        const sharp::loaders::BasicLoaded r = sharp::loaders::loadBasic(*ctx.machine(), *image);
-        sharp::loaders::logNotes(ctx.appLog(), r);
+        const sharp::loaders::BasicLoaded r = loadBasic(*ctx.machine(), *image, ctx.appLog());
         if (!r.ok) return Refused{sharp::loaders::refusal(name, r.refusal)};
         return Done{};
     }

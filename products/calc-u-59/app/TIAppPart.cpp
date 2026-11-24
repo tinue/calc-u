@@ -226,19 +226,6 @@ void TIAppPart::diagnostic(const std::string& message) {
     if (m_ctx) m_ctx->log(message);
 }
 
-calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, pacing::WallClock clock,
-                                                          std::optional<std::uint32_t> jitterSeed,
-                                                          std::vector<sessions::SessionPart*> before,
-                                                          std::vector<sessions::SessionPart*> after, bool start) {
-    shell::HostSessionSetup host;
-    host.clock = std::move(clock);
-    host.jitterSeed = jitterSeed;
-    host.before = std::move(before);
-    host.after = std::move(after);
-    host.start = start;
-    return makeAppSession(std::move(setup), std::move(host));
-}
-
 calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, shell::HostSessionSetup host) {
     auto part = std::make_shared<TIAppPart>(std::move(setup));
     TIAppPart& p = *part;

@@ -28,7 +28,8 @@ class TIDebugPart;
 std::vector<std::string> tiPresetExtensions();
 
 /// The Qt6 program's arguments with its own options and their values taken
-/// out (`--grab x`, `--after n`, `--pacing-probe s`), the
+/// out (`--grab x`, `--after n`, `--pacing-probe s`, `--app-log-level l`,
+/// `--attach-port n`), the
 /// program's name kept first: what calcu::opening::startFile reads, so the
 /// start file is the last argument that does not start with `-` and names an
 /// existing file (as in Calc-U-1600), never a value of an option.

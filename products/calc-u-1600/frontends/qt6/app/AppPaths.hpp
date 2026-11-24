@@ -39,27 +39,7 @@ void useBundleDirs(const cu1600::BundleDirs& dirs);
 // (calcu::qt6::bundledDataDir) and the host folders.
 cu1600::AppPaths& paths();
 
-// ~/Calc-U-1600 (home dir, non-dotted), created if missing.
-QString defaultInstanceDir();
-
-// `path` the way every label shows one: under defaultInstanceDir() as
-// "~/Calc-U-1600/...", else under the home folder as "~/...", else as is.
-// A screenshot run's throwaway home thus reads like a fresh install's.
+// `path` the way every label shows one (cu1600::AppPaths::displayPath).
 QString displayPath(const QString& path);
-
-// [storage] save-folder if non-empty, else
-// defaultInstanceDir(). The single source of truth every other class calls
-// to find "where battery-card instances live right now".
-QString instanceDir();
-
-// Cassettes: [storage] cassette-folder if
-// non-empty, else "Cassettes" inside instanceDir(); created on demand. A tape's
-// definition and its sound lie there.
-QString cassetteDir();
-
-// cu1600::AppPaths::traceDir() / serialLinkDir(): the Settings override,
-// else instanceDir().
-QString traceDir();
-QString serialLinkDir();
 
 }  // namespace AppPaths

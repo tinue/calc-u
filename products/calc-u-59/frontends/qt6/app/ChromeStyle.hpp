@@ -61,12 +61,11 @@ inline double fontScale(double faceplateWidth) { return chrome().textScale(facep
 
 /// Monospaced header action (RESUME / FREEZE / … in the debug headers).
 inline QString headerButton(const QColor& color, int pixelSize = 13) {
-    return (QStringLiteral("QToolButton { color: %1; background: transparent; border: none; font-weight: bold;"
-                           " font-family: ") +
-            calcu::qt6::fixedFamilyCss() +
-            QStringLiteral("; font-size: %5px; }"
+    return (QStringLiteral("QToolButton { color: %1; background: transparent; border: none; ") +
+            calcu::qt6::fixedFontCss(pixelSize, true) +
+            QStringLiteral(" }"
                            "QToolButton:disabled { color: rgba(%2,%3,%4,0.4); }"))
-        .arg(rgb(color)).arg(color.red()).arg(color.green()).arg(color.blue()).arg(pixelSize);
+        .arg(rgb(color)).arg(color.red()).arg(color.green()).arg(color.blue());
 }
 
 } // namespace ChromeStyle

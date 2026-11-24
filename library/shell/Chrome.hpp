@@ -57,6 +57,9 @@ struct ChromeColours {
     // A colour of `more`; a missing one is magenta, so it shows (the
     // product's tests check every name it uses: checkChrome).
     Colour named(std::string_view name) const;
+    // Gives a colour of `more` another value (a dark set over the light
+    // one); a name not in `more` is not added.
+    void setNamed(std::string_view name, Colour colour);
 };
 
 // The colours of `more` the component sets draw the shell with (the Web's

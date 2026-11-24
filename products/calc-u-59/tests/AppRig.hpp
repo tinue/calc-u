@@ -72,13 +72,7 @@ struct Rig {
         s.paths = paths.get();
         s.examplesFolder = "examples";
         s.files = files;
-        calcu::shell::HostSessionSetup host;
-        host.clock = [this] { return now += std::chrono::milliseconds(1); };
-        host.jitterSeed = 59u;
-        host.start = false;
-        host.appLog = &appLog;
-        host.appLogLevel = calcu::applog::AppLogLevel::Debug;
-        app = cu59::makeAppSession(std::move(s), std::move(host));
+        app = cu59::makeAppSession(std::move(s), testroms::hostSetup(now, &appLog));
         me = session().listen(fe, {});
         send(calcu::sessions::kStartCommand);   // the library's start, once, as a host sends it
     }

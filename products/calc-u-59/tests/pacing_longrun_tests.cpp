@@ -42,7 +42,9 @@ calcu::sessions::ProductSession<TIAppPart> session(ModelId model, calcu::pacing:
     static const calcu::testing::TempFolder folder("calcu59-longrun");
     static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl());
     static const auto paths = testroms::rigPaths(settings, folder.path().string(), folder.path().string());
-    return makeAppSession(testroms::appSetup(settings, model, *paths), std::move(clock), 59u);
+    calcu::shell::HostSessionSetup host = testroms::hostSetup(std::move(clock));
+    host.start = true;
+    return makeAppSession(testroms::appSetup(settings, model, *paths), std::move(host));
 }
 
 } // namespace

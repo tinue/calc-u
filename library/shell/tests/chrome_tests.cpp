@@ -56,3 +56,13 @@ TEST(chrome_check_names) {
     CHECK_EQ(problems.size(), std::size_t{3});   // dark lacks a (twice: named, of light), light lacks b
     CHECK_EQ(c.light.named("x"), (shell::Colour{255, 0, 255, 255}));
 }
+
+// A dark set starts as the light one and changes some of its named colours.
+TEST(chrome_set_named_changes_only_a_known_name) {
+    shell::ChromeColours k;
+    k.more = {{"a", shell::Colour{1, 2, 3, 255}}};
+    k.setNamed("a", shell::Colour{4, 5, 6, 255});
+    k.setNamed("b", shell::Colour{7, 8, 9, 255});
+    CHECK_EQ(k.named("a"), (shell::Colour{4, 5, 6, 255}));
+    CHECK(k.find("b") == nullptr);
+}

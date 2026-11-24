@@ -22,7 +22,7 @@ inline const sessions::CommandName kSetControlCommand{"set-control"};
 class PeripheralsPart final : public sessions::SessionPart {
 public:
     explicit PeripheralsPart(HostLinkRules rules = {}, std::optional<std::string> folder = std::nullopt,
-                             HostLinkFactory factory = {});
+                             HostLinkFactory factory = openHostLink);
 
     HostLinks& hostLinks() { return links_; }
     const HostLinks& hostLinks() const { return links_; }

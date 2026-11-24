@@ -44,7 +44,7 @@ HostLinkRules uartRule(bool openAtOnce) {
 
 TEST(without_pty_machine_runs_and_bytes_go_nowhere) {
     int made = 0;
-    HostLinks links(uartRule(true), std::string("/nowhere"), [&](const std::optional<std::string>&, const std::string&) {
+    HostLinks links(uartRule(true), std::string("/nowhere"), [&](const std::optional<std::string>&, const std::string&, std::string*) {
         ++made;
         return std::unique_ptr<HostLink>();   // a platform without pseudo-terminals
     });
@@ -75,7 +75,7 @@ TEST(host_links_move_bytes_by_rule_and_rebind) {
     std::vector<std::uint8_t> written;
     std::deque<std::uint8_t> toMachine{'O', 'K'};
     int made = 0;
-    HostLinks links(uartRule(false), std::nullopt, [&](const std::optional<std::string>&, const std::string&) {
+    HostLinks links(uartRule(false), std::nullopt, [&](const std::optional<std::string>&, const std::string&, std::string*) {
         ++made;
         return std::make_unique<FakeLink>(&written, &toMachine);
     });

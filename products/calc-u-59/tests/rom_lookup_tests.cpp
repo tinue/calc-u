@@ -345,7 +345,9 @@ std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const 
     cu59::TIAppSetup s = testroms::appSetup(settings, cu59::ModelId{cu59::kTI59}, *paths);
     s.roms = roms;
     auto t = std::make_shared<calcu::pacing::WallTime>(std::chrono::hours(1));
-    auto app = cu59::makeAppSession(std::move(s), [t] { return *t += std::chrono::milliseconds(1); }, 59u);
+    calcu::shell::HostSessionSetup host = testroms::hostSetup([t] { return *t += std::chrono::milliseconds(1); });
+    host.start = true;
+    auto app = cu59::makeAppSession(std::move(s), std::move(host));
     settle(*app.session);   // the library's start
     return app;
 }

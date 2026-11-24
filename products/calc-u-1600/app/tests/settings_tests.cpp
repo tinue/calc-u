@@ -182,7 +182,7 @@ TEST(first_start_defaults_and_writes_file) {
 
     // The save folder is ~/Calc-U-1600 on Qt6.
     cu1600::AppPaths paths(s, dirs, cu1600::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
-    CHECK(paths.instanceDir() == (tmp.path() / "home" / "Calc-U-1600").generic_string());
+    CHECK(paths.places().saveFolder() == (tmp.path() / "home" / "Calc-U-1600").generic_string());
     CHECK(paths.places().settingsFile() == path);
 }
 
@@ -227,9 +227,9 @@ TEST(web_keeps_and_ignores_dap_serial_window_folders) {
     cu1600::Settings s(file);
     cu1600::AppPaths paths(s, web, cu1600::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
     // Ignored: the save folder override, the serial link folder (Qt6 only).
-    CHECK(paths.instanceDir() == web.saveFolder);
-    CHECK(paths.serialLinkDir() == web.saveFolder);
-    CHECK(paths.traceDir().empty());  // no trace folder on the Web
+    CHECK(paths.places().saveFolder() == web.saveFolder);
+    CHECK(paths.places().serialLinkFolder() == std::optional<std::string>(web.saveFolder));
+    CHECK(!paths.places().traceFolder());  // no trace folder on the Web
 
     // A change the Web makes keeps them.
     s.setStartupModelPreference("PC-1600");
@@ -249,26 +249,29 @@ TEST(test_app_paths) {
     cu1600::Settings& s = t.settings;
     cu1600::AppPaths paths(s, testHostDirs(home), cu1600::BundleDirs{(root / "bundle").generic_string(), {}});
 
-    CHECK(paths.instanceDir() == home + "/Calc-U-1600");
-    CHECK(fs::is_directory(home + "/Calc-U-1600"));
-    CHECK(paths.cassetteDir() == home + "/Calc-U-1600/Cassettes");
-    CHECK(paths.traceDir() == home + "/Calc-U-1600");
-    CHECK(paths.serialLinkDir() == home + "/Calc-U-1600");
+    // The folders as the library gives them; a label shows the home as `~`.
+    const calcu::settings::Paths& p = paths.places();
+    CHECK(p.saveFolder() == home + "/Calc-U-1600");
+    CHECK(p.cassetteFolder() == home + "/Calc-U-1600/Cassettes");
+    CHECK(p.traceFolder() == std::optional<std::string>(home + "/Calc-U-1600"));
+    CHECK(p.serialLinkFolder() == std::optional<std::string>(home + "/Calc-U-1600"));
+    CHECK(!fs::exists(home + "/Calc-U-1600"));   // asking makes no folder
     CHECK(paths.displayPath(home + "/Calc-U-1600/x.module.yaml") == "~/Calc-U-1600/x.module.yaml");
     CHECK(paths.displayPath(home + "/Documents/y") == "~/Documents/y");
     CHECK(paths.displayPath(home + "-other/y") == home + "-other/y");
     CHECK(paths.displayPath("/elsewhere") == "/elsewhere");
 
     t.file.set("storage", "save-folder", (root / "saves").generic_string());
-    CHECK(paths.instanceDir() == (root / "saves").generic_string());
-    CHECK(fs::is_directory(root / "saves"));
-    CHECK(paths.cassetteDir() == (root / "saves" / "Cassettes").generic_string());
+    CHECK(p.saveFolder() == (root / "saves").generic_string());
+    CHECK(p.cassetteFolder() == (root / "saves" / "Cassettes").generic_string());
     t.file.set("storage", "cassette-folder", (root / "tapes").generic_string());
-    CHECK(paths.cassetteDir() == (root / "tapes").generic_string());
+    CHECK(p.cassetteFolder() == (root / "tapes").generic_string());
     t.file.set("trace", "folder", (root / "traces").generic_string());
-    CHECK(paths.traceDir() == (root / "traces").generic_string());
+    CHECK(p.traceFolder() == std::optional<std::string>((root / "traces").generic_string()));
+    t.file.set("serial", "link-folder", (root / "links").generic_string());
+    CHECK(p.serialLinkFolder() == std::optional<std::string>((root / "links").generic_string()));
 
-
+    fs::create_directories(root / "saves");
     std::ofstream((root / "saves" / "f.txt").string()) << "x";
     CHECK(cu1600::isUnderDir((root / "saves" / "f.txt").generic_string(), (root / "saves").generic_string()));
     CHECK(cu1600::isUnderDir((root / "saves").generic_string(), (root / "saves").generic_string()));

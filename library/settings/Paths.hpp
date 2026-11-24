@@ -18,7 +18,8 @@
 //                  Given: the folder passed
 //   screenshots    the save folder; Web: none, a download; Given:
 //                  the folder passed
-//   serial links   Qt6: [serial] link-folder, else the save folder; else none
+//   serial links   Qt6: [serial] link-folder, else the save folder; Swift,
+//                  Web, Given: the save folder
 //   files          at the save folder's root (`ti58c.memory.yaml`)
 
 namespace calcu::settings {
@@ -27,6 +28,8 @@ enum class Folder { Save, Cassettes, Traces, Screenshots, SerialLinks };
 
 // A path value with a leading `~` expanded against `home`.
 std::string expandHome(std::string_view value, const std::string& home);
+// `path` with the home folder written as `~`, the way a label shows it.
+std::string withTilde(const std::string& path, const std::string& home);
 
 class Paths {
 public:

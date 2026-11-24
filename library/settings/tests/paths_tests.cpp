@@ -155,6 +155,11 @@ TEST(paths_absolute_tilde_is_home) {
     CHECK_EQ(expandHome("/abs/~x", "/home/u"), std::string("/abs/~x"));
     CHECK_EQ(expandHome("~other/x", "/home/u"), std::string("~other/x"));  // only `~` and `~/`
     CHECK_EQ(expandHome("~\\x", "C:\\Users\\u"), std::string("C:\\Users\\u\\x"));
+    // A label writes the home folder back as `~`, whole components only.
+    CHECK_EQ(withTilde("/home/u", "/home/u"), std::string("~"));
+    CHECK_EQ(withTilde("/home/u/Test-Product/x", "/home/u"), std::string("~/Test-Product/x"));
+    CHECK_EQ(withTilde("/home/u-other/y", "/home/u"), std::string("/home/u-other/y"));
+    CHECK_EQ(withTilde("/elsewhere", "/home/u"), std::string("/elsewhere"));
     // A relative path is not accepted: the setting has its default.
     TempDir dir;
     const std::string ini = dir / "cfg/Test-Product/Test-Product.ini";
@@ -258,7 +263,7 @@ TEST(swift_screenshots_save_folder_traces_by_location) {
     const SettingsFile def = withValues(ini, "");
     CHECK(Paths(def, s).screenshotFolder() == std::optional<std::string>("/icloud/Documents"));
     CHECK(Paths(def, s).traceFolder() == std::optional<std::string>("/app-support"));  // the default
-    CHECK(!Paths(def, s).serialLinkFolder());
+    CHECK(Paths(def, s).serialLinkFolder() == std::optional<std::string>("/icloud/Documents"));
     const SettingsFile icloud = withValues(ini, "[trace]\nlocation = icloud\n");
     CHECK(Paths(icloud, s).traceFolder() == std::optional<std::string>("/icloud/Documents"));
     // [trace] folder is Qt6's; an unknown location has the default.
@@ -309,9 +314,22 @@ TEST(web_has_no_trace_or_screenshot_folder) {
     const Paths p(f, w);
     CHECK(!p.traceFolder());       // a trace that has ended is offered as a download
     CHECK(!p.screenshotFolder());  // and so is a screenshot
-    CHECK(!p.serialLinkFolder());
+    CHECK(p.serialLinkFolder() == std::optional<std::string>("/persist/Test-Product"));
     const Paths::Ensured e = p.ensure(Folder::Traces);
     CHECK(!e.ok && !e.problem.empty());
+}
+
+// The harness's links lie in the save folder the run passes; none without one.
+TEST(given_serial_links_in_the_passed_save_folder) {
+    HostDirs g;
+    g.frontend = FrontendKind::Given;
+    g.home = "/run/home";
+    g.saveFolder = "/run/saves";
+    TempDir dir;
+    const SettingsFile f = withValues(dir / "c/Test-Product.ini", "[serial]\nlink-folder = /links\n");
+    CHECK(Paths(f, g).serialLinkFolder() == std::optional<std::string>("/run/saves"));
+    g.saveFolder.clear();
+    CHECK(!Paths(f, g).serialLinkFolder());
 }
 
 TEST(missing_folder_created_on_first_write) {

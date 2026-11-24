@@ -6,7 +6,6 @@
 #include <optional>
 
 #include "settings/SettingsFile.hpp"
-#include "shell/HostAppLog.hpp"
 #include "qt6/BundledData.hpp"
 #include "qt6/MacHost.hpp"
 
@@ -48,22 +47,13 @@ void useHostDirs(const calcu::settings::HostDirs& dirs) { folders().useHostDirs(
 void useBundleDirs(const cu1600::BundleDirs& dirs) { chosenBundleDirs() = dirs; }
 
 cu1600::AppPaths& paths() {
-    static cu1600::AppPaths p = [] {
-        cu1600::AppPaths made(AppSettings::settings(), folders().hostDirs(),
+    static cu1600::AppPaths p(AppSettings::settings(), folders().hostDirs(),
                               chosenBundleDirs() ? *chosenBundleDirs()
                                                  : cu1600::BundleDirs{bundledResourcesDir().toStdString(), {}});
-        made.useAppLog(calcu::shell::hostAppLog());
-        return made;
-    }();
     return p;
 }
 
-QString defaultInstanceDir() { return q(paths().defaultInstanceDir()); }
 QString displayPath(const QString& path) { return q(paths().displayPath(path.toStdString())); }
-QString instanceDir() { return q(paths().instanceDir()); }
-QString cassetteDir() { return q(paths().cassetteDir()); }
-QString traceDir() { return q(paths().traceDir()); }
-QString serialLinkDir() { return q(paths().serialLinkDir()); }
 }  // namespace AppPaths
 
 namespace AppSettings {

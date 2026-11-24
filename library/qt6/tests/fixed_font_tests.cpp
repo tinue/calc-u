@@ -8,7 +8,7 @@
 // stand in for (that search costs tens of milliseconds and a warning), and
 // a stylesheet that names it gets that family.
 
-using calcu::qt6::fixedFamilyCss;
+using calcu::qt6::fixedFontCss;
 using calcu::qt6::fixedFont;
 
 TEST(fixed_font_is_a_family_of_the_platform) {
@@ -22,9 +22,16 @@ TEST(fixed_font_is_a_family_of_the_platform) {
 }
 
 TEST(fixed_font_in_a_stylesheet) {
-    CHECK(fixedFamilyCss() == QLatin1Char('"') + fixedFont().family() + QLatin1Char('"'));
+    CHECK(fixedFontCss(11) == QStringLiteral("font: 11px \"") + fixedFont().family() + QStringLiteral("\";"));
+    CHECK(fixedFontCss(9, true) == QStringLiteral("font: bold 9px \"") + fixedFont().family() + QStringLiteral("\";"));
     QLabel label(QStringLiteral("SCOM"));
-    label.setStyleSheet(QStringLiteral("QLabel { font-family: ") + fixedFamilyCss() + QStringLiteral("; font-size: 11px; }"));
+    label.setStyleSheet(QStringLiteral("QLabel { ") + fixedFontCss(11) + QStringLiteral(" }"));
     label.ensurePolished();
     CHECK(label.font().family() == fixedFont().family());
+    CHECK(label.font().pixelSize() == 11 && !label.font().bold());
+    QLabel head(QStringLiteral("SCOM"));
+    head.setStyleSheet(QStringLiteral("QLabel { ") + fixedFontCss(9, true) + QStringLiteral(" }"));
+    head.ensurePolished();
+    CHECK(head.font().family() == fixedFont().family());
+    CHECK(head.font().pixelSize() == 9 && head.font().bold());
 }

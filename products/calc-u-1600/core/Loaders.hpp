@@ -71,11 +71,6 @@ struct BasicLoaded {
 // Not an operation: writes at once. Refused, writing nothing.
 BasicLoaded loadBasic(LoaderMemory&, const std::vector<std::uint8_t>& image);
 BasicLoaded loadBasic(calcu::machine::Machine&, const std::vector<std::uint8_t>& image);
-// The load's notes into the app layer's log (anything with warn() and debug()).
-template <class Log> void logNotes(Log& log, const BasicLoaded& r) {
-    for (const std::string& w : r.warnings) log.warn(w);
-    for (const std::string& d : r.details) log.debug(d);
-}
 
 // ---- Machine code ----
 

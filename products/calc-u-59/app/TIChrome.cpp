@@ -76,15 +76,11 @@ calcu::shell::Chrome make() {
     // The dark appearance changes only the Web's menus and dialogs: the
     // window is dark in both.
     calcu::shell::ChromeColours& d = c.dark.emplace(k);
-    auto set = [&d](std::string_view name, Colour colour) {
-        for (auto& [n, v] : d.more)
-            if (n == name) v = colour;
-    };
-    set(colour::kMenu, Colour::rgb(0x252525));
-    set(colour::kMenuText, Colour::rgb(0xf0ece2));
-    set(colour::kMenuBorder, white.withAlpha(0.16));
-    set(colour::kLink, Colour::rgb(0xe0b45a));
-    set(colour::kAlert, Colour::rgb(0xff6b6b));
+    d.setNamed(colour::kMenu, Colour::rgb(0x252525));
+    d.setNamed(colour::kMenuText, Colour::rgb(0xf0ece2));
+    d.setNamed(colour::kMenuBorder, white.withAlpha(0.16));
+    d.setNamed(colour::kLink, Colour::rgb(0xe0b45a));
+    d.setNamed(colour::kAlert, Colour::rgb(0xff6b6b));
 
     calcu::shell::ChromeSizes& s = c.sizes;
     // The printer's header and the debugger's tab row; the printer's

@@ -17,6 +17,13 @@ std::string expandHome(std::string_view value, const std::string& home) {
     return std::string(value);
 }
 
+std::string withTilde(const std::string& path, const std::string& home) {
+    if (home.empty() || path.rfind(home, 0) != 0) return path;
+    if (path.size() == home.size()) return "~";
+    if (path[home.size()] == '/' || path[home.size()] == '\\') return "~" + path.substr(home.size());
+    return path;
+}
+
 Paths::Paths(const SettingsFile& settings, HostDirs dirs) : settings_(&settings), dirs_(std::move(dirs)) {}
 
 std::optional<std::string> Paths::folderValue(std::string_view section, std::string_view key) const {
@@ -64,9 +71,12 @@ std::optional<std::string> Paths::screenshotFolder() const {
 }
 
 std::optional<std::string> Paths::serialLinkFolder() const {
-    if (dirs_.frontend != FrontendKind::Qt6) return std::nullopt;
-    if (auto over = folderValue("serial", "link-folder")) return over;
-    return saveFolder();
+    if (dirs_.frontend == FrontendKind::Qt6)
+        if (auto over = folderValue("serial", "link-folder")) return over;
+    // Given (the harness) passes a save folder of its own, or none.
+    std::string save = saveFolder();
+    if (save.empty()) return std::nullopt;
+    return save;
 }
 
 std::string Paths::saveFolderFile(std::string_view name) const { return joinPath(saveFolder(), std::string(name)); }

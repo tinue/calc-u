@@ -228,6 +228,15 @@ TEST(options_taken_out_before_the_rule) {
     CHECK(c && *c == q);
     CHECK(!startFile(programArguments({"calc-u-59", "-NSDocumentRevisionsDebugMode", "YES"}), isFile));
     CHECK(!startFile(programArguments({"calc-u-59", "--pacing-probe", p}), isFile));       // an option's value
+    // The app log level and the attach port: a file in the working folder
+    // named like the value is no start file.
+    dir.write("debug", kPreset);
+    dir.write("59059", kPreset);
+    const std::string level = (dir.path() / "debug").string(), port = (dir.path() / "59059").string();
+    CHECK(!startFile(programArguments({"calc-u-59", "--app-log-level", level}), isFile));
+    CHECK(!startFile(programArguments({"calc-u-59", "--attach-port", port}), isFile));
+    const auto d = startFile(programArguments({"calc-u-59", p, "--app-log-level", level, "--attach-port", port}), isFile);
+    CHECK(d && *d == p);
 }
 
 // A file named at the start or opened with Open With is opened as what it

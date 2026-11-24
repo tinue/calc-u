@@ -14,6 +14,8 @@ const QFont& fixedFont() {
     return font;
 }
 
-QString fixedFamilyCss() { return QStringLiteral("\"%1\"").arg(fixedFont().family()); }
+QString fixedFontCss(int px, bool bold) {
+    return QStringLiteral("font: %1%2px \"%3\";").arg(bold ? QStringLiteral("bold ") : QString()).arg(px).arg(fixedFont().family());
+}
 
 } // namespace calcu::qt6

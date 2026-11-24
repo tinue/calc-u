@@ -38,7 +38,11 @@ TEST(ti59_on_the_session_thread) {
     const TIAppSetup setup = testroms::appSetup(settings, ModelId{kTI59}, *paths);
     std::atomic<std::uint64_t> ticks{0};
     auto t = std::make_unique<SessionThread>(
-        [setup] { return makeAppSession(setup, steadyWallTime).session; },
+        [setup] {
+            calcu::shell::HostSessionSetup host = testroms::hostSetup(steadyWallTime);
+            host.start = true;
+            return makeAppSession(setup, std::move(host)).session;
+        },
         calcu::sessions::HostServices{}, steadyWallTime, [] {});
     std::this_thread::sleep_for(500ms);
     t->post([&](calcu::sessions::AppSession& a) { ticks = a.machineSession().machine()->tickCount(); });

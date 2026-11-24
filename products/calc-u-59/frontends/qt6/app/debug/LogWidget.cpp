@@ -22,8 +22,8 @@ LogWidget::LogWidget(EmulatorController& controller, QWidget* parent) : QWidget(
 
     m_text = new QPlainTextEdit(this);
     m_text->setReadOnly(true);
-    m_text->setStyleSheet((QStringLiteral("QPlainTextEdit { background: %1; color: %2; border: 1px solid %3; font-family: ") +
-                           calcu::qt6::fixedFamilyCss() + QStringLiteral("; font-size: 11px; padding: 8px; }"))
+    m_text->setStyleSheet((QStringLiteral("QPlainTextEdit { background: %1; color: %2; border: 1px solid %3; ") +
+                           calcu::qt6::fixedFontCss(11) + QStringLiteral(" padding: 8px; }"))
                               .arg(ChromeStyle::rgb(cu59::chrome::kSection), ChromeStyle::rgb(cu59::chrome::kLogText),
                                    ChromeStyle::rgb(ChromeStyle::qcolour(ChromeStyle::colours().pill))));
     col->addWidget(m_text, 1);

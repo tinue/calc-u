@@ -23,7 +23,8 @@ std::vector<std::string> programArguments(const std::vector<std::string>& argv) 
     std::vector<std::string> out;
     for (std::size_t i = 0; i < argv.size(); ++i) {
         const std::string& a = argv[i];
-        if (i > 0 && (a == "--grab" || a == "--after" || a == "--pacing-probe")) {
+        if (i > 0 && (a == "--grab" || a == "--after" || a == "--pacing-probe" || a == "--app-log-level" ||
+                      a == "--attach-port")) {
             ++i;   // and its value
             continue;
         }

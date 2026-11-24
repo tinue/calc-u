@@ -49,7 +49,7 @@ const COMPONENT_CSS = ["paper.css", "media.css"].map((n) => path.join(WEB, "comp
 // The shell, its models first.
 COMPONENT_SOURCES.push(...["shellModel.js", "useShell.jsx", "ShellModal.jsx", "ShellMenuBar.jsx", "ShellControlBar.jsx",
   "ShellSettings.jsx", "ShellAbout.jsx", "ShellNotice.jsx", "ShellLoading.jsx", "ShellPanelArea.jsx",
-  "useShellFaceplate.jsx", "ShellRomsMissing.jsx", "ShellMoreMenu.jsx", "ShellStorageBanner.jsx"].map((n) => path.join(WEB, "components", n)));
+  "useShellFaceplate.jsx", "ShellRomsMissing.jsx", "ShellMoreMenu.jsx", "ShellStorageBanner.jsx", "PaperWindow.jsx"].map((n) => path.join(WEB, "components", n)));
 COMPONENT_CSS.push(path.join(WEB, "components", "shell.css"));
 // Host keys to `host-key-down` and the keys held down.
 COMPONENT_SOURCES.push(path.join(WEB, "components", "hostKeys.js"));

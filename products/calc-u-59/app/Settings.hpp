@@ -3,6 +3,7 @@
 #include "MachineModelInfo.hpp"
 #include "settings/Declaration.hpp"
 #include "settings/SettingsFile.hpp"
+#include "settings/WindowPlace.hpp"
 #include <optional>
 #include <string>
 #include <string_view>
@@ -36,8 +37,7 @@ const char* openFolderKind(OpenFolder folder);
 // is not set is empty: the window system places the window, the splitter
 // splits by its own rules.
 struct WindowState {
-    std::optional<long> x, y;
-    long width = 1280, height = 860;
+    calcu::settings::WindowPlace place{std::nullopt, std::nullopt, 1280, 860};
     std::optional<long> calculatorWidth, printerWidth, debugWidth;
     bool operator==(const WindowState&) const = default;
 };

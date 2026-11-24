@@ -83,15 +83,16 @@ function Inspector({ shell }) {
 }
 
 // The library's paper panel in the product's chrome: always
-// there, named after the plotter the control state's panel entry names.
-function PaperDock({ shell, owner, hint }) {
+// there, named after the plotter the control state's panel entry names;
+// `ownWindow`: the paper's own window where the page offers it.
+function PaperDock({ shell, owner, hint, ownWindow }) {
   const papers = useCalcuPaper(shell);
   const entry = owner ? papers.papers.find((p) => p.printer === owner) : null;
   const empty = !entry || papers.paper(entry.owner).empty;
   return (
     <section className="calcu-panel calcu-paper" data-panel="paper" data-owner={owner || ""}
       data-empty={empty ? "true" : "false"}>
-      <CalcuPaperPanel shell={shell} owner={owner || null} hint={hint} />
+      <CalcuPaperPanel shell={shell} owner={owner || null} hint={hint} ownWindow={ownWindow} />
     </section>
   );
 }

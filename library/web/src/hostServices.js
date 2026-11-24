@@ -70,10 +70,15 @@ function calcuDisarmClipboard() {
   if (armed) armed.reject(new Error("The copy was not made."));
 }
 
-function armClipboard({ text = false } = {}) {
+// {view}: the window of the gesture (the paper's own window), whose
+// clipboard takes the entry; the page's by default.
+function armClipboard({ text = false, view = null } = {}) {
   calcuDisarmClipboard();
-  const clip = typeof navigator !== "undefined" ? navigator.clipboard : null;
-  if (!clip || !clip.write || typeof ClipboardItem === "undefined") return null;
+  const w = view || (typeof window !== "undefined" ? window : null);
+  const nav = w ? w.navigator : (typeof navigator !== "undefined" ? navigator : null);
+  const Item = (w && w.ClipboardItem) || (typeof ClipboardItem !== "undefined" ? ClipboardItem : undefined);
+  const clip = nav ? nav.clipboard : null;
+  if (!clip || !clip.write || typeof Item === "undefined") return null;
   const deferred = () => {
     const d = {};
     d.promise = new Promise((resolve, reject) => { d.resolve = resolve; d.reject = reject; });
@@ -86,7 +91,7 @@ function armClipboard({ text = false } = {}) {
   if (txt) items["text/plain"] = txt.promise;
   let written;
   try {
-    written = Promise.resolve(clip.write([new ClipboardItem(items)]));
+    written = Promise.resolve(clip.write([new Item(items)]));
   } catch (e) {
     written = Promise.reject(e);
   }

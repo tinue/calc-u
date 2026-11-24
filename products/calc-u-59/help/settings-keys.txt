@@ -27,3 +27,8 @@ product [window] calculator-width
 product [window] printer-width
 product [window] debug-width
 product [window] portrait-debug-page
+product [window] paper-own-window
+product [window] paper-x
+product [window] paper-y
+product [window] paper-width
+product [window] paper-height

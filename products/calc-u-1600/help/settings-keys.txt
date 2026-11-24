@@ -22,5 +22,12 @@ product [folders] basic-programs
 product [folders] machine-code
 product [folders] host-drive
 family [window] <key>
+product [window] x
+product [window] y
 product [window] width
 product [window] height
+product [window] paper-own-window
+product [window] paper-x
+product [window] paper-y
+product [window] paper-width
+product [window] paper-height

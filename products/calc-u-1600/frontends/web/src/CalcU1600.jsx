@@ -126,7 +126,9 @@ const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, ba
 // (width, keyboard, layout, preset, height, model, workerUrl). One layout:
 // `layout` takes "auto" only (the default); embedProps ignores another value
 // with a console warning. `model` is the model's name (PC-1600); `preset` a
-// path of the bundle, with or without `examples:`.
+// path of the bundle, with or without `examples:`. The product's own:
+// `paperWindow` (the app page): the page offers the paper's own window
+// (never on mobile).
 function CalcU1600(props) {
   const embedded = embedProps(props, { name: "CalcU1600", layouts: ["auto"], layout: "auto" });
   const { width, height, keyboard } = embedded;
@@ -245,6 +247,10 @@ function CalcU1600(props) {
 
   const s = useCalcuShell(shell, product, CALCU_SHELL_WEB_TRAITS);
   sRef.current = s;
+  // The paper's own window (desktop only): never in the row then.
+  const paperWindowOffered = !!embedded.rest.paperWindow && !s.traits.mobile;
+  const paperWindow = useCalcuPaperWindow(shell, { offered: paperWindowOffered, title: "Calc-U-1600 — Printer", notify: tell });
+  const ownWindow = paperWindowOffered ? { own: paperWindow.own, toggle: paperWindow.toggle } : undefined;
   // The product's chrome (app/SharpChrome) as the root's custom properties,
   // light or dark with the system.
   const dark = useColourScheme();
@@ -373,7 +379,7 @@ function CalcU1600(props) {
   // where the view rule's debugger fits. Narrower, the paper gives way to
   // the inspector while no plotter is plugged in. The panels alone (mobile)
   // are the paper, with its hint without a plotter, and never the inspector.
-  const showPaper = panelRoom && (view.panelsAlone || view.debuggerFits || !!paperOwner);
+  const showPaper = panelRoom && !paperWindow.own && (view.panelsAlone || view.debuggerFits || !!paperOwner);
   const showPrinter = panelRoom && !!(printerEntry && printerEntry.shown);
   const showInspector = panelRoom && !view.panelsAlone && (view.debuggerFits || !(showPaper || showPrinter));
   const anyPanel = showInspector || showPaper || showPrinter;
@@ -417,13 +423,14 @@ function CalcU1600(props) {
         <div className="calcu-panels">
           <ShellPanelArea shell={s} panels={C1600_PANELS}>
             {showInspector && <Inspector shell={shell} />}
-            {showPaper && <PaperDock shell={shell} owner={paperOwner} hint={paperPanel.hint} />}
+            {showPaper && <PaperDock shell={shell} owner={paperOwner} hint={paperPanel.hint} ownWindow={ownWindow} />}
             {showPrinter && <Ce158Printer shell={shell} />}
           </ShellPanelArea>
         </div>
       )}
       <ShellDialogs shell={s} savedMedia={ShellSavedMedia} />
       {dialogs.element}
+      {paperWindow.portal(<PaperDock shell={shell} owner={paperOwner} hint={paperPanel.hint} ownWindow={ownWindow} />, chromeStyle)}
     </div>
   );
 }

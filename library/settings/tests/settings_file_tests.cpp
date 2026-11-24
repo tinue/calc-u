@@ -358,3 +358,15 @@ TEST(settings_values_not_accepted_are_named) {
     CHECK(std::find(bad.begin(), bad.end(), "[test] port = \"many\"") != bad.end());
     CHECK_EQ(bad.size(), std::size_t{2});
 }
+
+// A number without a default ([window] x) is empty until the app writes it:
+// accepted, not a value to warn about.
+TEST(integer_without_default_accepts_empty) {
+    TempDir tmp("calcu-settings-optional-number");
+    SettingsFile f = SettingsFile::open(testProduct(), tmp.str() + "/Test-Product.ini");
+    CHECK(f.notAccepted().empty());
+    const KeyDecl* x = testProduct().find("window", "paper-x");
+    CHECK(x && accepts(testProduct(), *x, "") && accepts(testProduct(), *x, "-20") && !accepts(testProduct(), *x, "left"));
+    const KeyDecl* width = testProduct().find("window", "paper-width");
+    CHECK(width && !accepts(testProduct(), *width, ""));
+}

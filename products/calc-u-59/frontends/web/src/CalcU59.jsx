@@ -161,18 +161,24 @@ const embeddedWide = () => ({
 });
 
 /// The view of layout="auto" for the client's room (the library's rule on
-/// app/'s chrome): beside the faceplate with the panels fitting, the wide
-/// layout; else the pages.
-function autoView(width, height, menuHeight) {
+/// app/'s chrome, cu59::viewInputs): beside the faceplate with the panels
+/// fitting, the wide layout; else the pages. With the paper in its own
+/// window (`own`) the panels are the debugger alone: beside the faceplate
+/// where its width and height fit, else the calculator alone.
+function autoView(width, height, menuHeight, own) {
   const sizes = CHROME_SIZES;
   const view = calcuShellView({
     width, height, faceplateAspect: CANVAS_ASPECT, fixedWidth: 2 * FACE_PADDING,
     fixedHeight: menuHeight + sizes.barHeight + 2 * FACE_PADDING,
-    panelsMinWidth: sizes.panelsMinWidth, panelsMinHeight: sizes.panelsMinHeight,
-    debuggerMinWidth: sizes.debuggerMinWidth, debuggerMinHeight: sizes.debuggerMinHeight, mobile: CALCU_SHELL_MOBILE,
+    panelsMinWidth: own ? sizes.debuggerMinWidth : sizes.panelsMinWidth, panelsMinHeight: sizes.panelsMinHeight,
+    debuggerMinWidth: own ? 0 : sizes.debuggerMinWidth, debuggerMinHeight: sizes.debuggerMinHeight, mobile: CALCU_SHELL_MOBILE,
   });
-  const wide = view.side === "beside" && view.panelsFit;
-  return { wide, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth, debugger: wide && view.debuggerFits };
+  const fits = view.side === "beside" && view.panelsFit;
+  if (own) {
+    const debuggerFits = fits && height - menuHeight >= sizes.debuggerMinHeight;
+    return { wide: debuggerFits, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth, debugger: debuggerFits };
+  }
+  return { wide: fits, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth, debugger: fits && view.debuggerFits };
 }
 
 /// `rules` is embeddedWide() or (layout="auto") autoView(): the artwork
@@ -190,12 +196,14 @@ function WideLayout({ page, width, height, rules }) {
   const [printerWidth, setPrinterWidth] = React.useState(rules.printerStart ?? printerMax);
   const free = width - columnWidth - 2;
   const pw = Math.max(printerMin, Math.min(printerMax, printerWidth, free - (hasDebugger ? CHROME_SIZES.debuggerMinWidth : 0)));
+  // The paper in its own window: the debugger takes its room.
+  const paperHere = !page.paperWindow.own;
   return (
     <div className="calcu-wide" style={{ height: total }}>
       <CalculatorColumn page={page} faceWidth={faceWidth} width={columnWidth} />
       <div className="calcu-vline" />
-      <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane shell={page.shell} paper={page.paper} onChoose={page.s.choose} /></div>
-      {hasDebugger && <Divider onDrag={(dx) => setPrinterWidth(Math.max(printerMin, Math.min(printerMax, pw + dx)))} />}
+      {paperHere && <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane shell={page.shell} paper={page.paper} onChoose={page.s.choose} ownWindow={page.ownWindow} /></div>}
+      {paperHere && hasDebugger && <Divider onDrag={(dx) => setPrinterWidth(Math.max(printerMin, Math.min(printerMax, pw + dx)))} />}
       {hasDebugger && <Debugger />}
     </div>
   );
@@ -220,11 +228,12 @@ function PortraitLayout({ page, width, height: whole }) {
           than the calculator (a tablet, a desktop window) the chevrons stay at
           its corners instead of the screen's. */}
       <div className="calcu-column" style={{ width: faceWidth + 2 * FACE_PADDING }}>
-        <div className="calcu-page" hidden={view !== "calc"}>
+        <div className="calcu-page" hidden={view !== "calc" && !page.paperWindow.own}>
           <CalculatorColumn page={page} faceWidth={faceWidth} />
         </div>
-        {view === "printer" && <div className="calcu-page calcu-page-printer"><PaperPane shell={page.shell} paper={page.paper} onChoose={page.s.choose} /></div>}
-        {view === "calc" ? chevron("right") : chevron("left")}
+        {view === "printer" && !page.paperWindow.own && <div className="calcu-page calcu-page-printer"><PaperPane shell={page.shell} paper={page.paper} onChoose={page.s.choose} ownWindow={page.ownWindow} /></div>}
+        {/* The paper in its own window: no printer page. */}
+        {!page.paperWindow.own && (view === "calc" ? chevron("right") : chevron("left"))}
       </div>
     </div>
   );
@@ -243,7 +252,9 @@ const C59_NO_PRODUCT = { name: "Calc-U-59", acts: {} };
 function CalcU59(props) {
   const { width, keyboard, layout, preset, height, model: modelProp, workerUrl, rest } =
     embedProps(props, { name: "CalcU59", layouts: ["portrait", "wide", "auto"], layout: "portrait" });
-  const { settings = true } = rest;
+  // paperWindow: the page offers the paper's own window (the app page;
+  // never an embed, never mobile).
+  const { settings = true, paperWindow: paperWindowProp = false } = rest;
   // The traces the session hands over (the RUN LOG tab), kept by the page's host services.
   const traces = React.useRef(null);
   if (!traces.current) traces.current = createC59Traces();
@@ -267,10 +278,18 @@ function CalcU59(props) {
   // is its notice. The picker offers the preset extensions and all files.
   const openFiles = (files, way) => calcuOpenFiles((name, args) => shell.send(name, args), files, way);
 
+  // The paper's own window; its notice is the shell's, made below.
+  const notifyRef = React.useRef(null);
+  const paperWindow = useCalcuPaperWindow(shell, {
+    offered: auto && !CALCU_SHELL_MOBILE && !!paperWindowProp, title: "Calc-U-59 — Printer",
+    notify: (text) => { if (notifyRef.current) notifyRef.current(text); },
+  });
+
   // layout="auto": the view for this size, once app/'s chrome is here
   // (the answer of the last render; the first answer's layout is portrait).
   const [chromeHere, setChromeHere] = React.useState(false);
-  const rules = auto && chromeHere ? autoView(width || measured || 0, height || 0, menuBar ? MENU_HEIGHT : 0) : null;
+  const rules = auto && chromeHere
+    ? autoView(width || measured || 0, height || 0, menuBar ? MENU_HEIGHT : 0, paperWindow.own) : null;
   const portrait = auto ? !rules || !rules.wide : layout !== "wide";
 
   // The product's shell data per layout (the settings differ).
@@ -287,6 +306,7 @@ function CalcU59(props) {
   const chromeStyle = React.useMemo(() => calcuChromeStyle(chrome, dark), [chrome, dark]);
   const traits = React.useMemo(() => traitsFor(settings), [settings]);
   const s = useCalcuShell(shell, product, traits, { layout: portrait ? "portrait" : "wide", version: CALC_VERSION, build: CALC_BUILD });
+  notifyRef.current = s.notify;
   const cs = s.inputs.controlState;
   const model = (cs && cs.model) || modelProp || "TI-59";
 
@@ -352,7 +372,10 @@ function CalcU59(props) {
   const drop = calcuFileDrop(shell ? openFiles : null);
 
   const paper = s.panels.find((p) => p.kind === "paper") || {};
-  const page = { shell, s, faceplate: maps[model] || null, model, paper, menuHeight: menuBar ? MENU_HEIGHT : 0 };
+  const ownWindow = auto && !CALCU_SHELL_MOBILE && paperWindowProp
+    ? { own: paperWindow.own, toggle: paperWindow.toggle } : undefined;
+  const page = { shell, s, faceplate: maps[model] || null, model, paper, menuHeight: menuBar ? MENU_HEIGHT : 0,
+    paperWindow, ownWindow };
   const romsMissing = !!s.romsMissing && !s.started;
   const failed = start === "failed";
   const Layout = portrait ? PortraitLayout : WideLayout;
@@ -383,6 +406,7 @@ function CalcU59(props) {
         <KeyFeedback shell={shell} enabled={touch} />
         <ShellDialogs shell={s} savedMedia={ShellSavedMedia} />
         {cardDialog && <CardPicker shell={shell} mode={cardDialog} onClose={() => setCardDialog(null)} />}
+        {paperWindow.portal(<PaperPane shell={shell} paper={paper} onChoose={s.choose} ownWindow={ownWindow} />, chromeStyle)}
       </C59_PAGE.Provider>
     </div>
   );

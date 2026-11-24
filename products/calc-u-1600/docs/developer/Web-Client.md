@@ -118,7 +118,10 @@ builds the test build and tests it, then builds `--release`, checks it
   `React.createElement(CalcU1600, props)`:
 
   The props are the family's shared ones (`docs/formats/web-embed.md`
-  §1.1 at the repository root); Calc-U-1600 has no prop of its own.
+  §1.1 at the repository root), and one of Calc-U-1600's own:
+  `paperWindow` (default `false`; the app page passes `true`), on a
+  desktop page the paper panel's button that opens the paper in a window
+  of its own (`useCalcuPaperWindow`, `library/web/components/PaperWindow.jsx`).
   `layout` takes only `"auto"`, the default; `model` takes `PC-1500`,
   `PC-1500A` or `PC-1600`; without `width` and `height` the client fills
   its parent.

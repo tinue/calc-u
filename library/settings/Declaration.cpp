@@ -76,6 +76,7 @@ bool accepts(const ProductDecl& product, const KeyDecl& decl, std::string_view v
     case ValueKind::Path: return value.empty() || isAbsolutePath(value);
     case ValueKind::Boolean: return value == "true" || value == "false";
     case ValueKind::Integer: {
+        if (value.empty() && decl.defaultValue.empty()) return true;   // a number not set yet ([window] x)
         const auto n = parseLong(value);
         return n && (!decl.min || *n >= *decl.min) && (!decl.max || *n <= *decl.max);
     }

@@ -4,7 +4,8 @@
 //
 //   <CalcuPaperPanel shell={shell} owner={peripheralId | null} ownerPlace={place | null}
 //                    hint={text} controls={[{id, form: "key" | "switch", on, label?, shortLabel?}]?}
-//                    send={fn?} places={[bar control]} onChoose={fn} />
+//                    send={fn?} places={[bar control]} onChoose={fn}
+//                    ownWindow={{own, toggle}?} />
 //
 // owner, ownerPlace: the printer plugged in and its place, from the control
 // state's panel; hint: what shows where the paper would start while there is
@@ -12,8 +13,11 @@
 // control state's of the owner on its place; places: the shell's place controls on the paper
 // (the panel model's), first in the header, onChoose(item) carrying out
 // their choice (the shell's choose); send(command, args) defaults to
-// shell.send. The header holds the places left, the owner's name centred
-// and the view control right; below the paper one row that never wraps: the
+// shell.send; ownWindow: the paper's own window where the page offers it
+// (useCalcuPaperWindow), its button at the header's right edge ("Open in
+// Own Window", in it "Back to Main Window"). The header holds the places
+// left, the owner's name centred and the view control right, left of that
+// button; below the paper one row that never wraps: the
 // owner's controls left, labelled as the control state labels them (the
 // short labels where the row is compact: calcuShellPaperRowCompact on the
 // panel's width and the chrome's --calcu-paper-row-compact-width), a switch
@@ -21,7 +25,7 @@
 // arm the clipboard inside the click (armClipboard, hostServices.js) and
 // send `paper.copy` / `paper.cut {copy: true}`.
 // Elements carry data-calcu names for the tests: paper-panel, paper-owner,
-// paper-view, paper-copy, paper-cut, paper-toast, paper-text,
+// paper-view, paper-window, paper-copy, paper-cut, paper-toast, paper-text,
 // paper-control-<id>, paper-scroll, paper-canvas.
 
 const CALCU_PAPER_FOLLOW = 64;      // points from the end within which the view follows
@@ -37,8 +41,20 @@ function useCalcuPaper(shell) {
     () => none);
 }
 
-// Copy (two sheets) and Cut (scissors), drawn in the button's text colour.
+// Copy (two sheets) and Cut (scissors), drawn in the button's text colour;
+// the own window: a window with an arrow out of it ("out") or back in ("in").
 function CalcuPaperIcon({ kind }) {
+  if (kind === "out" || kind === "in") {
+    const tip = kind === "in" ? [7.5, 8.5] : [14, 2], tail = kind === "in" ? [14, 2] : [7.5, 8.5];
+    const d = kind === "in" ? 4 : -4;
+    return (
+      <svg className="calcu-paper-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"
+        fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7.5 2.5H2.5V13.5H13.5V8.5" />
+        <path d={`M${tail[0]} ${tail[1]}L${tip[0]} ${tip[1]}M${tip[0]} ${tip[1] - d}L${tip[0]} ${tip[1]}L${tip[0] + d} ${tip[1]}`} />
+      </svg>
+    );
+  }
   return (
     <svg className="calcu-paper-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"
       fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
@@ -96,7 +112,12 @@ function CalcuPaperControl({ control, compact, onSet }) {
 
 const CALCU_PAPER_NO_CONTROLS = [];
 
-function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send, places, onChoose }) {
+// The window the element is drawn in: the page's, or the paper's own.
+function calcuViewOf(el) {
+  return (el && el.ownerDocument && el.ownerDocument.defaultView) || window;
+}
+
+function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send, places, onChoose, ownWindow }) {
   const state = useCalcuPaper(shell);
   const all = useTopic(shell, "control-state", (cs) => (cs && cs.controls) || CALCU_PAPER_NO_CONTROLS);
   const controls = given || all.filter((c) => c.peripheral === owner && c.place === ownerPlace);
@@ -116,13 +137,14 @@ function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send
   React.useEffect(() => {
     const el = panelRef.current;
     if (!el) return undefined;
+    const view = calcuViewOf(el);
     const update = () => {
-      const width = parseFloat(getComputedStyle(el).getPropertyValue("--calcu-paper-row-compact-width")) || 0;
+      const width = parseFloat(view.getComputedStyle(el).getPropertyValue("--calcu-paper-row-compact-width")) || 0;
       setCompact(calcuShellPaperRowCompact({ paperRowCompactWidth: width }, el.clientWidth));
     };
     update();
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const o = new ResizeObserver(update);
+    if (typeof view.ResizeObserver === "undefined") return undefined;
+    const o = new view.ResizeObserver(update);
     o.observe(el);
     return () => o.disconnect();
   }, []);
@@ -139,8 +161,9 @@ function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send
     const update = () => setSize((old) => (old.width === el.clientWidth && old.height === el.clientHeight
       ? old : { width: el.clientWidth, height: el.clientHeight }));
     update();
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const o = new ResizeObserver(update);
+    const view = calcuViewOf(el);
+    if (typeof view.ResizeObserver === "undefined") return undefined;
+    const o = new view.ResizeObserver(update);
     o.observe(el);
     return () => o.disconnect();
   }, [showText]);
@@ -175,7 +198,7 @@ function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || showText) return;
-    const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
+    const dpr = calcuViewOf(canvas).devicePixelRatio || 1;
     const w = Math.max(1, size.width), h = Math.max(1, size.height);
     if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
       canvas.width = Math.round(w * dpr);
@@ -202,7 +225,9 @@ function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send
   }, [copy && copy.seq]);
 
   const copyOrCut = (command, args) => {
-    armClipboard({ text: textLayer });   // in the gesture (hostServices.js armClipboard)
+    // In the gesture (hostServices.js armClipboard), on the clipboard of
+    // the window the click was in.
+    armClipboard({ text: textLayer, view: calcuViewOf(panelRef.current) });
     Promise.resolve(sendTo(command, args)).then((r) => {
       if (!r || !r.done) calcuDisarmClipboard();
     });
@@ -225,6 +250,12 @@ function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send
               aria-pressed={view === "text"} onClick={() => setView(view === "text" ? "marks" : "text")}>
               {view === "text" ? "Text" : "Marks"}
             </button>
+          )}
+          {ownWindow && (
+            <button type="button" className="calcu-paper-action calcu-paper-window" data-calcu="paper-window"
+              title={ownWindow.own ? "Back to Main Window" : "Open in Own Window"}
+              aria-label={ownWindow.own ? "Back to Main Window" : "Open in Own Window"}
+              onClick={ownWindow.toggle}><CalcuPaperIcon kind={ownWindow.own ? "in" : "out"} /></button>
           )}
         </span>
       </div>

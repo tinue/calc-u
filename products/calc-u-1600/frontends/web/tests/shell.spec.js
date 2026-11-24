@@ -365,3 +365,24 @@ test('the program file items', async ({ page }) => {
     expect(await fc.element().evaluate((e) => e.accept)).toBe(accept);
   }
 });
+
+// The paper in its own window (the app page on a desktop): a popup with the
+// same panel, the INSPECTOR alone in the row; closing it puts the paper
+// back. Qt6's twin: paper_own_window_inspector_alone_in_the_row.
+test('the paper in its own window and back', async ({ page }) => {
+  await page.setViewportSize({ width: 1430, height: 1000 });
+  await page.goto('app/');
+  await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
+  const paper = page.locator('[data-panel=paper]');
+  await expect(paper).toBeVisible({ timeout: 15000 });
+  const button = paper.locator(c('paper-window'));
+  await expect(button).toHaveAttribute('aria-label', 'Open in Own Window');
+  const [popup] = await Promise.all([page.waitForEvent('popup'), button.click()]);
+  await expect(popup.locator(c('paper-panel'))).toBeVisible();
+  await expect(popup.locator(c('paper-window'))).toHaveAttribute('aria-label', 'Back to Main Window');
+  await expect(paper).toHaveCount(0);
+  await expect(page.locator('[data-panel=inspector]')).toBeVisible();
+  await popup.locator(c('paper-window')).click();   // the button puts it back too
+  await expect(paper).toBeVisible();
+  await expect(page.locator('[data-panel=inspector]')).toBeVisible();
+});

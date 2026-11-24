@@ -10,14 +10,15 @@
 #include <vector>
 
 // The settings in the session: the state topic `settings` and the commands
-// `set-setting` and `remember-folder`, so that the dialog of every frontend
+// `set-setting`, `remember-folder` and `remember-window`, so that the dialog of every frontend
 // reads and writes the product's settings file through the session (the
 // Web's file lives in the worker).
 //
 //   settings        {home, rows: [{section, key, kind, value, default,
 //                   choices, min?, max?, inUse, isDefault}]} for every
 //                   declared key but [window] and [startup] last-model,
-//                   and the keys of `alsoShown`;
+//                   and the keys of `alsoShown`; window: {<key>: text}
+//                   every declared [window] key as the file has it;
 //                   `kind`: text, path, boolean, integer, choice,
 //                   model-or-last, model-name, folder ([folders] keys)
 //   set-setting     {section, key, value | null}: null is the default; a
@@ -28,6 +29,9 @@
 //                   A [folders] key sets its fixed folder.
 //   remember-folder {kind, folder}: the folder a file dialog of that kind
 //                   was last used in
+//   remember-window {values: {<key>: value}}: declared [window] keys a page
+//                   writes (the paper's own window); a key not declared or
+//                   a value it does not accept refuses them all
 
 namespace calcu::shell {
 

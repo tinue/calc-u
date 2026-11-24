@@ -11,12 +11,13 @@
 // the page's clipboard service.
 
 // `paper`: the shell's paper panel ({owner, ownerPlace, hint, places});
-// `onChoose`: the shell's choose, for the place controls on the paper.
-function PaperPane({ shell, paper, onChoose }) {
+// `onChoose`: the shell's choose, for the place controls on the paper;
+// `ownWindow`: the paper's own window where the page offers it.
+function PaperPane({ shell, paper, onChoose, ownWindow }) {
   return (
     <div className="calcu-printer" data-panel="paper">
       <CalcuPaperPanel shell={shell} owner={paper.owner || null} ownerPlace={paper.ownerPlace || null}
-        hint={paper.hint} places={paper.places || []} onChoose={onChoose} />
+        hint={paper.hint} places={paper.places || []} onChoose={onChoose} ownWindow={ownWindow} />
     </div>
   );
 }

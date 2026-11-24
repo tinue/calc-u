@@ -133,7 +133,7 @@ std::vector<std::string_view> tiChromeNames() {
     return names;
 }
 
-calcu::shell::ViewInputs viewInputs(double width, double height, double extraWidth, bool mobile) {
+calcu::shell::ViewInputs viewInputs(double width, double height, double extraWidth, bool mobile, bool paperOwnWindow) {
     const calcu::shell::ChromeSizes& s = tiChrome().sizes;
     calcu::shell::ViewInputs in;
     in.width = width;
@@ -146,6 +146,10 @@ calcu::shell::ViewInputs viewInputs(double width, double height, double extraWid
     in.debuggerMinWidth = s.debuggerMinWidth;
     in.debuggerMinHeight = s.debuggerMinHeight;
     in.mobile = mobile;
+    if (paperOwnWindow) {
+        in.panelsMinWidth = s.debuggerMinWidth;
+        in.debuggerMinWidth = 0;
+    }
     return in;
 }
 

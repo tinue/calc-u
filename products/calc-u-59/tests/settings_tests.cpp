@@ -64,7 +64,9 @@ TEST(settings_declaration) {
         {"window.y", ""},                      {"window.width", "1280"},
         {"window.height", "860"},              {"window.calculator-width", ""},
         {"window.printer-width", ""},          {"window.debug-width", ""},
-        {"window.portrait-debug-page", "false"},
+        {"window.portrait-debug-page", "false"}, {"window.paper-own-window", "false"},
+        {"window.paper-x", ""},                {"window.paper-y", ""},
+        {"window.paper-width", "400"},         {"window.paper-height", "640"},
     };
     std::vector<std::pair<std::string, std::string>> actual;
     for (const cs::KeyDecl& k : d.keys) actual.emplace_back(k.section + "." + k.key, k.defaultValue);
@@ -76,7 +78,9 @@ TEST(settings_declaration) {
     CHECK((byApp == std::set<std::string>{"startup.last-model", "folders.presets", "folders.asm-overlays",
                                           "window.x", "window.y", "window.width", "window.height",
                                           "window.calculator-width", "window.printer-width",
-                                          "window.debug-width", "window.portrait-debug-page"}));
+                                          "window.debug-width", "window.portrait-debug-page",
+                                          "window.paper-own-window", "window.paper-x", "window.paper-y",
+                                          "window.paper-width", "window.paper-height"}));
     CHECK(d.find("folders", "other") == nullptr);  // not a key: no dialog uses it
 
     // The accepted values.
@@ -270,10 +274,7 @@ TEST(window_numbers_round_trip) {
     TempDir tmp("calcu59-lib9-ac35");
     const std::string path = tmp.str() + "/Calc-U-59/Calc-U-59.ini";
     s59::WindowState w;
-    w.x = -40;  // a second screen left of the first
-    w.y = 25;
-    w.width = 1500;
-    w.height = 900;
+    w.place = {-40, 25, 1500, 900};  // x on a second screen left of the first
     w.calculatorWidth = 420;
     w.printerWidth = 300;
     w.debugWidth = 780;
@@ -293,5 +294,5 @@ TEST(window_numbers_round_trip) {
     f.set("window", "width", "wide");
     f.set("window", "x", "left");
     const s59::WindowState back = s59::Settings(f).windowState();
-    CHECK(back.width == 1280 && !back.x && back.y == 25);
+    CHECK(back.place.width == 1280 && !back.place.x && back.place.y == 25);
 }

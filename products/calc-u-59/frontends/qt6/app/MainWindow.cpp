@@ -40,8 +40,11 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
 
     // The shell over the session host, with Calc-U-59's data and the
     // Qt6 frontend's settings dialog.
+    calcu::qt6::ShellOptions options;
+    options.windowSettings = &AppSettings::settings().file();
     m_shell = new calcu::qt6::Shell(*this, host(), product(),
-                                    cu59::settingsSpec(cu59::ShellFrontend::Qt6, calcu::shell::about(product()).version));
+                                    cu59::settingsSpec(cu59::ShellFrontend::Qt6, calcu::shell::about(product()).version),
+                                    std::move(options));
     m_shell->setChrome(ChromeStyle::chrome());
     m_calculator->setShellWidgets(*m_shell);
 
@@ -114,6 +117,7 @@ MainWindow::MainWindow(QWidget* parent, calcu::pacing::WallClock clock)
         applyView();
     });
     m_splitter->installEventFilter(this);
+    connect(m_shell->panelArea(), &calcu::qt6::PanelArea::paperOwnWindowChanged, this, [this] { applyView(); });
 
     restoreWindowState();
     applyView();
@@ -190,19 +194,23 @@ void MainWindow::selectAsmFile() {
 
 // The library's view rule on the window's room: the printer beside the
 // faceplate where it fits (the debugger too where the room takes both and
-// the window is tall enough), else the pages.
+// the window is tall enough), else the pages. With the paper in its own
+// window: the debugger beside the faceplate where it fits, else the
+// calculator alone.
 void MainWindow::applyView() {
     if (!m_splitter || !m_debug) return;
     const calcu::shell::ChromeSizes& s = ChromeStyle::chrome().sizes;
+    calcu::qt6::PanelArea* panels = m_shell->panelArea();
+    const bool own = panels->paperOwnWindow();
     // The splitter's dividers beside the faceplate.
-    const calcu::shell::View v =
-        calcu::shell::view(cu59::viewInputs(m_splitter->width(), m_splitter->height(), 2 * m_splitter->handleWidth(), false));
+    const calcu::shell::View v = calcu::shell::view(
+        cu59::viewInputs(m_splitter->width(), m_splitter->height(), 2 * m_splitter->handleWidth(), false, own));
     const bool wide = v.side == calcu::shell::ViewSide::Beside && v.panelsFit;
-    const bool debugger = v.debuggerFits;
-    m_paged = !wide;
-    QWidget* panels = m_shell->panelArea();
+    const bool debugger = own ? wide && m_splitter->height() >= s.debuggerMinHeight : v.debuggerFits;
+    if (own) m_printerPage = false;
+    m_paged = !wide && !own;
     m_calculator->setVisible(wide || !m_printerPage);
-    panels->setVisible(wide || m_printerPage);
+    panels->setVisible(!own && (wide || m_printerPage));
     m_debug->setVisible(debugger);
     m_chevron->setVisible(m_paged);
     if (m_paged) {
@@ -230,8 +238,8 @@ void MainWindow::closeEvent(QCloseEvent* e) {
 // of the three panels.
 void MainWindow::restoreWindowState() {
     const cu59::settings::WindowState w = AppSettings::settings().windowState();
-    resize(static_cast<int>(w.width), static_cast<int>(w.height));
-    if (w.x && w.y) move(static_cast<int>(*w.x), static_cast<int>(*w.y));
+    resize(static_cast<int>(w.place.width), static_cast<int>(w.place.height));
+    if (w.place.x && w.place.y) move(static_cast<int>(*w.place.x), static_cast<int>(*w.place.y));
     if (w.calculatorWidth && w.printerWidth && w.debugWidth)
         m_splitter->setSizes({static_cast<int>(*w.calculatorWidth), static_cast<int>(*w.printerWidth),
                               static_cast<int>(*w.debugWidth)});
@@ -240,12 +248,10 @@ void MainWindow::restoreWindowState() {
 void MainWindow::saveWindowState() {
     const QRect g = normalGeometry();
     const QPoint at = isMaximized() || isFullScreen() ? g.topLeft() : pos();
-    // The columns' widths as last seen side by side.
+    // The columns' widths as last seen side by side, the paper among them
+    // (with the paper in its own window its column is 0: kept as it was).
     cu59::settings::WindowState w = AppSettings::settings().windowState();
-    w.x = at.x();
-    w.y = at.y();
-    w.width = g.width();
-    w.height = g.height();
+    w.place = {at.x(), at.y(), g.width(), g.height()};
     const QList<int> sizes = m_splitter->sizes();
     if (sizes.size() == 3 && sizes[0] > 0 && sizes[1] > 0 && sizes[2] > 0) {
         w.calculatorWidth = sizes[0];

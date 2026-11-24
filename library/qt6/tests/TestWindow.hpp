@@ -32,8 +32,10 @@ namespace calcu::qt6::test {
 class TestWindow {
 public:
     // `product`: changes the test product before the shell takes it.
+    // `paperWindow`: the shell offers the paper's own window, its keys in
+    // the window's settings file.
     explicit TestWindow(bool withControlState = true, ShellOptions options = defaultOptions(),
-                        const std::function<void(shell::ShellProduct&)>& product = {});
+                        const std::function<void(shell::ShellProduct&)>& product = {}, bool paperWindow = false);
     ~TestWindow();
 
     static ShellOptions defaultOptions() { return {}; }

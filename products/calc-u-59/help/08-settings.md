@@ -78,6 +78,12 @@ app:
   and the debug panel (Qt6).
 - `[window] portrait-debug-page`: Debug Page in Portrait, `true` or
   `false` (iPhone, iPad); `false` by default.
+- `[window] paper-own-window`: the paper in a window of its own, `true`
+  or `false` (Qt6); `false` by default
+  ([The paper in its own window](../../../library/help/05-peripherals-and-paper.md#the-paper-in-its-own-window)).
+- `[window] paper-x`, `[window] paper-y`, `[window] paper-width`,
+  `[window] paper-height`: that window's place and size (Qt6); 400 by
+  640 by default.
 
-The Qt6 window comes back at its last normal size and place, never
+The Qt6 windows come back at their last normal size and place, never
 maximised or full screen.

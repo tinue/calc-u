@@ -62,6 +62,7 @@ inline const sessions::CommandName kScreenKeyUp{"screen-key-up"};
 inline const sessions::CommandName kSpeed{"speed"};
 inline const sessions::CommandName kSetSetting{"set-setting"};
 inline const sessions::CommandName kRememberFolder{"remember-folder"};
+inline const sessions::CommandName kRememberWindow{"remember-window"};
 } // namespace commands
 
 // Reading a Value without throwing: a member by key, or what a missing or

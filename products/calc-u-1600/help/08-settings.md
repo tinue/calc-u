@@ -73,9 +73,18 @@ and leaves both keys as they are ([Debugger](07-debugger.md#one-time-installatio
 
 ## Window
 
-`[window] <key>` of the family has two keys here:
+`[window] <key>` of the family has these keys here, all written by the
+app:
 
-- `[window] width`: the window's width, written by the app; 900 by
+- `[window] x`, `[window] y`: the window's left and top edge.
+- `[window] width`, `[window] height`: the window's size; 900 by 700
+  by default.
+- `[window] paper-own-window`: the paper in a window of its own, `true`
+  or `false`; `false` by default
+  ([The paper in its own window](../../../library/help/05-peripherals-and-paper.md#the-paper-in-its-own-window)).
+- `[window] paper-x`, `[window] paper-y`, `[window] paper-width`,
+  `[window] paper-height`: that window's place and size; 400 by 640 by
   default.
-- `[window] height`: the window's height, written by the app; 500 by
-  default.
+
+The windows come back at their last normal size and place, never
+maximised or full screen.

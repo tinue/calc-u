@@ -30,7 +30,8 @@ class QHBoxLayout;
 //   {owner, copy: true}`, `set-control {peripheral, control, on}`.
 // The header shows the shell's place controls on the paper (setPlaces)
 // left, the owner's name centred and the view control (with a text layer)
-// right; below it the paper, scrolled with the wheel or by touch without a
+// right, at the right edge the own-window button where the shell offers
+// it (setOwnWindowOffered: a desktop window); below it the paper, scrolled with the wheel or by touch without a
 // scroll bar, or the text in a fixed-width font; below the paper one row
 // that never wraps: the owner's controls left (a switch with the dot of its
 // position), labelled as the control state labels them (the short labels
@@ -41,7 +42,7 @@ class QHBoxLayout;
 // A Copy or Cut is answered by a toast inside the panel for 1.8 s.
 //
 // Object names: paper-panel, paper-header, paper-footer, paper-owner,
-// paper-view-toggle, paper-copy, paper-cut, paper-control-<id>, paper-view,
+// paper-view-toggle, paper-window, paper-copy, paper-cut, paper-control-<id>, paper-view,
 // paper-text, paper-toast.
 
 namespace calcu::qt6 {
@@ -71,6 +72,12 @@ public:
     // line up with the panels beside it; the paper's colours.
     void setChrome(const shell::ChromeColours&, const shell::ChromeSizes&);
     void setSender(Sender s) { sender_ = std::move(s); }
+    // The own-window button (tooltips "Open in Own Window", "Back to Main
+    // Window"): shown where the shell offers the own window; setOwnWindow
+    // says where the panel is. A press asks with ownWindowRequested.
+    void setOwnWindowOffered(bool);
+    void setOwnWindow(bool);
+    bool ownWindow() const { return ownWindow_; }
 
     // What the panel shows now (the tests, the shell).
     std::string ownerName() const;               // "" without an owner
@@ -86,6 +93,9 @@ public:
         paper::Reach reach;
         bool empty() const { return marks.empty() && lines.empty() && reach == paper::Reach{}; }
     };
+
+signals:
+    void ownWindowRequested(bool own);
 
 protected:
     void resizeEvent(QResizeEvent*) override;
@@ -115,6 +125,9 @@ private:
     QHBoxLayout* placesLayout_;
     QLabel* ownerLabel_;
     QToolButton* viewToggle_;
+    QToolButton* windowButton_;
+    bool ownWindow_ = false;
+    QColor windowText_;   // the chrome's pill text (setChrome)
     QWidget* controlsBox_;
     QHBoxLayout* controlsLayout_;
     QToolButton* copy_;

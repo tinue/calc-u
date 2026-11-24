@@ -484,6 +484,29 @@ TEST(narrow_window_inspector_or_paper) {
     CHECK(inspector->isVisible() && paper->isVisible() && inspector->x() < paper->x());
 }
 
+// The paper in its own window is never in the row: the INSPECTOR alone,
+// in a wide window too; back, both again.
+TEST(paper_own_window_inspector_alone_in_the_row) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f;
+    calcu::qt6::PanelArea* area = f.w().shell().panelArea();
+    QWidget* inspector = f.w().inspector();
+    QWidget* paper = area->panel("paper");
+    f.w().resize(1430, 1000);
+    f.run(50);
+    auto* button = paper->findChild<QToolButton*>(QStringLiteral("paper-window"));
+    CHECK(button && button->isVisible());
+    if (!button) return;
+    button->click();
+    f.run(50);
+    CHECK(area->paperOwnWindow() && paper->window() != &f.w() && paper->isVisible());
+    CHECK(f.w().panelsShown() && inspector->isVisible());
+    button->click();
+    f.run(50);
+    CHECK(!area->paperOwnWindow() && paper->window() == &f.w());
+    CHECK(inspector->isVisible() && paper->isVisible() && inspector->x() < paper->x());
+}
+
 // The bar below the faceplate by the library's rule (shell::barFit): as
 // wide as the faceplate's art, centred under it; its labels ("Cassette:",
 // "More") only where the whole bar fits the art with them.

@@ -47,7 +47,8 @@ const cs::Paths& places() { return folders().places(); }
 
 QString defaultDir() {
     const QString dir = q(cs::joinPath(folders().hostDirs().home, cu59::settings::settingsDecl().productName));
-    QDir().mkpath(dir);
+    // Still the folder a file dialog starts in; it opens where the system lets it.
+    if (!QDir().mkpath(dir)) qWarning("The folder %s cannot be created.", qPrintable(dir));
     return dir;
 }
 

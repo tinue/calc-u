@@ -339,3 +339,25 @@ TEST(set_at_build_and_after_operation) {
 }
 
 } // namespace
+
+// What fails while the part is made goes to the app log once the session
+// is there: a module definition that does not read, the host drive's ROM
+// where the host offers the drive. The session starts all the same.
+TEST(start_problems_in_the_app_log) {
+    SessionFixture f;
+    const fs::path bundle = f.root / "bundle";
+    std::ofstream(bundle / "broken.module.yaml") << "format-version: 1\nmodule-name: BROKEN\nbogus-key: 1\n";
+    fs::remove(bundle / "PC1600-P1-B7-HOSTDRIVE.bin");
+    f.open();
+    CHECK(f.appLog.has(calcu::applog::AppLogLevel::Warn, "broken.module.yaml: "));
+    CHECK(f.appLog.has(calcu::applog::AppLogLevel::Warn, "The host drive is off: its ROM cannot be read: "));
+}
+
+// A browser offers no host drive: its missing ROM is no problem there.
+TEST(no_host_drive_no_rom_warning) {
+    SessionFixture f;
+    f.hostDirectories = false;
+    fs::remove(f.root / "bundle" / "PC1600-P1-B7-HOSTDRIVE.bin");
+    f.open();
+    CHECK(!f.appLog.has(calcu::applog::AppLogLevel::Warn, "host drive"));
+}

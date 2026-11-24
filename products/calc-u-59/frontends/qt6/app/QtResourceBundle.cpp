@@ -1,4 +1,5 @@
 #include "QtResourceBundle.hpp"
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 
@@ -16,7 +17,10 @@ std::optional<std::vector<std::uint8_t>> QtResourceBundle::read(std::string_view
     const QString name = QString::fromUtf8(fileName.data(), static_cast<qsizetype>(fileName.size()));
     if (!QDir(QStringLiteral(":/roms")).entryList(QDir::Files).contains(name, Qt::CaseSensitive)) return std::nullopt;
     QFile f(QStringLiteral(":/roms/") + name);
-    if (!f.open(QIODevice::ReadOnly)) return std::nullopt;
+    if (!f.open(QIODevice::ReadOnly)) {   // listed but not readable: the lookup calls it missing
+        qDebug("The bundled ROM file %s cannot be read: %s", qPrintable(name), qPrintable(f.errorString()));
+        return std::nullopt;
+    }
     const QByteArray b = f.readAll();
     const auto* data = reinterpret_cast<const std::uint8_t*>(b.constData());
     return std::vector<std::uint8_t>(data, data + b.size());

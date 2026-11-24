@@ -159,7 +159,7 @@ TEST(qt_menus_in_family_order) {
     CHECK(checkList("Machine", labels(f.find<QMenu>(names::menu("machine"))),
                     {"Model ▸", "ROM Revision ▸", "Peripherals ▸", "-", "Reset", "Cold boot", "Resume", "Trace", "Log Level ▸"}));
     CHECK(checkList("Log Level", labels(f.find<QMenu>(names::item(cu1600::kItemLogLevel))), {"Off", "Info (how presets run)", "Debug"}));
-    CHECK(checkList("Help", labels(f.find<QMenu>(names::menu("help"))), {"Calc-U-1600 Help", "About Calc-U-1600…"}));
+    CHECK(checkList("Help", labels(f.find<QMenu>(names::menu("help"))), {"Calc-U-1600 Help", "Show App Log", "About Calc-U-1600…"}));
     CHECK(checkList("ROM Revision", labels(f.find<QMenu>(names::item("variants-model"))), {"A01", "A03", "A04"}));
     CHECK(checkList("Peripherals", labels(f.find<QMenu>(names::item("peripherals"))), {"CE-150", "-", "CE-158"}));
     // Host Drive… is the PC-1600's (its product entry); Resume while paused.
@@ -324,6 +324,7 @@ TEST(settings_sections_and_rows) {
     want.push_back("Serial ports: Link folder");
 #endif
     want.push_back("Debugger: Debug server (DAP) Port");
+    want.push_back("App log: App log level");
     CHECK(checkList("sections", sections, want));
     // The two status lines of Serial ports and the debug server's status.
     f.run(100);

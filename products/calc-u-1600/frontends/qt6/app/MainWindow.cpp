@@ -385,6 +385,7 @@ void MainWindow::chooseProgram(bool code) {
 std::optional<QByteArray> MainWindow::readChosen(const QString& path, const QString& title) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
+        qWarning("%s cannot be read: %s", qPrintable(path), qPrintable(file.errorString()));
         QMessageBox::warning(this, title, tr("Could not read %1: %2").arg(path, file.errorString()));
         return std::nullopt;
     }
@@ -438,6 +439,7 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
     const sessions::ReplyMessage planned = m_controller->ask(cu1600::requests::kCodePlan, sessions::Value(*args));
     const auto* plan = sessions::payloadAs<cu1600::CodePlanReply>(planned.result);
     if (!planned.done || !plan) {
+        qInfo("Load Machine Code: %s: %s", qPrintable(name), planned.reason.c_str());
         QMessageBox::warning(this, title, QString::fromStdString(planned.reason));
         return;
     }
@@ -447,13 +449,15 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
         if (dialog.exec() != QDialog::Accepted) return;
         args->push_back({"address", sessions::Value(dialog.address().toStdString())});
     } else if (!plan->refusal.empty()) {
+        qInfo("Load Machine Code: %s: %s", qPrintable(name), plan->refusal.c_str());
         QMessageBox::warning(this, title, name + QStringLiteral(": ") + QString::fromStdString(plan->refusal));
         return;
     }
     m_controller->send(cu1600::commands::kLoadCode, sessions::Value(std::move(*args)),
-                       [this, title](const sessions::ReplyMessage& r) {
+                       [this, title, name](const sessions::ReplyMessage& r) {
                            const auto* loaded = sessions::payloadAs<cu1600::CodeLoadedReply>(r.result);
                            if (!r.done || !loaded) {
+                               qInfo("Load Machine Code: %s: %s", qPrintable(name), r.reason.c_str());
                                QMessageBox::warning(this, title, QString::fromStdString(r.reason));
                                return;
                            }
@@ -681,7 +685,7 @@ void MainWindow::openFile(const QString& path, calcu::opening::Way way) {
 void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, const QString& kind) {
     namespace sessions = calcu::sessions;
     if (m_programFlow) {
-        qDebug().noquote() << "[open] a program flow runs; dropped" << name;
+        qInfo().noquote() << "Open: a program load is asking already;" << name << "is not opened.";
         return;
     }
     m_programFlow = true;

@@ -24,6 +24,7 @@
 #include "../core/Connector/MemoryCardCatalog.hpp"
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
+#include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "support/Typing.hpp"
 #include "TestRoms.hpp"
@@ -1230,6 +1231,23 @@ TEST(test_catalog_scan_missing_dir) {
     auto entries = scanMemoryCardDirectory("/no/such/module/dir", &err);
     CHECK(entries.empty());
     CHECK(!err.empty());
+}
+
+// The definitions that do not read are left out and named, each with its
+// reason, for the app log; so is a folder that cannot be read.
+TEST(module_definitions_problems_named) {
+    const calcu::testing::TempFolder dirFolder("calcu1600-cards");
+    const std::string dir = makeScratchCardDir(dirFolder);
+    calcu::machine::Catalogue c = sharp::sharpCatalogue();
+    std::vector<std::string> problems;
+    CHECK_EQ(sharp::addModuleDefinitions(c, dir, &problems), 3);
+    CHECK_EQ(problems.size(), std::size_t{1});
+    CHECK(!problems.empty() && problems[0].find("The module definitions in " + dir + ": broken.module.yaml: ") == 0);
+    CHECK(!c.peripheral(calcu::machine::PeripheralId{"BROKEN"}));
+    problems.clear();
+    CHECK_EQ(sharp::addModuleDefinitions(c, "/no/such/module/dir", &problems), 0);
+    CHECK_EQ(problems.size(), std::size_t{1});
+    CHECK(!problems.empty() && problems[0].find("/no/such/module/dir") != std::string::npos);
 }
 
 }  // namespace

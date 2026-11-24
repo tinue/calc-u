@@ -76,7 +76,10 @@ calcu::machine::PeripheralDescriptor moduleDescriptor(const MemoryCardDefinition
 
 // Adds every module definition (`*.module.yaml`) of `dir` that is not in the
 // catalogue yet; returns how many it added. A file that does not parse is
-// skipped (MemoryCardCatalog's rule).
-int addModuleDefinitions(calcu::machine::Catalogue&, const std::string& dir);
+// skipped (MemoryCardCatalog's rule), and so is a folder that cannot be
+// read; each such problem is appended to `problems`, one sentence each, for
+// the app layer to log.
+int addModuleDefinitions(calcu::machine::Catalogue&, const std::string& dir,
+                         std::vector<std::string>* problems = nullptr);
 
 } // namespace sharp

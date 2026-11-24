@@ -101,7 +101,7 @@ void MachineController::cancelPaste() { app().typingPart().engine().focusLost();
 
 void MachineController::attachAudio(cu1600::AudioSink& sink) {
     m_sound = std::make_unique<cu1600::SoundFeed>(sink, [](const std::string& text) {
-        qWarning().noquote() << QString::fromStdString(text);
+        qDebug().noquote() << QString::fromStdString(text);
     });
     m_sound->warmUp(sharp::kSoundRate);
 }

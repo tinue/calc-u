@@ -97,8 +97,12 @@ void TIAppPart::followPlugs(bool newMachine) {
     if (newMachine || module != m_moduleID) {
         m_moduleID = module;
         // The module cue cards from the module file.
-        m_moduleCards = m_setup.roms.set ? moduleCueCards(*m_setup.roms.set, m_moduleID, [this](const std::string& m) { diagnostic(m); })
-                                     : std::map<int, CueCardContent>{};
+        // A module file that does not read gives no cards; the machine runs on.
+        const auto unread = [this](const std::string& m) {
+            if (m_ctx) m_ctx->appLog().warn(m);
+        };
+        m_moduleCards = m_setup.roms.set ? moduleCueCards(*m_setup.roms.set, m_moduleID, unread)
+                                         : std::map<int, CueCardContent>{};
         refreshCueCard();
     }
     // The printer, and TRACE: the position follows

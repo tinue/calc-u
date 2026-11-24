@@ -9,7 +9,7 @@ the server speaks it is [DAP.md](DAP.md).
 - **Transport:** the server listens on 127.0.0.1 only and takes one client
   at a time; a second one is told the debugger is busy. `--dap <port>`
   overrides Settings for one run; a port outside 1024 to 65535 is said
-  (standard error and a notice; the harness ends with exit status 2) and
+  (Qt6: the app log and a notice; the harness: standard error, exit status 2) and
   the server stays off for that run.
 - **Hosts:** the server is the app layer's `DapPart`; the Qt6 frontend
   and the harness (`calcu --product c1600 serve --dap <port>`) host it, the

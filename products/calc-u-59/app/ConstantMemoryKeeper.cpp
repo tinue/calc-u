@@ -5,6 +5,12 @@
 
 namespace cu59 {
 
+std::string ConstantMemoryKeeper::path() const { return m_files.savePath(TIFileAccess::kConstantMemoryFile); }
+
+void ConstantMemoryKeeper::warn(const std::string& line) const {
+    if (m_warn) m_warn(line);
+}
+
 std::shared_ptr<const calcu::machine::ProductData> ConstantMemoryKeeper::contentForBuild() {
     m_fileCard.reset();
     m_written.reset();
@@ -21,16 +27,18 @@ std::shared_ptr<const calcu::machine::ProductData> ConstantMemoryKeeper::content
             m_written = *c;
         } else {
             const ConstantMemoryProblem& p = std::get<ConstantMemoryProblem>(r);
-            if (p.kind == ConstantMemoryProblem::Kind::Damaged)
+            if (p.kind == ConstantMemoryProblem::Kind::Damaged) {
                 m_notice("The constant memory file " + std::string(kConstantMemoryFileName) + " cannot be read (" + p.what +
                          "); the TI-58C starts with zeroed memory.");
-            else
+                warn("The constant memory file " + path() + " cannot be read: " + p.what);
+            } else
                 m_notice("The constant memory file " + std::string(kConstantMemoryFileName) +
                          " was written by a newer release; it is replaced at the first change.");
         }
     } else if (unreadable) {
         m_notice("The constant memory file " + std::string(kConstantMemoryFileName) +
                  " cannot be read; the TI-58C starts with zeroed memory.");
+        warn("The constant memory file " + path() + " is there but cannot be read.");
     }
     m_handed = content;
     return content;
@@ -56,13 +64,15 @@ std::optional<ConstantMemoryContents> ConstantMemoryKeeper::current(calcu::machi
 
 void ConstantMemoryKeeper::write(const ConstantMemoryContents& c) {
     m_due.reset();
-    if (m_files.writeConstantMemory(writeConstantMemoryFile(c, m_savedAt ? m_savedAt() : std::string()))) {
+    const auto w = m_files.writeConstantMemory(writeConstantMemoryFile(c, m_savedAt ? m_savedAt() : std::string()));
+    if (w.ok) {
         m_written = c;
         return;
     }
     if (!m_failNoticed) {   // once per app session; the next change tries again
         m_failNoticed = true;
         m_notice("The constant memory could not be saved to " + std::string(kConstantMemoryFileName) + ".");
+        warn("Saving the constant memory to " + path() + " failed: " + (w.problem.empty() ? "no reason given." : w.problem));
     }
     m_written = c;   // the next change tries again
 }

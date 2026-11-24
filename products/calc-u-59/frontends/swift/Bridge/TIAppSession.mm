@@ -194,6 +194,8 @@ NSArray<TIInspectorEntry*>* inspectorEntries(const std::vector<cu59::InspectorEn
 
 namespace cs = calcu::sessions;
 
+calcu::applog::AppLog& theAppLog();
+
 /// The card and constant-memory files as the app had them: read
 /// and written through NSFileCoordinator (the media part's file access too);
 /// a card that iCloud has not
@@ -205,16 +207,27 @@ public:
     Read read(const std::string& path) const override {
         NSURL* url = [NSURL fileURLWithPath:ns(path)];
         __block NSData* data = nil;
+        __block NSError* readErr = nil;
         NSError* err = nil;
-        [[[NSFileCoordinator alloc] init] coordinateReadingItemAtURL:url options:0 error:&err
-                                                          byAccessor:^(NSURL* src) { data = [NSData dataWithContentsOfURL:src]; }];
+        [[[NSFileCoordinator alloc] init] coordinateReadingItemAtURL:url options:0 error:&err byAccessor:^(NSURL* src) {
+            NSError* e = nil;
+            data = [NSData dataWithContentsOfURL:src options:0 error:&e];
+            readErr = e;
+        }];
         if (data) return {std::string(static_cast<const char*>(data.bytes), data.length), false};
         NSString* placeholder = [[url URLByDeletingLastPathComponent]
             URLByAppendingPathComponent:[NSString stringWithFormat:@".%@.icloud", url.lastPathComponent]].path;
         const bool exists = [[NSFileManager defaultManager] fileExistsAtPath:url.path];
         if (!exists && [[NSFileManager defaultManager] fileExistsAtPath:placeholder]) {
-            [[NSFileManager defaultManager] startDownloadingUbiquitousItemAtURL:url error:nil];
+            NSError* downloadErr = nil;
+            if (![[NSFileManager defaultManager] startDownloadingUbiquitousItemAtURL:url error:&downloadErr])
+                theAppLog().warn("The iCloud download of " + path + " cannot start: " + cpp(downloadErr.localizedDescription));
             return {std::nullopt, true};
+        }
+        // A file that is there but does not read: the caller's notice has no cause.
+        if (exists) {
+            NSError* why = err ? err : readErr;
+            theAppLog().warn(path + " cannot be read: " + (why ? cpp(why.localizedDescription) : std::string("no reason given.")));
         }
         return {std::nullopt, exists};
     }
@@ -222,15 +235,25 @@ public:
         NSData* fileData = [NSData dataWithBytes:text.data() length:text.size()];
         NSURL* url = [NSURL fileURLWithPath:ns(path)];
         __block BOOL ok = NO;
+        __block NSError* writeErr = nil;
         NSError* err = nil;
         [[[NSFileCoordinator alloc] init] coordinateWritingItemAtURL:url options:NSFileCoordinatorWritingForReplacing
                                                                error:&err byAccessor:^(NSURL* dst) {
-            ok = [fileData writeToURL:dst atomically:YES];
+            NSError* e = nil;
+            ok = [fileData writeToURL:dst options:NSDataWritingAtomic error:&e];
             // A dropped card outside our folders: the sandbox may grant the
             // file but not its folder, where an atomic write puts its temp file.
-            if (!ok) ok = [fileData writeToURL:dst atomically:NO];
+            if (!ok) {
+                e = nil;
+                ok = [fileData writeToURL:dst options:0 error:&e];
+            }
+            writeErr = e;
         }];
-        if (!ok || err) return {false, "the file cannot be written."};
+        // The callers' notices and app log lines carry this problem.
+        if (!ok || err) {
+            NSError* why = err ? err : writeErr;
+            return {false, why ? "the file cannot be written: " + cpp(why.localizedDescription) : std::string("the file cannot be written.")};
+        }
         __weak id<TIAppSessionDelegate> d = delegate_;
         if (!url.path.lastPathComponent || ![url.lastPathComponent isEqualToString:@"ti58c.memory.yaml"])
             dispatch_async(dispatch_get_main_queue(), ^{ [d cardWritten]; });

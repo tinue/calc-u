@@ -189,6 +189,7 @@ TEST(damaged_line_nothing_used_notice) {
     bool noticed = false;
     for (const auto& n : r.notices()) noticed = noticed || (n.find("cannot be read") != std::string::npos && n.find("line 7") != std::string::npos);
     CHECK(noticed);
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Warn, "The constant memory file " + kMemoryPath + " cannot be read: line 7"));
 }
 
 TEST(no_register_lines_valid) {
@@ -252,6 +253,12 @@ TEST(failed_write_notice_once_next_change_retries) {
     int notices = 0;
     for (const auto& n : r.notices()) notices += n.find("could not be saved") != std::string::npos;
     CHECK_EQ(notices, 1);
+    // The app log has the path and the cause, once.
+    int warned = 0;
+    for (const auto& l : r.appLog.lines())
+        warned += l.level == calcu::applog::AppLogLevel::Warn &&
+                  l.text == "Saving the constant memory to " + kMemoryPath + " failed: the file cannot be written.";
+    CHECK_EQ(warned, 1);
     CHECK(r.machine() != nullptr);   // runs on
     files->failWrites = false;
     r.memory().writeRegister(5, num("3"));

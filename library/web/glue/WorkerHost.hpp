@@ -39,7 +39,7 @@ struct WebStart {
     settings::HostDirs dirs;             // FrontendKind::Web, settingsBase, saveFolder
     std::string bundleDir = "/bundle", presetsDir = "/presets", uploadsDir = "/uploads";
     // The file cache in the persistent file system (files/FileCache): every
-    // uploaded file is kept there; empty: none.
+    // uploaded or picked file but a preset loaded once; empty: none.
     std::string cacheDir;
     StorageMode storage = StorageMode::Kept;
     // A new settings file with the keys' first values (a fresh install's

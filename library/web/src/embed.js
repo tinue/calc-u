@@ -7,7 +7,7 @@
 //                        props in their order, then the
 //                        product's own in rest; layout is
 //                        one of the product's layouts, else its default (a
-//                        value not among them is ignored with a console
+//                        value not among them is ignored with an app log
 //                        warning naming the component `name`)
 //   bundlePathOf(preset) the preset prop as its bundle path: "sum.ti59" and
 //                        "examples:sum.ti59" both give "examples:sum.ti59"

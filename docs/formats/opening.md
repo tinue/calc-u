@@ -210,11 +210,11 @@ folder of its own.
 ### The file cache (the Web)
 
 The Web host gives a file cache, `<mount>/cache` in the browser's kept
-storage (`OpenSetup::cacheFolder`, `files/FileCache.hpp`). Every file of an
-`open` with `upload` is written there by its name without folders, a newer
-file of a name replacing the older, except the preset an upload opens:
-a preset loaded once is not kept. The file picker's files (Import Media…)
-are kept there too. A relative file an uploaded preset names that is not in
+storage (`OpenSetup::cacheFolder`, `files/FileCache.hpp`). It keeps every
+file the page uploads or picks but a preset it loads once: every file of an
+`open` with `upload` but the preset it opens, and every file of the host's
+file picker (Import Media…), by its name without folders, a newer file of
+a name replacing the older. A relative file an uploaded preset names that is not in
 its folder is looked up in the cache by its last part; so a preset whose
 files were opened before can be opened, or chosen as a startup preset,
 alone. A file that cannot be kept is opened all the same; the app log says

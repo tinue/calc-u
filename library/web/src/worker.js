@@ -178,7 +178,7 @@
     calcuAppLog("debug", `storage: ${CONFIG.mount} opened as ${storage.mode}`);
     host = new Module[CONFIG.host]({
       product: CONFIG.name,
-      // cache: the file cache, every uploaded file kept for a preset chosen later without it.
+      // cache: the file cache, every uploaded or picked file but a preset loaded once.
       dirs: { settingsBase: `${CONFIG.mount}/settings`, saveFolder: `${CONFIG.mount}/${CONFIG.name}`,
               cache: `${CONFIG.mount}/cache`, home: "" },
       storage,

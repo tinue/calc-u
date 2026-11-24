@@ -88,8 +88,7 @@ struct LibraryPartsSetup {
     // Where several files become one folder (the Web hosts'
     // uploads folder); none: several files are opened one by one.
     std::optional<std::string> uploadFolder;
-    // The Web's file cache (files/FileCache): every uploaded file is kept
-    // there; none on the native hosts.
+    // The Web's file cache (files/FileCache); none on the native hosts.
     std::optional<std::string> cacheFolder;
     // The product's control rules (null: none).
     const control::ControlRules* controlRules = nullptr;

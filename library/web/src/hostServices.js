@@ -44,6 +44,11 @@ function calcuPickFiles(accept, multiple) {
   });
 }
 
+// Files (picked or dropped) as the session takes them: [{name, bytes}].
+function calcuNamedFiles(files) {
+  return Promise.all(Array.from(files).map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) })));
+}
+
 // Both products' downloadBytes.
 function calcuDownload(name, bytes, type) {
   const url = URL.createObjectURL(new Blob([bytes], { type: type || "application/octet-stream" }));
@@ -56,12 +61,11 @@ function calcuDownload(name, bytes, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// The clipboard written inside the user's gesture (a click on
-// Copy or Cut), with promises the clipboard-image answer resolves, because
-// the picture is made in the worker and its ask reaches the page after the
-// gesture (WebKit allows a write only within one). {text}: whether a text
-// entry comes too. A later arm, or calcuDisarmClipboard (the command was
-// refused), rejects the one before.
+// The clipboard written inside the user's gesture (a click on Copy, Cut
+// or Copy Screen), with promises calcuCopyPicture resolves, because the
+// picture comes from the worker after the gesture (WebKit allows a write
+// only within one). {text}: whether a text entry comes too. A later arm,
+// or calcuDisarmClipboard (the copy was refused), rejects the one before.
 let calcuArmedClipboard = null;
 
 function calcuDisarmClipboard() {
@@ -106,8 +110,10 @@ function armClipboard({ text = false, view = null } = {}) {
   return armed;
 }
 
-// clipboard-image with text, name, dotsPerInch.
-async function calcuCopyPicture(a, given, refused) {
+// clipboard-image with text, name, dotsPerInch; also the page's own copy
+// of a picture (Copy Screen), with `whose` for the app log ("The
+// screen's"); given(value) and refused(reason) make the outcome.
+async function calcuCopyPicture(a, given, refused, whose = "The paper's") {
   const pngBlob = new Blob([a.bytes || new Uint8Array(0)], { type: "image/png" });
   const hasText = typeof a.text === "string";
   const armed = calcuArmedClipboard;
@@ -125,7 +131,7 @@ async function calcuCopyPicture(a, given, refused) {
   } catch (e) {
     // The browser's own error is told here only: the refusal's reason stays
     // short, for the user.
-    const why = `The paper's picture was not copied: ${calcuErrorText(e)}`;
+    const why = `${whose} picture was not copied: ${calcuErrorText(e)}`;
     let textError = null;
     if (hasText) {
       try {
@@ -152,7 +158,7 @@ function calcuWebHostServices() {
       case "file-picker": {
         const files = await calcuPickFiles(a.accept, a.multiple);
         if (!files.length) return refused("cancelled");
-        return given(await Promise.all(files.map(async (f) => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) }))));
+        return given(await calcuNamedFiles(files));
       }
       case "keep-file":
         calcuDownload(a.name || "download", a.bytes || new Uint8Array(0), a.mediaType);

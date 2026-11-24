@@ -41,7 +41,7 @@ calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     cu1600::SharpAppPartOptions options;
     options.canMountHostFolder = false;
     options.uploadFolder = start.uploadsDir;   // several files of Load Preset…
-    if (!start.cacheDir.empty()) options.cacheFolder = start.cacheDir;   // every uploaded file, kept
+    if (!start.cacheDir.empty()) options.cacheFolder = start.cacheDir;   // the file cache
     parts->part = std::make_unique<cu1600::SharpAppPart>(parts->typed, *parts->paths, std::move(options));
     parts->web = std::make_unique<cu1600::SharpWebPart>(*parts->part, start.uploadsDir);
 

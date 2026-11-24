@@ -40,7 +40,7 @@ struct OpenSetup {
     std::vector<FileKind*> kinds;                  // in the product's order
     std::map<Way, std::uint64_t> maxBytes;         // a way not listed has no limit
     std::optional<std::string> uploadFolder;       // where several files become one folder (Web: /uploads)
-    std::optional<std::string> cacheFolder;        // the Web's file cache: every uploaded file is kept there
+    std::optional<std::string> cacheFolder;        // the Web's file cache (files/FileCache)
     settings::SettingsFile* settings = nullptr;    // [preset]; null: no choose-startup-preset
 };
 

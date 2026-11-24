@@ -245,7 +245,7 @@ const C59_NO_PRODUCT = { name: "Calc-U-59", acts: {} };
 
 // The props (docs/developer/Web-Client.md): the embedding interface's width,
 // keyboard (on by default), layout ("portrait", the default, "wide" or
-// "auto"; embedProps ignores another value with a console warning), preset
+// "auto"; embedProps ignores another value with an app log warning), preset
 // (a bundled preset's path, with or without `examples:`), height, model (by
 // its name), workerUrl and paperWindow, and the product's own settings.
 // model and preset are read once, at mount.

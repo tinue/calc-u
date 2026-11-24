@@ -147,7 +147,7 @@ struct TIAppSetup {
     /// The Web: where several files of the preset picker's upload become one
     /// folder; unset: none.
     std::optional<std::string> uploadFolder;
-    /// The Web: the file cache, where every uploaded file is kept; unset: none.
+    /// The Web: the file cache (files/FileCache); unset: none.
     std::optional<std::string> cacheFolder;
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     /// The harness: the debug panel's tabs computed as if

@@ -302,7 +302,7 @@ test('copy screen', async ({ page }) => {
 });
 
 // A clipboard that takes nothing: the screen is offered as a download, and
-// the app log has the browser's error.
+// the app log has the browser's errors.
 test('copy screen refused by the browser', async ({ page }) => {
   const log = [];
   page.on('console', (m) => { if (m.type() === 'warning' && m.text().startsWith('[Calc-U] ')) log.push(m.text()); });
@@ -310,6 +310,7 @@ test('copy screen refused by the browser', async ({ page }) => {
     const clip = navigator.clipboard || {};
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: Object.assign(Object.create(clip), {
       write: () => Promise.reject(new DOMException('no pictures', 'NotAllowedError')),
+      writeText: () => Promise.reject(new DOMException('no text', 'NotAllowedError')),
     }) });
   });
   await h.gotoReady(page);
@@ -318,8 +319,8 @@ test('copy screen refused by the browser', async ({ page }) => {
   await h.menu(page, 'edit', 'copy-screen');
   expect((await download).suggestedFilename()).toBe('screen.png');
   await expect.poll(() => log).toEqual([
-    '[Calc-U] Copy Screen: not copied: NotAllowedError: no pictures',
-    '[Calc-U] Copy Screen: offered as the download screen.png.',
+    "[Calc-U] The screen's picture was not copied: NotAllowedError: no pictures; " +
+      'its text was not copied either: NotAllowedError: no text; offered as a download.',
   ]);
 });
 

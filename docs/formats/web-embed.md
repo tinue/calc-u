@@ -92,7 +92,7 @@ The shared props, in this order, then the product's own:
 | Calc-U-59 | `portrait`, `wide`, `auto` | `portrait` |
 | Calc-U-1600 | `auto` | `auto` |
 
-Another value draws the default, and the console gets, once per
+Another value draws the default, and the app log gets, once per
 component and value, the warning (values in JSON quotes):
 
 ```
@@ -296,7 +296,7 @@ fetch that fails is a failed start.
 | `<mount>` | the persistent file system (§5) |
 | `<mount>/settings/<Product>/<Product>.ini` | the settings file |
 | `<mount>/<Product>/` | the save folder |
-| `<mount>/cache/` | the file cache: every file the page uploaded, by its name, and the startup presets chosen with "Choose…" (`opening.md` §5, §5a); the worker passes it as `dirs.cache` |
+| `<mount>/cache/` | the file cache: every file the page uploads or picks but a preset it loads once, by its name, and the startup presets chosen with "Choose…" (`opening.md` §5, §5a); the worker passes it as `dirs.cache` |
 
 `<mount>` is `/persist-calc-u-59` for Calc-U-59 and `/persist` for
 Calc-U-1600. Each product has its own: IDBFS names its IndexedDB

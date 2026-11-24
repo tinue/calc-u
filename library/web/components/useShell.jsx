@@ -127,12 +127,11 @@ function useCalcuShell(shell, product, traits, shellArgs) {
     });
   };
   // The preset with every file it names, or alone when they were chosen
-  // before (the session keeps every uploaded file in its file cache).
+  // before (the session keeps them in its file cache).
   const chooseStartupPreset = (model) => {
     calcuPickFiles(product.presetUploads || "", true).then(async (files) => {
       if (!files.length) return;
-      const named = await Promise.all(files.map((f) => f.arrayBuffer().then((b) => ({ name: f.name, bytes: new Uint8Array(b) }))));
-      sendChecked("choose-startup-preset", { model, files: named });
+      sendChecked("choose-startup-preset", { model, files: await calcuNamedFiles(files) });
     });
   };
   const nameAndSave = (place) => {

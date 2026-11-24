@@ -228,8 +228,9 @@ void WorkerHost::receive(val message) {
     }
 }
 
-// The picked files' bytes go to the uploads folder; the session gets their
-// paths.
+// The picked files' bytes go to the uploads folder, where a medium's
+// companion is read beside it; the session gets their paths. Each is kept
+// in the file cache as well, as an uploaded file is.
 void WorkerHost::answerFilePicker(s::CallId ask, val message) {
     s::ServiceAnswer a;
     a.given = message["done"].isTrue();
@@ -255,11 +256,11 @@ void WorkerHost::answerFilePicker(s::CallId ask, val message) {
                 else   // left out of the pick
                     log_->warn("The picked file " + file + " cannot be written to " + path + ": " +
                                calcu::files::osReason(errno));
-                std::string why;   // kept for a preset chosen later without it
+                std::string why;
                 if (out && !start_.cacheDir.empty() &&
                     !calcu::files::keepInCache(calcu::files::toPath(start_.cacheDir), file, bytes->bytes()->data(),
                                                bytes->bytes()->size(), &why))
-                    log_->warn("The picked file " + file + " was not kept in the file cache: " + why + ".");
+                    log_->warn("The file " + file + " was not kept in the file cache: " + why + ".");
             }
         a.result = s::Value(std::move(paths));
     }

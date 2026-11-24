@@ -16,7 +16,7 @@ struct DebugView: View {
                     .disabled(!vm.calculatorTabAvailable)
                     .opacity(vm.calculatorTabAvailable ? 1.0 : 0.35)
                 tabButton("CPU", .cpu)
-                tabButton("LOG", .log)
+                tabButton("RUN LOG", .log)
                 Spacer()
             }
             .frame(height: Chrome.panelHeaderHeight)
@@ -166,7 +166,7 @@ private struct StaticDebugContent: View {
 
                 Button { vm.toggleDebug() } label: {
                     HStack(spacing: 4) {
-                        Text("LOG")
+                        Text("RUN LOG")
                         ChromeDot(on: vm.debugLevel != .off, colour: vm.debugLevel == .debug ? Chrome.red : Chrome.orange)
                     }
                     .chromePill()

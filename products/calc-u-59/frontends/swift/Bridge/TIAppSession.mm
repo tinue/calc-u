@@ -279,7 +279,7 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kCpuDebug) return TIChangeCpu;
     if (t == T::kHeatmap) return TIChangeHeatmap;
     if (t == T::kAsmOverlay) return TIChangeAsm;
-    if (t == cs::kLogLevelTopic) return TIChangeLog;   // the level the LOG button shows
+    if (t == cs::kLogLevelTopic) return TIChangeLog;   // the level the RUN LOG button shows
     // The PC-100C's controls and TRACE's position too.
     if (t == calcu::control::kControlStateTopic)
         return static_cast<TIChange>(TIChangeControl | TIChangeShell | TIChangeCard | TIChangePrinter);
@@ -546,7 +546,7 @@ std::optional<calcu::applog::AppLogLevel> appLogLevelOfRun() { return runAppLogL
     std::vector<std::string> _paperLines;
     std::vector<TIPaperDot> _paperDots;
     double _paperReach;
-    // The LOG tab's view of the library's `log`: the last 2000 lines.
+    // The RUN LOG tab's view of the library's `log`: the last 2000 lines.
     cu59::RingLog _log;
     std::string _logText;
     // c59.debug-view's count of requests already shown.
@@ -711,7 +711,7 @@ std::optional<calcu::applog::AppLogLevel> appLogLevelOfRun() { return runAppLogL
                 if (any) [d noticesChanged];
                 continue;
             }
-            if (s->topic == cs::kLogTopic) {   // the LOG tab's lines (a message may hold several)
+            if (s->topic == cs::kLogTopic) {   // the RUN LOG tab's lines (a message may hold several)
                 bool any = false;
                 for (const auto& p : s->appended)
                     if (const auto* l = cs::payloadAs<cs::LogLine>(p)) {

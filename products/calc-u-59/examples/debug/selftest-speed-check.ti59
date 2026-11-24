@@ -6,7 +6,7 @@
 # steps elapsed-time: start and elapsed-time: report.
 #
 # Real hardware takes ~15s for SBR = on this self-test. Load this file and
-# check the LOG tab (DEBUG panel) for the two "Elapsed:" lines — both should
+# check the RUN LOG tab (DEBUG panel) for the two "Elapsed:" lines — both should
 # be close to each other and to that ~15s figure.
 
 format-version: 2

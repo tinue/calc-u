@@ -717,12 +717,12 @@ test('the three debugger tabs, labels and short forms', async ({ page }) => {
   await debug.getByRole('button', { name: 'SCOM', exact: true }).click();
   await expect(debug.getByLabel('Debug log')).toHaveValue(/── SCOM ──/, { timeout: 5000 });
   const level = debug.getByRole('button', { name: /^LOG / });
-  await expect(level).toHaveText('LOG ○');
+  await expect(level).toHaveText('RUN LOG ○');
   await level.click();
-  await expect(level).toHaveText('LOG ●');
+  await expect(level).toHaveText('RUN LOG ●');
   await level.click();
   await level.click();
-  await expect(level).toHaveText('LOG ○');
+  await expect(level).toHaveText('RUN LOG ○');
   await debug.getByRole('button', { name: 'Clear the log' }).click();
   await expect(debug.getByLabel('Debug log')).toHaveValue('');
 });
@@ -798,7 +798,7 @@ test('a trace is downloaded when switched off', async ({ page }) => {
 });
 
 // A preset's screenshot is a download,
-// as Calc-U-1600's; the LOG tab lists only traces.
+// as Calc-U-1600's; the RUN LOG tab lists only traces.
 test('a preset screenshot is offered as a download, not listed as a trace', async ({ page }) => {
   await gotoReady(page);
   const debug = page.locator('[data-panel=debug]');

@@ -270,7 +270,7 @@ from the old repositories. The CHANGELOG entries are written from them.
 - Site authors: the component `calc.js` defines is `CalcU59` (file `src/CalcU59.jsx`), with `CalcU59.portraitWidth(h)`; 2.3.0's global `PlayCalculator` is gone, so a page that mounts it must rename it. The props are the family's shared ones in the order `width`, `keyboard`, `layout` (`portrait`, the default, `wide`, `auto`), `preset`, then `height`, `model`, `workerUrl`, then Calc-U-59's `settings`; `module` is still ignored. The release's `Calc-U-59-web.zip` is a release build; the page's test-only commands `c59.web.key-button-down`/`-up` are gone (the key grid sends `screen-key-down`/`-up`).
 - Windows and Linux: a file dropped onto the window or opened with Open With brings the window to the front, the drop shows as accepted, and the file is opened after the drop, as in Calc-U-1600 (2.3.0: the window stayed where it was, and the drop was opened during the drag). Web: a drop of exactly one file is opened and a drop of more is ignored (2.3.0: the first file of a drop was opened), and no drop reaches the browser.
 - The trace folder and the trace size limit are read at each trace start, so a change in Settings is used by the next trace (2.3.0: those of the app's start). The folder is created and written once at the start of a trace; where that fails, the start is refused with "The trace folder cannot be written: <reason>." (2.3.0: the TRACE button could not be pressed where the folder could not be created, and no write was tried). `[trace] max-file-size-mb` accepts zero and negatives, which mean 50 MiB (2.3.0: the settings dialog started at 1).
-- Web: a preset's `screenshot:` step offers the picture as a download, as Calc-U-1600's page does (2.3.0: it was written into the browser's save folder, where nobody could reach it); the LOG tab lists only traces.
+- Web: a preset's `screenshot:` step offers the picture as a download, as Calc-U-1600's page does (2.3.0: it was written into the browser's save folder, where nobody could reach it); the RUN LOG tab lists only traces.
 - Developers: the harness command and the preset step that set a control of the PC-100C (`set-control`) without a PC-100C plugged in are refused with "No PC-100C is plugged in." (2.3.0: accepted). No GUI can send it then.
 - Windows, Linux and web: the paper panel's PRINT and ADV keys show as pressed while they are held (2.3.0: always drawn up); the TRACE switch shows its actual position.
 - A save folder or screenshot folder changed in Settings is used at once, by the next save (a card, the TI-58C's `ti58c.memory.yaml`, a preset's screenshot), with no restart (2.3.0: the folders of the start were used until the next start).
@@ -287,9 +287,11 @@ Still to add to the CHANGELOG entry:
 - (partly) Windows and Linux: a notice is shown without a title (2.3.0: a title taken from the sentence).
 - Developers: the harness names Calc-U-59 `c59` (`calcu --product c59`; `59` is refused), the product commands are `c59 …` (were `ti59 …`), `ti59 registers` is `c59 data-registers`, `lcd` is `display-text`, the debug panel's topics carry the `c59.` prefix, the command for the shown CPU tab is `c59.show-cpu-debug` (was `c59.cpu-debug`), `state c59.printer` is gone and `c59.led` is `c59.calc-indicator`. Scripts that call the old names must be changed.
 - (partly) Site authors: the release's `Calc-U-59-web.zip` is a release build; the page's test-only commands `c59.web.key-button-down`/`-up` are gone.
-- (partly) Web: the LOG tab lists only traces.
+- (partly) Web: the RUN LOG tab lists only traces.
 - Developers: the harness command and the preset step `set-control` for the PC-100C without a PC-100C plugged in are refused with "No PC-100C is plugged in." (2.3.0: accepted).
 - (partly) Developers (`calcu --product c59`): `switch` is `set-control`; `key` without a key replies "refused: usage: key <key ID> ..."; a preset's `key:` without a key is refused with "key: needs one or more key IDs."; `sync-clock` (was `syncclock`) is refused on every TI model.
+
+- The app log: how the app ran, every failure with its cause, in `~/Library/Logs/Calc-U-59/Calc-U-59.log` (macOS), `%LOCALAPPDATA%\Calc-U-59\Calc-U-59.log`, `$XDG_STATE_HOME/Calc-U-59/`, the app's sandbox on iOS, the browser's console on the Web; Help ▸ Show App Log, `[app-log] level` (Settings "App log level"), `--app-log-level` (desktop), `?app-log-level=` (Web). 2.3.0 had none. The debug panel's LOG tab is RUN LOG.
 
 ### Calc-U-1600 0.9.0 (against 0.8.1)
 
@@ -359,6 +361,7 @@ Still to add to the CHANGELOG entry:
 - (partly) After the fixed folder is reset, the file dialog starts in the former fixed folder (0.8.1: it went back to the last pick).
 - (partly) Developers: the web page's request `c1600.lcd-text` is `c1600.display-text`; the harness's product command list also includes `load-code`, `file-kind`, `load-basic` and `type-basic`; the VS Code extension's `settings.json` must be edited too, and its name and publisher (`calcu1600-debug`) stay.
 - (partly) Developers: a preset's `key:` without a key is refused with "key: needs one or more key IDs.", and `key-down`/`key-up` without `key` with "The key command needs key: <key ID>."; the bundled startup preset `default-pc1600.pc1600` uses `sync-clock:`, and its log line reads `sync-clock`.
+- The app log, as Calc-U-59's: `~/Library/Logs/Calc-U-1600/Calc-U-1600.log`, `%LOCALAPPDATA%\Calc-U-1600\Calc-U-1600.log` (0.8.1: `~/Calc-U-1600/Calc-U-1600.log`), `$XDG_STATE_HOME/Calc-U-1600/Calc-U-1600.log` (0.8.1: syslog), the browser's console on the Web; Help ▸ Show App Log, `[app-log] level`, `--app-log-level`. Machine ▸ Log Level ▸ is Machine ▸ Run Log ▸.
 
 ## Closing check
 

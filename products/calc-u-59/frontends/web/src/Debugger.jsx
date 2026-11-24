@@ -1,9 +1,9 @@
 // The debugger panel, wide layout only (Qt6/app/debug/, App/Views/DebugView):
-// tabs CALCULATOR / CPU / LOG. Only the visible tab's snapshots are
+// tabs CALCULATOR / CPU / RUN LOG. Only the visible tab's snapshots are
 // built (setLiveDebugEnabled / setCpuDebugEnabled follow it). It draws the
 // product topics of the debug part (app/TIDebugPart): c59.calculator-debug,
 // c59.program-listing, c59.cpu-debug, c59.heatmap, c59.asm-overlay and c59.debug-view, whose
-// values are already the rows formatted by app/DebugText; the LOG tab is
+// values are already the rows formatted by app/DebugText; the RUN LOG tab is
 // the session's `log` at its `log-level`. FREEZE, STEP and RESUME of each tab are the component set's
 // run-control buttons for the level `program` (CALCULATOR) and `cpu` (CPU),
 // on the library's `run-state`, which FREEZE ON START
@@ -304,7 +304,7 @@ function LogTab() {
   // The session's log level: off → info → debug → off.
   const LEVELS = ["off", "info", "debug"];
   const level = Math.max(0, LEVELS.indexOf(log.level));
-  const labels = ["LOG ○", "LOG ●", "LOG ●"];
+  const labels = ["RUN LOG ○", "RUN LOG ●", "RUN LOG ●"];
   const mb = (n) => (n / 1e6).toFixed(n < 1e5 ? 2 : 1) + " MB";
   return (
     <div className="calcu-debug-tab">
@@ -384,7 +384,7 @@ function Debugger() {
   return (
     <div className="calcu-debugger" data-panel="debug" ref={rootRef}>
       <div className="calcu-tabs" role="tablist">
-        {["CALCULATOR", "CPU", "LOG"].map((t, i) => (
+        {["CALCULATOR", "CPU", "RUN LOG"].map((t, i) => (
           <button key={t} type="button" role="tab" aria-selected={shown === i} disabled={i === 0 && calculatorClosed}
             onClick={() => setTab(i)}>{t}</button>
         ))}

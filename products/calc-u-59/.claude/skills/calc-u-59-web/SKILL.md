@@ -70,7 +70,7 @@ Never edit the calculator there — that copy is generated.
    `c59.calculator-debug`, `c59.program-listing` (the whole listing while
    paused), `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view` (the tab a
    `debug-panel:` step asked for: shown when its `requests` grows; the log
-   level), whose values are already the page's forms; the LOG tab keeps the
+   level), whose values are already the page's forms; the RUN LOG tab keeps the
    last 2000 lines of the session's `log` stream (clear empties the view only); the
    buttons send `c59.dump`, `c59.heatmap-reset`,
    `c59.asm-load` / `-run` / `-clear` and the library's `log-level`; Run and the CALCULATOR tab

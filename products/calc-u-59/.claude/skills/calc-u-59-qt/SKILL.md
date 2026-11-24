@@ -66,7 +66,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
    machine and the topic `roms-missing`) and the `SessionHost` over it
    (the library's `calcu::qt6::ProductHost`: the 60 Hz timer, the listener, the clipboard and open-url services,
    harness attach), reads the host's topic mirror and turns topic changes
-   into Qt signals; it keeps the LOG tab's view of `log`. Notices, the log
+   into Qt signals; it keeps the RUN LOG tab's view of `log`. Notices, the log
    to the platform, "Loading…" are the shell's. The paper is the library's
    paper panel in the shell's panel area (owner from the control state;
    `MainWindow::followPrinter` sets the PC-100C's PRINT, ADV and TRACE with
@@ -124,7 +124,7 @@ Everything that isn't drawing: `docs/developer/App-Layer.md`.
 | `CueCardRenderer` | `CueCardView` |
 | the library's `calcu::qt6::PaperPanel` in the shell's panel area | `PrinterView` |
 | `CardPickerDialog` | `CardPickerView` |
-| `debug/DebugPanel`, `debug/AsmOverlayBox`, `debug/LogWidget` | `DebugView` (`ASMDebugContent`, `StaticDebugContent`); they draw `TIDebugPart`'s product topics through `EmulatorController`, which keeps the LOG tab's view (`cu59::RingLog`) of the `log` topic; Run, TRACE and the CALCULATOR tab follow the product entries (`entryAvailable`) |
+| `debug/DebugPanel`, `debug/AsmOverlayBox`, `debug/LogWidget` | `DebugView` (`ASMDebugContent`, `StaticDebugContent`); they draw `TIDebugPart`'s product topics through `EmulatorController`, which keeps the RUN LOG tab's view (`cu59::RingLog`) of the `log` topic; Run, TRACE and the CALCULATOR tab follow the product entries (`entryAvailable`) |
 | `debug/LiveDebugWidget` | `LiveDebugView` |
 | `debug/DebugHeaderRow` (both tabs' header from app/'s `debugHeader`) | `DebugHeaderView` |
 | `debug/CpuInspectorWidget`, `debug/RomHeatmapWidget` | `CPUInspectorView` |

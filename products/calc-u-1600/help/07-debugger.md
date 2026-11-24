@@ -691,7 +691,7 @@ Two items of the **Machine** menu belong with it (desktop only):
   `CALCU1600_TRACE.bin`) in the trace folder (`[trace] folder`); a tick
   shows it runs. The size limit and its notice are the family's
   ([Debugger](../../../library/help/07-debugger.md)).
-- **Log Level ▸ Off, Info, Debug:** the log's level, the one in use ticked.
+- **Run Log ▸ Off, Info, Debug:** the log's level, the one in use ticked.
   At Info the log also shows how a preset is carried out, each step as it
   is done; Debug adds nothing yet.
 

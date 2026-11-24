@@ -508,14 +508,14 @@ class EmulatorViewModel {
 
     func toggleDebug() { session?.cycleDebugLevel() }
 
-    /// Empties the LOG tab's view, not the log.
+    /// Empties the RUN LOG tab's view, not the log.
     func clearDebug() {
         session?.clearLog()
         if !debugDisplayText.isEmpty { debugDisplayText = "" }
         debugClearID &+= 1
     }
 
-    // Dumps for the LOG tab (formats: app/DebugLog.cpp).
+    // Dumps for the RUN LOG tab (formats: app/DebugLog.cpp).
     func debugDumpVars() { session?.dumpVars() }
     func debugDumpSCOM() { session?.dumpScom() }
     func debugDumpProg() { session?.dumpProg() }

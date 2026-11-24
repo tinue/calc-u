@@ -48,7 +48,7 @@ can install it as an app, which then runs offline.
   bundled preset to start with:
   `https://tinue.github.io/1600/calc/?model=PC-1600&preset=plotter/lissajou-1600.pc1600`.
 - Not in the browser: the debugger, the serial ports, the host drive
-  `S3:`, and Machine ▸ Trace and Log Level ▸.
+  `S3:`, and Machine ▸ Trace and Run Log ▸.
 
 ## Documentation
 

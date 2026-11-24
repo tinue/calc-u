@@ -1,6 +1,6 @@
 // Calc-U-59's debug panel below the frontends: the product topics and
 // entries, `debug-panel:`, the CALCULATOR tab, the buttons, the CPU tab, the
-// heatmap, the LOG tab, the ASM overlay's kind, box, Run and life, its file
+// heatmap, the RUN LOG tab, the ASM overlay's kind, box, Run and life, its file
 // kind and the debug panel's other cases. The format is asm_overlay_tests.cpp; the harness harness_tests.cpp.
 
 #include "TestHarness.hpp"
@@ -450,7 +450,7 @@ TEST(apart_from_the_profile) {
     CHECK(!rc(r).profile().on());   // the harness's profile is the library's, not switched by the tab
 }
 
-// ── The LOG tab ──────────────────────────────────────────────────────────────
+// ── The RUN LOG tab ──────────────────────────────────────────────────────────────
 
 TEST(last_2000_lines_in_pages) {
     RingLog log;

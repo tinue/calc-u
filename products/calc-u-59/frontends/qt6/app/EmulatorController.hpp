@@ -135,9 +135,9 @@ public:
     void clearHeatmap() { send(cu59::commands::kHeatmapReset); }
 
     DebugLevel debugLevel() const;
-    /// The LOG button: off, info, debug, off (the library's `log-level`).
+    /// The RUN LOG button: off, info, debug, off (the library's `log-level`).
     void cycleDebugLevel();
-    /// The LOG tab's view of the session's `log`: the last 2000 lines.
+    /// The RUN LOG tab's view of the session's `log`: the last 2000 lines.
     QString logText() const { return m_logText; }
     /// Empties the tab's view, not the log.
     void clearLog();
@@ -192,7 +192,7 @@ private:
     std::unique_ptr<calcu::qt6::ProductHost<cu59::TIAppPart>> m_session;
     std::string m_model;               ///< the model last seen in the control state
     std::pair<bool, std::vector<calcu::peripherals::ControlInfo>> m_printerSeen;   ///< last drawn: plugged in, its controls
-    cu59::RingLog m_log;               ///< the LOG tab's view
+    cu59::RingLog m_log;               ///< the RUN LOG tab's view
     QString m_logText;
     bool m_logDirty = false;
     QTimer m_logTimer;                 ///< the view's text at 1 Hz

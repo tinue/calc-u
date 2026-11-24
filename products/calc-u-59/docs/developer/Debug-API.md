@@ -30,7 +30,7 @@ cannot be written refuses the start). The commands: `c59.show-calculator-debug {
 `c59.show-cpu-debug {on}`, `c59.heatmap-reset`, `c59.dump {what: scom|memory|prog|vars}` (replies with the
 lines), `c59.asm-load {name, text}`, `c59.asm-run`, `c59.asm-clear`; the
 harness's `c59 asm load|run|clear`, `c59 dump …`,
-`c59 heatmap reset`. The LOG button sends the library's `log-level
+`c59 heatmap reset`. The RUN LOG button sends the library's `log-level
 {level: off|info|debug}` and shows its `log-level` topic (the harness's
 `log-level …`). Which panel lives where: `Frontend-Parity.md`
 § "Debugger". The session and controller: `App-Layer.md`. Panel
@@ -353,7 +353,7 @@ or `"BR 0x03A2"`.
 
 ---
 
-## LOG tab
+## RUN LOG tab
 
 The log is the library's `log` topic: the machine's own lines (the
 product kind `c59.machine-log`, at their level; the lines of one host call

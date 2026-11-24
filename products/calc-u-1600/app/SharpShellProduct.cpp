@@ -66,7 +66,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
     if (withTrace) {
         // Trace: a toggle on the library's trace (the file is named after
         // the model, CALCU1600_TRACE.bin; the trace session limits and ends
-        // it). Log Level: a choice of the session's log level; at Info the
+        // it). Run Log: a choice of the session's log level; at Info the
         // log tells how a preset is carried out.
         shell::ProductItem trace = item(shell::MenuGroup::MachineEnd, kItemTrace, "Trace");
         trace.command = calcu::debugger::kTraceCommand;
@@ -74,7 +74,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
         trace.checkedBy = shell::ProductItem::Check{calcu::debugger::kTraceTopic, "running", Value(true),
                                                     Value::object({{"off", true}})};
         p.items.push_back(std::move(trace));
-        shell::ProductItem log = item(shell::MenuGroup::MachineEnd, kItemLogLevel, "Log Level");
+        shell::ProductItem log = item(shell::MenuGroup::MachineEnd, kItemLogLevel, "Run Log");
         auto level = [&](const char* id, const char* label, sessions::LogLevel l) {
             const std::string name(sessions::logLevelName(l));
             shell::ProductItem i = item(shell::MenuGroup::MachineEnd, id, label);

@@ -53,7 +53,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (§ "Bridge La
 | `DebugSnapshots` | Builds the CALCULATOR snapshot and listing and the CPU history entries |
 | `TIChrome` | The GUIs' look and layout values (the library's `shell::Chrome`, dark only): the colours by name, the panel header and button-bar heights, the inset, the pill's shape, the bar, the printer column's width range (desktop, embedded), the view rule's numbers for the library's `shell::view` (the printer column's least room beside the faceplate, none below it; the debugger's least width and the window's least height for it), the text scale with the faceplate; every GUI reads it, the Web through `c59.shell-product` |
 | `DebugText` | The panels' shared text and colours; `mobileTopMargin` (iOS) |
-| `DebugLog` | The LOG tab's view (`RingLog`, the last 2000 lines; kept by each frontend) and the Vars / SCOM / Prog / Memory dumps |
+| `DebugLog` | The RUN LOG tab's view (`RingLog`, the last 2000 lines; kept by each frontend) and the Vars / SCOM / Prog / Memory dumps |
 | `RomHeatmap` | How the heatmap is drawn: the grid, heat steps and colours (the counts are the core's `c59.rom-heatmap`) |
 | `ModuleImage` | PRG SOURCE decoding, the module's program table, source labels |
 | `AsmOverlay` | The reader of the ASM overlay format 2.0 (`readAsmOverlay`) |
@@ -604,7 +604,7 @@ CalcU59App                    (Calc-U-59App.swift: scene, background/active)
     │   └─ CueCardView
     ├─ PrinterView            (the PC-100C's paper, PRINT / T / ADV, copy, cut)
     ├─ CardPickerView         (Arm Card / Arm Fresh Card sheet)
-    ├─ DebugView              (CALCULATOR / CPU / LOG tabs)
+    ├─ DebugView              (CALCULATOR / CPU / RUN LOG tabs)
     │   ├─ LiveDebugView      (CALCULATOR)
     │   ├─ CPUInspectorView   (CPU, with the ROM heatmap) + ASMDebugContent
     │   └─ StaticDebugContent (LOG)
@@ -633,7 +633,7 @@ EmulatorViewModel (@Observable, main thread)
 | `Views/CueCardView.swift` | Cue card on its template art |
 | `Views/PrinterView.swift` | The paper panel: the owner's paper under its name, an empty paper under none; dots by band (`PaperBand`) or text; Copy and Cut are the session's |
 | `Views/CardPickerView.swift` | Arm Card (the saved cards by name, from the library's `media` topic) and Arm Fresh Card (a name; the replace question) |
-| `Views/DebugView.swift` | Debug tabs; `ASMDebugContent`; LOG tab (`StaticDebugContent`) |
+| `Views/DebugView.swift` | Debug tabs; `ASMDebugContent`; RUN LOG tab (`StaticDebugContent`) |
 | `Views/LiveDebugView.swift`, `Views/CPUInspectorView.swift` | CALCULATOR and CPU tabs |
 | `Views/DebugHeaderView.swift` | Both tabs' header as `DebugText`'s `debugHeader` describes it (`TIViewRules.debugHeaderButtons`) |
 | `Views/HoldRepeatButton.swift` | Fires on press, repeats every 0.25 s while held and while step can be used (STEP) |
@@ -665,7 +665,7 @@ imports the public ones.
 |---|---|
 | `TIShell.{h,mm}` | The library's shell models for Swift: the last Value of each input topic (`control-state`, `busy`, `run-state`, `roms-missing`, `settings`, `media`, the `preset-list` reply) gives `calcu::shell::menus`, `moreItems`, `bar`, `dialog` over `cu59::settingsSpec`, `panels`, `LoadingRule`, `NoticeQueue` and `PointerTracker` on `cu59::faceplateHitMap`, with the traits of the mobile platform (no About, no Quit); `choose:` sends an item's command (a refusal is a notice) or hands back a shell action; value objects `TIMenu`, `TIMenuItem`, `TIBarControl`, `TIDialogSection`, `TIDialogRow` |
 | `TIShell+Session.h` | ObjC++-only: what `TIAppSession` and `TIShell` tell each other (the inputs, the notices, the busy changes) |
-| `TIAppSession.{h,mm}` | The app session on `calcu::shell::SessionThread`, with the library's `SettingsPart` and the settings file it owns (opened here, then the session thread's only; `--settings-file` in Debug builds): commands out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, the tab of `debug-panel:` from the topic `c59.debug-view`, `changed`, `cardWritten`); `TIAppLog` (the app log's file, the bridge's own lines through `theAppLog()`); the debug panel's product topics (`c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`), the LOG tab's `cu59::RingLog` of the library's `log`, the `control-state` entries (`asmRunAvailable`, `calculatorTabAvailable`, `cardControls` as `TICardControl`s), `freezeButtonsFor:` (`cu59::freezeButtons`) and the library's `open` / `open-would-take` (`openFile:…way:`, `wouldOpenFile:`); `TISessionStart`, `TIRomSet`; the coordinated save folder files (`CoordinatedFiles`, a `calcu::media::FileAccess`: `TIAppSetup::files`, the constant memory file's and the media part's file access); the cards on the library's `media` topic and `media.choose`, `media.start-new`, `media.eject` (`savedCards`, `armCard:`, `armFreshCard:`, `TISavedCard`); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, built when Swift reads them; also the library's `paper PC-100C` (kept as text lines and `TIPaperDot`s), `paper-copies`, `run-state` (`buttonUseFor:`, calcu::debugger::buttonUse) and `trace`, the run control's commands, and the clipboard host services (`clipboard-image`, `clipboard-text`) answered on the pasteboard |
+| `TIAppSession.{h,mm}` | The app session on `calcu::shell::SessionThread`, with the library's `SettingsPart` and the settings file it owns (opened here, then the session thread's only; `--settings-file` in Debug builds): commands out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, the tab of `debug-panel:` from the topic `c59.debug-view`, `changed`, `cardWritten`); `TIAppLog` (the app log's file, the bridge's own lines through `theAppLog()`); the debug panel's product topics (`c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`), the RUN LOG tab's `cu59::RingLog` of the library's `log`, the `control-state` entries (`asmRunAvailable`, `calculatorTabAvailable`, `cardControls` as `TICardControl`s), `freezeButtonsFor:` (`cu59::freezeButtons`) and the library's `open` / `open-would-take` (`openFile:…way:`, `wouldOpenFile:`); `TISessionStart`, `TIRomSet`; the coordinated save folder files (`CoordinatedFiles`, a `calcu::media::FileAccess`: `TIAppSetup::files`, the constant memory file's and the media part's file access); the cards on the library's `media` topic and `media.choose`, `media.start-new`, `media.eject` (`savedCards`, `armCard:`, `armFreshCard:`, `TISavedCard`); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, built when Swift reads them; also the library's `paper PC-100C` (kept as text lines and `TIPaperDot`s), `paper-copies`, `run-state` (`buttonUseFor:`, calcu::debugger::buttonUse) and `trace`, the run control's commands, and the clipboard host services (`clipboard-image`, `clipboard-text`) answered on the pasteboard |
 | `TISharedTables.{h,mm}` | `SevenSegment`, `KeyboardLayout`, `KeyIds`, the base image's width (the hit map's unit) |
 | `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, the PC-100C's paper width and dot size (`core/PC100CPaper.hpp`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileTopMargin`), the view rule (`shell::view` on `cu59::viewInputs`), the paper row's rule (`shell::paperRowCompact` on the TI chrome) |
 | `TIFileFormats.{h,mm}` | `TICueCard` |
@@ -720,7 +720,7 @@ to drop a selection. PRINT, ADV and TRACE send `set-control`.
 run control's level `program`, those of the CPU tab `cpu`;
 which can be used is the library's rule (`buttonUseFor:`, and
 `freezeButtonsFor:` for FREEZE and FREEZE ON START), FREEZE ON
-START is `pause-on-start`, the LOG tab's TRACE the trace session's button
+START is `pause-on-start`, the RUN LOG tab's TRACE the trace session's button
 trace. What the tabs show is the session's: the product topics
 of `app/TIDebugPart` and the library's `log`; the buttons send its commands
 (`c59.dump`, `c59.heatmap-reset`, `c59.asm-load`,

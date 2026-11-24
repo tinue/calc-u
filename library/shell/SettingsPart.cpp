@@ -65,6 +65,24 @@ void SettingsPart::attach(sessions::SessionSetup& s) {
         topic_->set(sessions::valuePayload("settings", state()));
         return sessions::Done{};
     });
+    s.command(commands::kRememberWindow, [this](const Value& a, sessions::SessionContext& c) -> sessions::CommandOutcome {
+        const Value* values = a.find("values");
+        const Value::Object* o = values ? values->members() : nullptr;
+        if (!o) return sessions::Refused{"remember-window needs values."};
+        auto& f = *setup_.file;
+        for (const auto& [key, v] : *o) {
+            const KeyDecl* d = f.product().find("window", key);
+            const auto text = valueText(v);
+            if (!d || !text || !settings::accepts(f.product(), *d, *text))
+                return sessions::Refused{"There is no window value [window] " + key + " of that kind."};
+        }
+        for (const auto& [key, v] : *o) {
+            const settings::SettingsFile::WriteResult w = f.set("window", key, *valueText(v));
+            if (!w.ok) c.appLog().warn(notSaved("[window] " + key, w));
+        }
+        topic_->set(sessions::valuePayload("settings", state()));
+        return sessions::Done{};
+    });
 }
 
 void SettingsPart::beforeFlush(sessions::SessionContext&) {
@@ -123,8 +141,12 @@ Value SettingsPart::state() const {
         row.push_back({"isDefault", Value(folder ? !settings::hasFixedOpenFolder(f, d.key) : value == def)});
         rows.push_back(Value(std::move(row)));
     }
+    // The [window] keys as the file has them, for a page's own windows.
+    Value::Object window;
+    for (const auto& d : decl.keys)
+        if (d.section == "window") window.push_back({d.key, Value(f.text(d.section, d.key))});
     const std::string home = setup_.paths ? setup_.paths->hostDirs().home : std::string();
-    return Value::object({{"home", home}, {"rows", Value(std::move(rows))}});
+    return Value::object({{"home", home}, {"rows", Value(std::move(rows))}, {"window", Value(std::move(window))}});
 }
 
 sessions::CommandOutcome SettingsPart::set(const Value& args, sessions::SessionContext& c) {

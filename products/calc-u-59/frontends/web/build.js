@@ -47,7 +47,7 @@ buildWebProduct({
   // In load order: helpers before the components that use them. One closure,
   // so nothing but CalcU59 reaches the host page's globals.
   sources: ["page.jsx", "painters.js", "CalculatorFace.jsx", "Dialogs.jsx", "Paper.jsx", "Debugger.jsx", "CalcU59.jsx"],
-  component: "CalcU59", props: { layout: "auto" },
+  component: "CalcU59", props: { layout: "auto", paperWindow: true },
   installSentence: "Install Calc-U 59 for one-tap, full-screen launches.",
   swId: "calcu59",   // the prefix of its caches: an activation removes the older ones that carry it
 });

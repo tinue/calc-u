@@ -10,6 +10,7 @@
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
 #include "settings/OpenFolders.hpp"
+#include "settings/WindowPlace.hpp"
 #include "shell/SettingsModel.hpp"
 #include "shell/SettingsPart.hpp"
 #include <memory>
@@ -292,4 +293,24 @@ TEST(choice_value_not_listed_shown_as_written) {
     const auto style = find(dialog(r.topic(), st::presetList(), styleSpec()), "test.style");
     CHECK_EQ(style->value, std::string("two"));
     CHECK_EQ(choiceText(*style), std::string("one=The first;two=two;"));
+}
+
+// remember-window: a page's own windows write their [window] keys, which
+// the topic carries (no dialog rows); a key not declared or a value it
+// does not take refuses them all.
+TEST(remember_window_writes_declared_window_keys) {
+    Rig r;
+    CHECK(r.row("window", "paper-own-window") == nullptr);
+    CHECK_EQ(read::text(*r.topic().find("window"), "paper-own-window"), std::string("false"));
+    const auto ok = r.session->send(
+        r.id, {commands::kRememberWindow,
+               Value::object({{"values", Value::object({{"paper-own-window", true}, {"paper-x", 40}, {"paper-width", 380}})}})});
+    CHECK(r.fe.reply(ok)->done);
+    CHECK(r.file.boolean("window", sett::kPaperOwnWindowKey));
+    CHECK_EQ(r.file.integer("window", "paper-width"), 380L);
+    CHECK_EQ(read::text(*r.topic().find("window"), "paper-x"), std::string("40"));
+    const auto no = r.session->send(
+        r.id, {commands::kRememberWindow, Value::object({{"values", Value::object({{"paper-y", 5}, {"colour", "red"}})}})});
+    CHECK(!r.fe.reply(no)->done);
+    CHECK(r.file.text("window", "paper-y").empty());
 }

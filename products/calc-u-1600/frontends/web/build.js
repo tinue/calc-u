@@ -41,7 +41,7 @@ buildWebProduct({
   ],
   // In load order; one closure, so nothing but CalcU1600 reaches the page.
   sources: ["painters.js", "Faceplate.jsx", "Panels.jsx", "Dialogs.jsx", "CalcU1600.jsx"],
-  component: "CalcU1600", props: { layout: "auto" },
+  component: "CalcU1600", props: { layout: "auto", paperWindow: true },
   installSentence: "Install Calc-U-1600 to run it offline in its own window.",
   swId: "calc-u-1600",
 });

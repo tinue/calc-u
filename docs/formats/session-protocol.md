@@ -475,9 +475,10 @@ delete).
 
 | Name | Shape | Arguments | Value |
 |---|---|---|---|
-| `settings` | state | — | `{home, rows: [{section, key, kind, value, default, choices: [..], min?, max?, inUse, isDefault}]}` |
+| `settings` | state | — | `{home, rows: [{section, key, kind, value, default, choices: [..], min?, max?, inUse, isDefault}], window: {<key>: text}}` |
 | `set-setting` | command | `{section, key, value}` (`value` null: the default) | — |
 | `remember-folder` | command | `{kind, folder}` | — |
+| `remember-window` | command | `{values: {<key>: value}}` | — |
 
 - `rows`: every declared key but `[window]` and `[startup] last-model`,
   and the keys a frontend shows besides. `kind` is `text`, `path`,
@@ -489,13 +490,19 @@ delete).
   <problem>.` and keeps the value for the run.
 - `remember-folder`: the folder a file dialog of that kind was last used
   in.
+- `window`: every declared `[window]` key with its text as the file has
+  it; `remember-window` writes some of them (the page's paper window: its
+  `paper-own-window`, `paper-x`, `paper-y`, `paper-width`,
+  `paper-height`). A key that is not declared, or a value it does not
+  take, refuses the whole command.
 
 **What the shell reads and sends.** The shell's models take these inputs
 as values: `control-state`, `busy`, `run-state`, `roms-missing`,
 `settings`, `media` (topics) and the reply of `preset-list`. They send
 `model`, `variant`, `attach`, `detach`, `reset`, `cold-boot`,
 `load-preset`, `resume`, `paste`, `media.import`, `screen-key-down`,
-`screen-key-up`, `speed`, `set-setting`, `remember-folder`.
+`screen-key-up`, `speed`, `set-setting`, `remember-folder`,
+`remember-window`.
 
 ## 14. Startup and machine control
 

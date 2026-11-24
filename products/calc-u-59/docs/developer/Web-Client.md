@@ -194,6 +194,11 @@ What is Calc-U-59's own:
   setting.
 - `settings` (default `true`), the product's own prop: offer Settings…
   (the File menu and the More menu).
+- `paperWindow` (default `false`), the product's own prop: with
+  `layout="auto"` on a desktop page, the paper panel's button that opens
+  the paper in a window of its own (`useCalcuPaperWindow`,
+  `library/web/components/PaperWindow.jsx`). The app page passes `true`;
+  an embedding page leaves it out.
 
 There is no `module` prop: a host page that wants
 another module names a preset that sets it.

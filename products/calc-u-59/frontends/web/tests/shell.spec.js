@@ -343,3 +343,39 @@ test('file menu has import and saved media', async ({ page }) => {
   await expect(el(page, 'more-item-import-media')).toBeVisible();
   await expect(el(page, 'more-item-saved-media')).toBeVisible();
 });
+
+// The paper in its own window (the app page on a desktop): a popup with the
+// same panel, the debugger taking the room; closing it puts the paper back,
+// and the setting and the place reach the settings file through
+// remember-window. Qt6's twin: paper_own_window_debugger_takes_the_room.
+test('the paper in its own window and back', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto('app/');
+  await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 15000 });
+  await expect(page.locator('[data-layout=wide]')).toBeVisible();
+  const button = page.locator('[data-panel=paper] [data-calcu=paper-window]');
+  await expect(button).toHaveAttribute('aria-label', 'Open in Own Window');
+  const [popup] = await Promise.all([page.waitForEvent('popup'), button.click()]);
+  await expect(popup.locator('[data-calcu=paper-panel]')).toBeVisible();
+  await expect(popup.locator('[data-calcu=paper-window]')).toHaveAttribute('aria-label', 'Back to Main Window');
+  await expect(page.locator('[data-panel=paper]')).toHaveCount(0);
+  await expect(page.locator('[data-panel=debug]')).toBeVisible();
+  // The printer attached from the window (the app's start may have it
+  // already), its controls there.
+  const place = popup.locator('[data-calcu=bar-place-printer]');
+  if ((await place.getAttribute('aria-pressed')) !== 'true') await place.click();
+  await expect(place).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
+  await expect(popup.locator('[data-calcu=paper-owner]')).toHaveText('PC-100C');
+  await expect(popup.locator('[data-calcu=paper-control-PRINT]')).toBeVisible();
+  const setting = () => page.evaluate(() => {
+    const st = document.querySelector('.calcu-device').calcuShell.getState().topics.settings;
+    return st && st.window ? st.window['paper-own-window'] : null;
+  });
+  await expect.poll(setting).toBe('true');
+  await popup.close();
+  await expect(page.locator('[data-panel=paper] [data-calcu=paper-owner]')).toHaveText('PC-100C');
+  await expect.poll(setting).toBe('false');
+  // In the page, no button on an embed.
+  await gotoReady(page, 'layout=wide');
+  await expect(page.locator('[data-calcu=paper-window]')).toHaveCount(0);
+});

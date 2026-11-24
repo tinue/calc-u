@@ -16,7 +16,7 @@ enum class ValueKind {
     Text,         // any text
     Path,         // empty, or an absolute path; a leading `~` is the home folder
     Boolean,      // `true` or `false`
-    Integer,      // a decimal number within [min, max]
+    Integer,      // a decimal number within [min, max]; empty too where the default is empty (not set yet)
     Choice,       // one of `choices`
     ModelOrLast,  // `last` or one of the product's models
     ModelName,    // one of the product's models, or empty

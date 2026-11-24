@@ -436,7 +436,10 @@ test('the paper in its own window and back', async ({ page }) => {
   await expect(popup.locator(c('paper-window'))).toHaveAttribute('aria-label', 'Back to Main Window');
   await expect(paper).toHaveCount(0);
   await expect(page.locator('[data-panel=inspector]')).toBeVisible();
-  await popup.locator(c('paper-window')).click();   // the button puts it back too
+  // The button puts it back too. It closes the window it is in, so the
+  // click may not see its own end; the window's close is the proof.
+  await Promise.all([popup.waitForEvent('close'),
+                     popup.locator(c('paper-window')).click().catch(() => {})]);
   await expect(paper).toBeVisible();
   await expect(page.locator('[data-panel=inspector]')).toBeVisible();
 });

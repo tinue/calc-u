@@ -39,8 +39,9 @@ TEST(about_value_form) {
                                       {"version", "Version 1.0"},
                                       {"lines", Value(Value::Array{"one"})},
                                       {"links", Value(Value::Array{Value(Value::Array{"Source", "https://example.org/src"})})},
-                                      {"supportHeading", "Support Information"},
-                                      {"support", Value(Value::Array{Value(Value::Array{"OS", "macOS"})})},
+                                      {"sections", Value(Value::Array{Value::object(
+                                                       {{"heading", "Support Information"},
+                                                        {"rows", Value(Value::Array{Value(Value::Array{"OS", "macOS"})})}})})},
                                       {"text", shell::aboutText(a)}});
     CHECK_EQ(sessions::toText(shell::toValue(a)), sessions::toText(want));
 }

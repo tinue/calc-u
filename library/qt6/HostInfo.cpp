@@ -1,12 +1,16 @@
 #include "qt6/HostInfo.hpp"
 
 #include <QFile>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QSettings>
 #include <QSysInfo>
+#include <QWidget>
 #include <QtGlobal>
 #include <string>
 
 #ifdef Q_OS_MACOS
+#include "qt6/MacDisplay.h"
 #include <sys/sysctl.h>
 #endif
 
@@ -78,5 +82,26 @@ std::string hardware() {
 } // namespace
 
 shell::SupportRows hostSupportRows() { return {{"OS", os()}, {"Hardware", hardware()}}; }
+
+shell::DisplayFacts displayFacts(const QWidget& window) {
+    shell::DisplayFacts d;
+#if defined(Q_OS_LINUX)
+    const QString platform = QGuiApplication::platformName();
+    if (platform == QStringLiteral("wayland")) d.windowing = "Wayland";
+    else if (platform == QStringLiteral("xcb")) d.windowing = qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY") ? "X11" : "X11 on Wayland";
+    else d.windowing = platform.toStdString();
+#endif
+    d.window = {window.width(), window.height()};
+    const QScreen* screen = window.screen();
+    if (!screen) return d;
+    d.screen = screen->name().toStdString();
+    d.reported = {screen->geometry().width(), screen->geometry().height()};
+    d.scale = screen->devicePixelRatio();
+#if defined(Q_OS_MACOS)
+    int w = 0, h = 0;
+    if (macPanelSize(*screen, &w, &h)) d.panel = {w, h};
+#endif
+    return d;
+}
 
 } // namespace calcu::qt6

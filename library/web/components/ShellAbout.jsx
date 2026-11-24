@@ -1,7 +1,8 @@
 // ShellAbout -- the About dialog of the React set, as the worker serves it (useCalcuShell's
 // `about`, shell::about): the product's name, its version and build, the texts and links the
-// product gives, the Support Information (build time, the page's address and what the browser
-// tells of where it runs), Copy (about-copy: the model's text, shell::aboutText) and OK.
+// product gives, its sections (about-section: the Support Information with build time, the page's
+// address and what the browser tells of where it runs; the Display of the screen and window),
+// Copy (about-copy: the model's text, shell::aboutText) and OK.
 // Name: about-dialog.
 
 function ShellAbout({ shell }) {
@@ -28,12 +29,12 @@ function ShellAbout({ shell }) {
       {a.links.map(([label, url]) => (
         <p key={url}><a href={url} target="_blank" rel="noopener noreferrer">{label}</a></p>
       ))}
-      {a.support.length > 0 && (
-        <div className="calcu-shell-about-support" data-calcu="about-support">
-          <div><b>{a.supportHeading}</b></div>
-          {a.support.map(([label, value]) => <div key={label}>{label}: {value}</div>)}
+      {a.sections.map((section) => (
+        <div key={section.heading} className="calcu-shell-about-section" data-calcu="about-section">
+          <div><b>{section.heading}</b></div>
+          {section.rows.map(([label, value]) => <div key={label}>{label}: {value}</div>)}
         </div>
-      )}
+      ))}
     </ShellModal>
   );
 }

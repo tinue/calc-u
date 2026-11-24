@@ -9,7 +9,8 @@
 //   page is mobile when CALCU_SHELL_MOBILE. shellArgs: the product's own
 //   args of its shell, as its Web part reads them.)
 //   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.about (the About
-//   dialog: shell::about with the page's rows, and its Copy `text`), s.loading, s.notice,
+//   dialog: shell::about with the page's rows and its Display facts, measured
+//   when About opens, and its Copy `text`), s.loading, s.notice,
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" |
 //   "name-and-save" | null), s.naming (the place Name & Save is open for),
 //   s.nameAndSavePrompts ({place: prompt}, the models' nameAndSave)
@@ -57,8 +58,12 @@ function calcuShellNow() {
 function useCalcuShell(shell, product, traits, shellArgs) {
   const t = Object.assign({}, CALCU_SHELL_WEB_TRAITS, traits || {});
   const host = useShellHostRows();
+  // About's Display section: the screen and the window as they are when
+  // About opens (measured again at each open, not at each resize).
+  const [display, setDisplay] = React.useState(null);
   const args = Object.assign({ mobile: !!t.mobile, settings: t.settings !== false, about: t.about !== false,
-    version: product.version || "", build: product.build || "", buildTime: product.buildTime || "", host }, shellArgs || {});
+    version: product.version || "", build: product.build || "", buildTime: product.buildTime || "", host },
+  display ? { display } : {}, shellArgs || {});
   const shellKey = JSON.stringify(args);
   const controlState = useTopic(shell, "control-state");
   const busy = useTopic(shell, "busy");
@@ -144,7 +149,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
     const a = CALCU_SHELL_ACTIONS;
     if (item.id === a.loadPreset) (product.loadPreset || loadPreset)();   // a product may open the files itself
     else if (item.id === a.settings) setOpen("settings");
-    else if (item.id === a.about) setOpen("about");
+    else if (item.id === a.about) { setDisplay(calcuShellDisplayFacts(window)); setOpen("about"); }
     else if (item.id === a.savedMedia) setOpen("saved-media");
     else if (item.id.startsWith(a.nameAndSavePrefix)) nameAndSave(item.args.place);
     else if (item.id === a.help) calcuWebHostServices().answer("open-url", { url: product.helpUrl });   // its result is ignored

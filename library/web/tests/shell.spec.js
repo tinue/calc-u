@@ -177,7 +177,7 @@ test('roms missing', async ({ page }) => {
 
 // The form of the text is shell::aboutText's (help_about_tests.cpp): here
 // the wiring, the model's text on the clipboard and the page's rows.
-test('about copies its texts and the support information', async ({ page }) => {
+test('about copies its texts, the support information and the display', async ({ page }) => {
   await start(page);
   await page.evaluate(() => {
     window.calcuCopied = [];
@@ -185,15 +185,23 @@ test('about copies its texts and the support information', async ({ page }) => {
       value: { writeText: (t) => { window.calcuCopied.push(t); return Promise.resolve(); } } });
   });
   await chooseItem(page, 'help', 'about');
-  const support = el(page, 'about-support');
+  const support = el(page, 'about-section').filter({ hasText: 'Support Information' });
   await expect(support).toContainText('Built: 2026-11-24T11:49:08Z');
   await expect(support).toContainText('Browser: ');
   await expect(support).toContainText(/Page: (localhost|127\.0\.0\.1):\d+\//);
+  // The screen and window as the page measured them when About opened.
+  const display = el(page, 'about-section').filter({ hasText: 'Display' });
+  const facts = await page.evaluate(() => ({ w: screen.width, h: screen.height, s: devicePixelRatio,
+    iw: innerWidth, ih: innerHeight }));
+  await expect(display).toContainText(`Reported: ${facts.w} × ${facts.h}`);
+  await expect(display).toContainText(`Actual: ${Math.round(facts.w * facts.s)} × ${Math.round(facts.h * facts.s)}`);
+  await expect(display).toContainText(`Window: ${facts.iw} × ${facts.ih}`);
   await el(page, 'about-copy').click();
   await expect(el(page, 'about-dialog')).toBeVisible();   // Copy leaves it open
   const copied = (await page.evaluate(() => window.calcuCopied))[0];
   expect(copied).toBe(await page.evaluate(() => window.calcuTestShellModel.about.text));
   expect(copied).toContain('Page: ');
+  expect(copied).toContain('\nDisplay\nReported: ');
 });
 
 test('help opens', async ({ page }) => {

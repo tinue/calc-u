@@ -225,8 +225,8 @@ function CalcU1600(props) {
   }, [shell, programs, dialogs.open]);
 
   const copyScreen = () => {
-    // A refused picture rejects both entries: the clipboard write fails and
-    // names the session's reason.
+    // A refused picture rejects both entries: nothing is copied, and the app
+    // log names the session's reason.
     const image = shell.request("c1600.screen-image", null).then((r) => {
       if (!r.done || !r.value) throw new Error(r.reason || "the screen's picture did not come");
       return r.value;

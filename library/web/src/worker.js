@@ -175,6 +175,7 @@
       postMessage({ kind: "state", topic: "web.storage", value: state });
       postMessage({ kind: "stream", topic: "notices", reset: false, value: [{ sentence: state.sentence }] });
     });
+    calcuAppLog("debug", `storage: ${CONFIG.mount} opened as ${storage.mode}`);
     host = new Module[CONFIG.host]({
       product: CONFIG.name,
       dirs: { settingsBase: `${CONFIG.mount}/settings`, saveFolder: `${CONFIG.mount}/${CONFIG.name}`, home: "" },

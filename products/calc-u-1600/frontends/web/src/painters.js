@@ -132,7 +132,7 @@ function canvasPng(canvas) {
 // gesture), with the data still on its way from the worker -- ClipboardItem
 // takes promises. Resolves false if the browser refuses, or an item's
 // promise rejects (its data did not come), with an app log line that names
-// `what` and the browser's error.
+// `what` and the browser's error, or the reason the data did not come.
 async function writeClipboard(what, items) {
   const asBlob = (mime) => Promise.resolve(items[mime]).then((v) => (typeof v === "string" ? new Blob([v], { type: mime }) : v));
   try {
@@ -150,7 +150,11 @@ async function writeClipboard(what, items) {
       return true;
     }
   } catch (e) {
-    calcuAppLog("warn", `${what}: not copied: ${calcuErrorText(e)}`);
+    // Data that did not come is the cause, whatever the browser says then.
+    const missing = (await Promise.allSettled(Object.values(items).map((v) => Promise.resolve(v))))
+      .find((r) => r.status === "rejected");
+    calcuAppLog("warn", missing ? `${what}: ${(missing.reason && missing.reason.message) || missing.reason}`
+      : `${what}: not copied: ${calcuErrorText(e)}`);
   }
   return false;
 }

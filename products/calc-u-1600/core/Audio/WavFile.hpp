@@ -2,12 +2,13 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdint>
-#include <cstdio>
 #include <cstring>
+#include <fstream>
 #include <string>
 #include <vector>
 
 #include "../FileIO.hpp"
+#include "files/Files.hpp"
 
 // Minimal RIFF/WAVE writer for PiezoSampler and TapeDeck output (mono,
 // 16-bit PCM) -- used by the headless CLIs' --wav flag to capture buzzer
@@ -45,19 +46,16 @@ inline std::vector<uint8_t> wavMono16Bytes(const std::vector<int16_t>& samples, 
 // False when the file is not written, with the system's reason in `error`.
 inline bool writeWavMono16(const std::string& path, const std::vector<int16_t>& samples, int sampleRate,
                            std::string* error = nullptr) {
-    FILE* f = std::fopen(path.c_str(), "wb");
-    if (!f) {
-        if (error) *error = std::strerror(errno);
+    const std::vector<uint8_t> bytes = wavMono16Bytes(samples, sampleRate);
+    errno = 0;
+    std::ofstream out(calcu::files::toPath(path), std::ios::binary | std::ios::trunc);
+    if (out) out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    if (out) out.close();
+    if (!out) {   // errno of the step that failed: the open, the write or the close
+        if (error) *error = calcu::files::osReason(errno);
         return false;
     }
-    const std::vector<uint8_t> bytes = wavMono16Bytes(samples, sampleRate);
-    bool ok = std::fwrite(bytes.data(), 1, bytes.size(), f) == bytes.size();
-    if (!ok && error) *error = std::strerror(errno);
-    if (std::fclose(f) != 0 && ok) {
-        ok = false;
-        if (error) *error = std::strerror(errno);
-    }
-    return ok;
+    return true;
 }
 
 // Decoded WAV contents: the channels mixed down to mono, each sample
@@ -131,6 +129,6 @@ inline bool readWavBytes(const std::vector<uint8_t>& bytes, WavData& out, std::s
 
 inline bool readWav(const std::string& path, WavData& out, std::string& error) {
     std::vector<uint8_t> bytes;
-    if (!readWholeFile(path, &bytes)) { error = "cannot open " + path; return false; }
+    if (!readWholeFile(calcu::files::toPath(path), &bytes)) { error = "cannot open " + path; return false; }
     return readWavBytes(bytes, out, error);
 }

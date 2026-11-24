@@ -265,11 +265,10 @@ bool isUtf8(std::string_view s) {
 }
 
 std::string stemOf(std::string_view path) {
-    const std::size_t slash = path.find_last_of("/\\");
-    std::string_view file = slash == std::string_view::npos ? path : path.substr(slash + 1);
+    std::string file = files::plainFileName(path);
     const std::size_t dot = file.rfind('.');
-    if (dot != std::string_view::npos && dot > 0) file = file.substr(0, dot);
-    return std::string(file);
+    if (dot != std::string::npos && dot > 0) file.resize(dot);
+    return file;
 }
 
 } // namespace calcu::presets

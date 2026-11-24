@@ -31,7 +31,5 @@ bool hasSuffix(std::string_view fileName, const KindDecl&);
 std::string stemOf(std::string_view fileName, const KindDecl&);
 // The inner name, else the file name without the suffix.
 std::string nameOf(const MediumInfo&, std::string_view fileName, const KindDecl&);
-// The last component of a path ("/" or "\").
-std::string baseName(std::string_view path);
 
 } // namespace calcu::media

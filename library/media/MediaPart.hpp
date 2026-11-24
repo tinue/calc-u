@@ -60,7 +60,7 @@ struct MediaSetup {
 struct Binding {
     const KindDecl* kind = nullptr;
     std::string name, description;
-    std::string insertNotice;               // the file's `insert-notice`, shown when a template is inserted by hand
+    std::string insertNotice;               // a template's: its file's `insert-notice`, shown when it is inserted by hand
     Origin origin = Origin::Saved;
     bool isTemplate = true;
     std::string path;                       // an instance: its file; a template: the file it came from, if any
@@ -124,8 +124,6 @@ public:
     // taken out) or fitted and fed by `side` (pass-through). The
     // refusal, or nullopt.
     std::optional<std::string> insert(sessions::SessionContext&, const std::string& word, Binding, Content, int side);
-    // A template the user put in says what its file's `insert-notice` says.
-    static void noticeInserted(sessions::SessionContext&, const Binding&);
     // Written first, then out; an empty place: nothing. A pass-through place:
     // a medium passing is taken out and stays fitted; none passing: the
     // fitted medium goes.

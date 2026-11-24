@@ -1,5 +1,7 @@
 #include "media/Header.hpp"
 
+#include <algorithm>
+
 namespace calcu::media {
 
 std::string quotedScalar(const std::string& s) {
@@ -50,6 +52,14 @@ bool readHeader(const formats::YamlNode& root, const HeaderRules& rules, Header*
     if (const formats::YamlNode* n = root.find("insert-notice"); n && !n->asString(&out->insertNotice, problem)) return false;
     if (const formats::YamlNode* t = root.find("template"); t && !t->asBool(&out->isTemplate, problem)) return false;
     if (const formats::YamlNode* s = root.find("saved"); s && !s->asString(&out->savedAt, problem)) return false;
+    if (rules.keys.empty()) return true;
+    static const std::string headerKeys[] = {"format", "format-version", "description", "insert-notice", "template", "saved"};
+    for (const auto& [key, node] : root.map) {
+        const auto same = [&](const std::string& k) { return k == key; };
+        if (key == rules.nameKey || std::ranges::any_of(headerKeys, same) || std::ranges::any_of(rules.keys, same)) continue;
+        *problem = "line " + std::to_string(node.line) + ": unknown key " + key;
+        return false;
+    }
     return true;
 }
 

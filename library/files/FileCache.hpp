@@ -17,12 +17,6 @@
 
 namespace calcu::files {
 
-// `name` without its folders.
-inline std::string plainFileName(std::string_view name) {
-    const std::size_t slash = name.find_last_of("/\\");
-    return std::string(slash == std::string_view::npos ? name : name.substr(slash + 1));
-}
-
 // Writes the bytes as `folder`/<plain name>; the path, or nullopt with the
 // reason in *problem.
 inline std::optional<std::filesystem::path> keepInCache(const std::filesystem::path& folder, std::string_view name,

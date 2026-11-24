@@ -22,6 +22,7 @@
 #include "app/dap/DapSession.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "debugger/RunControl.hpp"
+#include "files/Files.hpp"
 #include "machine/Machine.hpp"
 #include "presets/PresetsPart.hpp"
 #include "sessions/MachineSession.hpp"
@@ -41,11 +42,6 @@ std::string hex4(std::uint16_t v) {
     char buf[8];
     std::snprintf(buf, sizeof buf, "%04X", v);
     return buf;
-}
-
-std::string fileName(const std::string& path) {
-    const std::size_t at = path.find_last_of("/\\");
-    return at == std::string::npos ? path : path.substr(at + 1);
 }
 
 } // namespace
@@ -384,7 +380,7 @@ Task<bool> DapSession::buildAndLoad(OperationContext& op, Value d, std::string* 
         }
     }
     for (const std::string& w : r.warnings) output(w, "important");
-    std::string message = "Loaded " + fileName(req.bin) + " at " + hex4(r.lo) + "-" + hex4(r.hi);
+    std::string message = "Loaded " + calcu::files::plainFileName(req.bin) + " at " + hex4(r.lo) + "-" + hex4(r.hi);
     if (!r.callCommand.empty()) message += "; start with " + r.callCommand;
     output(message);
     if (body) {

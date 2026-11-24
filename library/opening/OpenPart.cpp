@@ -87,11 +87,7 @@ Value mediumArgs(const OpenedFile& f, const std::optional<std::string>& place, b
 }
 
 // The file's name without any folder, for a file written into a folder.
-std::string plainName(const OpenedFile& f) {
-    std::string n = fileNameOf(f);
-    const std::size_t slash = n.find_last_of("/\\");
-    return slash == std::string::npos ? n : n.substr(slash + 1);
-}
+std::string plainName(const OpenedFile& f) { return files::plainFileName(fileNameOf(f)); }
 
 } // namespace
 

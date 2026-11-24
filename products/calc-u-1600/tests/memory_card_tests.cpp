@@ -1212,25 +1212,26 @@ std::string makeScratchCardDir(const calcu::testing::TempFolder& tmp) {
 TEST(test_catalog_scan_lists_and_sorts) {
     const calcu::testing::TempFolder dirFolder("calcu1600-cards");
     const std::string dir = makeScratchCardDir(dirFolder);
-    std::string err;
-    auto entries = scanMemoryCardDirectory(dir, &err);
+    std::vector<std::string> problems;
+    auto entries = scanMemoryCardDirectory(dir, &problems);
     CHECK(entries.size() == 3);  // ce155 / ce1600m / ce1601m; notes.yaml + broken skipped
     if (entries.size() == 3) {
-        CHECK(entries[0].moduleName == "CE-155");     // sorted by module-name
-        CHECK(entries[1].moduleName == "CE-1600M");
-        CHECK(entries[2].moduleName == "CE-1601M");
-        CHECK(entries[0].compatibleWith(CardHost::PC1500));
-        CHECK(!entries[0].compatibleWith(CardHost::PC1600Slot2));
-        CHECK(entries[2].compatibleWith(CardHost::PC1600Slot2));
+        CHECK(entries[0].definition.moduleName == "CE-155");     // sorted by module-name
+        CHECK(entries[1].definition.moduleName == "CE-1600M");
+        CHECK(entries[2].definition.moduleName == "CE-1601M");
+        CHECK(entries[0].definition.compatibleWith(CardHost::PC1500));
+        CHECK(!entries[0].definition.compatibleWith(CardHost::PC1600Slot2));
+        CHECK(entries[2].definition.compatibleWith(CardHost::PC1600Slot2));
     }
-    CHECK(err.find("broken.module.yaml") != std::string::npos);  // reported, not fatal
+    CHECK_EQ(problems.size(), std::size_t{1});  // reported, not fatal
+    CHECK(!problems.empty() && problems[0].rfind("broken.module.yaml: ", 0) == 0);
 }
 
 TEST(test_catalog_scan_missing_dir) {
-    std::string err;
-    auto entries = scanMemoryCardDirectory("/no/such/module/dir", &err);
+    std::vector<std::string> problems;
+    auto entries = scanMemoryCardDirectory("/no/such/module/dir", &problems);
     CHECK(entries.empty());
-    CHECK(!err.empty());
+    CHECK_EQ(problems.size(), std::size_t{1});
 }
 
 // The definitions that do not read are left out and named, each with its

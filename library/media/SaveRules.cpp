@@ -1,4 +1,5 @@
 #include "media/SaveRules.hpp"
+#include "files/Files.hpp"
 #include "media/Names.hpp"
 
 namespace calcu::media {
@@ -44,7 +45,7 @@ Plan planSave(const SaveRequest& r, const Shelf& shelf, const InPlace& inPlace) 
     const KindDecl& k = *r.kind;
     const bool live = r.by != SaveBy::SaveasTemplate;
     if (r.byFile) {   // the file: form writes exactly the file it names
-        const std::string file = baseName(r.target);
+        const std::string file = files::plainFileName(r.target);
         if (!hasSuffix(file, k)) return refused("The file " + file + " does not end in " + k.suffix + ".");
         if (isBundledPath(shelf, k, r.target)) return refused("The bundled " + k.label + " file " + file + " is never written.");
         std::string bytes;
@@ -113,7 +114,7 @@ Plan planSave(const SaveRequest& r, const Shelf& shelf, const InPlace& inPlace) 
 ImportPlan planImport(const std::string& fileName, const std::string& bytes, const MediumCodec::Companion& companion,
                       const Shelf& shelf) {
     ImportPlan out;
-    const std::string file = baseName(fileName);
+    const std::string file = files::plainFileName(fileName);
     out.kind = shelf.kindOfFile(file);
     if (!out.kind || !out.kind->codec) {
         out.plan = refused("The file " + file + " is not a medium of this product.");

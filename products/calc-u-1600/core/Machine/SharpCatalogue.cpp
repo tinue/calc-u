@@ -4,7 +4,6 @@
 
 #include "../Connector/MemoryCardCatalog.hpp"
 #include "../Display/StatusLine.hpp"
-#include "../FileIO.hpp"
 #include "../PC1500/PC1500Clocks.hpp"
 #include "../PC1600/PC1600Clocks.hpp"
 #include "Machine/SharpKeyIds.hpp"
@@ -221,31 +220,14 @@ PeripheralDescriptor moduleDescriptor(const MemoryCardDefinition& def) {
 
 int addModuleDefinitions(Catalogue& catalogue, const std::string& dir, std::vector<std::string>* problems) {
     int added = 0;
-    std::string error;
-    const std::vector<MemoryCardCatalogEntry> entries = scanMemoryCardDirectory(dir, &error);
-    if (problems && !error.empty()) {   // one line per file the scan passed over, or the folder's
-        std::size_t from = 0;
-        while (from <= error.size()) {
-            const std::size_t end = std::min(error.find('\n', from), error.size());
-            if (end > from) problems->push_back("The module definitions in " + dir + ": " + error.substr(from, end - from));
-            from = end + 1;
-        }
-    }
-    for (const MemoryCardCatalogEntry& e : entries) {
-        if (catalogue.peripheral(PeripheralId{e.moduleName})) continue;
-        std::vector<std::uint8_t> bytes;
-        MemoryCardDefinition def;
-        std::string parseError;
-        if (!readWholeFile(e.filePath, &bytes)) parseError = "it cannot be opened.";
-        else if (!parseMemoryCardDefinition(std::string(bytes.begin(), bytes.end()), &def, &parseError) && parseError.empty())
-            parseError = "it does not parse.";
-        if (!parseError.empty()) {
-            if (problems) problems->push_back("The module definition " + e.filePath + " cannot be read: " + parseError);
-            continue;
-        }
-        catalogue.addPeripheral(moduleDescriptor(def));
+    std::vector<std::string> passedOver;   // each file the scan passed over, or the folder
+    for (const MemoryCardCatalogEntry& e : scanMemoryCardDirectory(dir, &passedOver)) {
+        if (catalogue.peripheral(PeripheralId{e.definition.moduleName})) continue;
+        catalogue.addPeripheral(moduleDescriptor(e.definition));
         ++added;
     }
+    if (problems)
+        for (const std::string& p : passedOver) problems->push_back("The module definitions in " + dir + ": " + p);
     return added;
 }
 

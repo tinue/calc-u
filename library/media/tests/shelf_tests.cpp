@@ -1,5 +1,6 @@
 #include "MediaFixture.hpp"
 #include "TestHarness.hpp"
+#include "files/Files.hpp"
 #include "media/Names.hpp"
 
 // Kinds and the shelf.
@@ -181,11 +182,11 @@ struct RecordingAccess final : FileAccess {
         return FileAccess::list(folder, problem);
     }
     Read read(const std::string& path) const override {
-        calls.push_back("read " + baseName(path));
+        calls.push_back("read " + files::plainFileName(path));
         return FileAccess::read(path);
     }
     Written write(const std::string& path, const std::string& bytes) const override {
-        calls.push_back("write " + baseName(path));
+        calls.push_back("write " + files::plainFileName(path));
         return FileAccess::write(path, bytes);
     }
 };

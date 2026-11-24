@@ -1,4 +1,5 @@
 #include "Ce158PrinterWidget.hpp"
+#include "qt6/FixedFont.hpp"
 #include "AppPaths.hpp"
 #include "app/SharpChrome.hpp"
 #include "qt6/ChromeStyle.hpp"
@@ -7,7 +8,6 @@
 #include <QEvent>
 #include <QFile>
 #include <QFileDialog>
-#include <QFontDatabase>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
@@ -41,7 +41,7 @@ Ce158PrinterWidget::Ce158PrinterWidget(MachineController* controller, QWidget* p
     m_output = new QPlainTextEdit(this);
     m_output->setReadOnly(true);
     m_output->setLineWrapMode(QPlainTextEdit::NoWrap);
-    m_output->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    m_output->setFont(calcu::qt6::fixedFont());
     m_output->setPlaceholderText(tr("Parallel-port output (OPN \"LPRT\" / PRINT#-9) appears here."));
     // Never take keyboard focus from MainWindow, which owns typing.
     m_output->setFocusPolicy(Qt::NoFocus);

@@ -1,9 +1,9 @@
 #include "qt6/PaperPanel.hpp"
+#include "qt6/FixedFont.hpp"
 #include "qt6/ChromeStyle.hpp"
 #include "qt6/PaperPainter.hpp"
 #include "shell/BarModel.hpp"
 #include <QApplication>
-#include <QFontDatabase>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -156,10 +156,7 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     text_->setReadOnly(true);
     text_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     text_->setFocusPolicy(Qt::NoFocus);
-    QFont fixed = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-    fixed.setStyleHint(QFont::TypeWriter);
-    fixed.setFixedPitch(true);
-    text_->setFont(fixed);
+    text_->setFont(fixedFont());
     text_->setLineWrapMode(QPlainTextEdit::NoWrap);
     stack_->addWidget(view_);
     stack_->addWidget(text_);

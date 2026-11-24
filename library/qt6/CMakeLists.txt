@@ -28,6 +28,7 @@ add_library(calcu_qt6 STATIC
 target_sources(calcu_qt6 PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/SessionHost.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/AppLogSink.cpp           # the app log: its file, Qt's messages
+  ${CMAKE_CURRENT_SOURCE_DIR}/FixedFont.cpp            # the platform's fixed-width font
   ${CMAKE_CURRENT_SOURCE_DIR}/HostFolders.cpp          # settings and folders on a Qt6 host
   ${CMAKE_CURRENT_SOURCE_DIR}/BundledData.cpp          # where an app finds the files it carries
   ${CMAKE_CURRENT_SOURCE_DIR}/FileOpening.cpp          # opening files on a Qt6 host

@@ -1,4 +1,5 @@
 #include "DebugPanel.hpp"
+#include "qt6/FixedFont.hpp"
 
 #include <QEvent>
 #include <QFont>
@@ -58,8 +59,7 @@ DebugPanel::DebugPanel(MachineController* controller, QWidget* parent)
     // ControlBar's widgets.
     m_output->setFocusPolicy(Qt::NoFocus);
     connect(m_output, &QPlainTextEdit::copyAvailable, this, &DebugPanel::outputSelectionChanged);
-    QFont monoFont("Menlo");
-    monoFont.setStyleHint(QFont::Monospace);
+    QFont monoFont = calcu::qt6::fixedFont();
     monoFont.setPointSize(11);
     m_output->setFont(monoFont);
     m_output->setMinimumHeight(120);

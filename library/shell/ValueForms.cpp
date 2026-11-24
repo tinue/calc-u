@@ -182,13 +182,14 @@ Value toValue(const AboutModel& a) {
         for (const auto& [l, r] : v) out.push_back(Value(Value::Array{Value(l), Value(r)}));
         return Value(std::move(out));
     };
+    Value::Array sections;
+    for (const auto& sec : a.sections) sections.push_back(Value::object({{"heading", sec.heading}, {"rows", rows(sec.rows)}}));
     return Value::object({{"title", a.title},
                           {"name", a.name},
                           {"version", a.version},
                           {"lines", strings(a.lines)},
                           {"links", rows(a.links)},
-                          {"supportHeading", kSupportHeading},
-                          {"support", rows(a.support)},
+                          {"sections", Value(std::move(sections))},
                           {"text", aboutText(a)}});
 }
 

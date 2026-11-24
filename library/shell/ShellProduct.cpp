@@ -1,11 +1,13 @@
 #include "shell/ShellProduct.hpp"
 #include "shell/Inputs.hpp"
 #include <algorithm>
+#include <cmath>
+#include <cstdio>
 #include <functional>
 
 namespace calcu::shell {
 
-AboutModel about(const ShellProduct& p, const SupportRows& host) {
+AboutModel about(const ShellProduct& p, const SupportRows& host, const DisplayFacts& display) {
     AboutModel a;
     a.title = p.aboutLabel.empty() ? "About " + p.name : p.aboutLabel;
     // "About Calc-U-1600…" as a menu label: the dialog's title has no ellipsis.
@@ -16,19 +18,63 @@ AboutModel about(const ShellProduct& p, const SupportRows& host) {
     a.version = "Version " + p.version + (p.build.empty() ? std::string() : " (" + p.build + ")");
     a.lines = p.aboutLines;
     a.links = p.aboutLinks;
-    if (!p.package.empty()) a.support.emplace_back("Package", p.package);
-    if (!p.buildTime.empty()) a.support.emplace_back("Built", p.buildTime);
+    SupportRows support;
+    if (!p.package.empty()) support.emplace_back("Package", p.package);
+    if (!p.buildTime.empty()) support.emplace_back("Built", p.buildTime);
     for (const auto& row : host)
-        if (!row.second.empty()) a.support.push_back(row);
+        if (!row.second.empty()) support.push_back(row);
+    for (AboutSection s : {AboutSection{"Support Information", std::move(support)},
+                           AboutSection{"Display", displayRows(display)}})
+        if (!s.rows.empty()) a.sections.push_back(std::move(s));
     return a;
+}
+
+namespace {
+
+std::string sizeText(DisplaySize s) {
+    return std::to_string(s.width) + " \xC3\x97 " + std::to_string(s.height);   // U+00D7 ×
+}
+
+bool known(DisplaySize s) { return s.width > 0 && s.height > 0; }
+
+// "2", "1.25": at most two decimals, no trailing zeros.
+std::string scaleText(double scale) {
+    char buf[32];
+    std::snprintf(buf, sizeof buf, "%.2f", scale);
+    std::string out = buf;
+    while (out.back() == '0') out.pop_back();
+    if (out.back() == '.') out.pop_back();
+    return out;
+}
+
+} // namespace
+
+SupportRows displayRows(const DisplayFacts& d) {
+    SupportRows out;
+    if (!d.windowing.empty()) out.emplace_back("Windowing", d.windowing);
+    if (!d.screen.empty()) out.emplace_back("Screen", d.screen);
+    if (known(d.reported)) out.emplace_back("Reported", sizeText(d.reported));
+    DisplaySize actual;
+    if (d.scale > 0) {
+        out.emplace_back("Scale", scaleText(d.scale));
+        if (known(d.reported)) {
+            actual = {static_cast<int>(std::lround(d.reported.width * d.scale)),
+                      static_cast<int>(std::lround(d.reported.height * d.scale))};
+            out.emplace_back("Actual", sizeText(actual));
+        }
+    }
+    if (known(d.panel) && (d.panel.width != actual.width || d.panel.height != actual.height))
+        out.emplace_back("Panel", sizeText(d.panel));
+    if (known(d.window)) out.emplace_back("Window", sizeText(d.window));
+    return out;
 }
 
 std::string aboutText(const AboutModel& a) {
     std::string out = a.name + "\n" + a.version + "\n";
     for (const auto& line : a.lines) out += line + "\n";
-    if (!a.support.empty()) {
-        out += std::string("\n") + kSupportHeading + "\n";
-        for (const auto& [label, value] : a.support) out += label + ": " + value + "\n";
+    for (const auto& s : a.sections) {
+        out += "\n" + s.heading + "\n";
+        for (const auto& [label, value] : s.rows) out += label + ": " + value + "\n";
     }
     return out;
 }

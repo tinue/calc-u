@@ -542,8 +542,10 @@ TEST(about_dialog_on_widgets) {
     CHECK(texts.contains(QStringLiteral("Version 1.2.3 (abc123)")));
     CHECK(texts.contains(QStringLiteral("A product made for the tests.")));
     CHECK(texts.contains(QStringLiteral("<a href=\"https://example.org/source\">Source</a>")));
-    auto* support = about->findChild<QLabel*>(QStringLiteral("about-support"));
-    CHECK(support && support->text() == QStringLiteral("<b>Support Information</b>"));   // OS, Hardware of this host
+    QStringList headings;
+    for (auto* h : about->findChildren<QLabel*>(QStringLiteral("about-section"))) headings << h->text();
+    // OS, Hardware of this host; the screen the window is on
+    CHECK(headings == (QStringList{QStringLiteral("<b>Support Information</b>"), QStringLiteral("<b>Display</b>")}));
     auto* buttons = about->findChild<QDialogButtonBox*>();
     CHECK(buttons && buttons->buttons().size() == 2);   // Copy and OK
     auto* copy = about->findChild<QPushButton*>(QStringLiteral("about-copy"));
@@ -553,8 +555,10 @@ TEST(about_dialog_on_widgets) {
     const QString copied = QGuiApplication::clipboard()->text();
     // The text's form is shell::aboutText's (help_about_tests.cpp): here the
     // dialog's model with this host's rows.
-    CHECK(copied == QString::fromStdString(shell::aboutText(shell::about(shell::test::product(), qt6::hostSupportRows()))));
+    CHECK(copied == QString::fromStdString(shell::aboutText(
+                        shell::about(shell::test::product(), qt6::hostSupportRows(), qt6::displayFacts(*about->parentWidget()->window())))));
     CHECK(copied.contains(QStringLiteral("OS: ")));
+    CHECK(copied.contains(QStringLiteral("\nDisplay\n")) && copied.contains(QStringLiteral("Window: ")));
     CHECK(about->isVisible());   // Copy leaves it open
 }
 

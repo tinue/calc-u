@@ -69,8 +69,13 @@ greyed out; where the platform shows tooltips, its tooltip says why.
   Windows installer, or "self-built"), when it was built and what it runs
   on: the operating system and the computer. In the browser it shows the
   page's address instead of the package, the browser, and what the
-  browser tells of the system. **Copy** puts the texts on the
-  clipboard as plain text, without the links: paste them into a bug report.
+  browser tells of the system. Under **Display** it shows the screen
+  the window is on: its size as the system reports it, the scale, the
+  pixels actually drawn, on a Mac the panel's own pixels when a scaled
+  mode draws more than the panel has, and the window's size; on Linux
+  also whether the app runs on Wayland, X11 or X11 on Wayland. **Copy**
+  puts the texts on the clipboard as plain text, without the links: paste
+  them into a bug report.
 
 On macOS, Settings…, About and Quit are in the application menu, as on
 every Mac program. In the browser there is no Quit.

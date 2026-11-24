@@ -10,8 +10,16 @@
 //             name and the architecture ("AMD Ryzen 7 7840U, x86_64")
 // A fact the host does not give stays empty (the dialog leaves its row out).
 
+class QWidget;
+
 namespace calcu::qt6 {
 
 shell::SupportRows hostSupportRows();
+
+// About's Display section for the screen `window` is on: its name, size
+// and scale as Qt tells them, the panel's native mode on macOS, the
+// window's size, and on Linux the windowing ("Wayland", "X11", "X11 on
+// Wayland" for XWayland, else Qt's platform name).
+shell::DisplayFacts displayFacts(const QWidget& window);
 
 } // namespace calcu::qt6

@@ -19,13 +19,15 @@ struct ModelSetup {
     ShellProduct product;
     DialogSpec spec;
     Traits traits;
-    SupportRows host;   // About's rows of where the page runs
+    SupportRows host;       // About's rows of where the page runs
+    DisplayFacts display;   // About's Display section, as the page measured it
 };
 
 // The page's part of the setup, from its `shell` args: the build the page
 // was stamped with (`version`, `build`, `buildTime`: the worker has none of
 // its own; an empty one keeps the product's) and About's rows of where it
-// runs (`host`: [[label, value]]).
+// runs (`host`: [[label, value]]) and of its screen (`display`: {windowing,
+// screen, reported, panel, window: {width, height}, scale}; DisplayFacts).
 void takePageArgs(ModelSetup&, const sessions::Value& args);
 
 class ModelHost {

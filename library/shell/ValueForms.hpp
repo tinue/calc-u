@@ -21,7 +21,7 @@ namespace calcu::shell {
 sessions::Value toValue(const ShellProduct&);
 
 // About as the page draws it: {title, name, version, lines: [...], links:
-// [[label, url]], supportHeading, support: [[label, value]], text} (`text`:
+// [[label, url]], sections: [{heading, rows: [[label, value]]}], text} (`text`:
 // aboutText, what Copy puts on the clipboard).
 sessions::Value toValue(const AboutModel&);
 

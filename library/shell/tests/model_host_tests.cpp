@@ -181,8 +181,18 @@ TEST(model_host_serves_about_with_the_page_args) {
     CHECK(a != nullptr);
     CHECK_EQ(read::text(*a, "version"), std::string("Version 1.2.3 (abc123)"));
     CHECK_EQ(read::text(*a, "text"), aboutText(about(s.product, s.host)));
-    CHECK_EQ(read::elements(*a, "support").size(), std::size_t{2});   // Built, Browser; the empty Hardware left out
-    takePageArgs(s, Value::object({{"host", Value(Value::Array{row("OS", "macOS")})}}));
+    const auto& sections = read::elements(*a, "sections");
+    CHECK_EQ(sections.size(), std::size_t{1});
+    CHECK_EQ(read::elements(sections[0], "rows").size(), std::size_t{2});   // Built, Browser; the empty Hardware left out
+    auto size = [](int w, int h) { return Value::object({{"width", w}, {"height", h}}); };
+    takePageArgs(s, Value::object({{"host", Value(Value::Array{row("OS", "macOS")})},
+                                   {"display", Value::object({{"reported", size(1180, 820)}, {"scale", 2},
+                                                              {"window", size(1180, 735)}})}}));
     CHECK_EQ(s.product.version, std::string("1.2.3"));   // not given: kept
     CHECK(s.host.size() == 1 && s.host[0].first == "OS");
+    CHECK(s.display.reported.width == 1180 && s.display.scale == 2.0 && s.display.window.height == 735);
+    takePageArgs(s, Value::object({{"display", Value::object({{"scale", 1.5}})}}));
+    CHECK(s.display.scale == 1.5 && s.display.reported.width == 0);   // given again: replaced
+    takePageArgs(s, Value::object({}));
+    CHECK(s.display.scale == 0.0);
 }

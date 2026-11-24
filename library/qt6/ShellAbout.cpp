@@ -12,7 +12,8 @@
 namespace calcu::qt6 {
 
 ShellAbout::ShellAbout(const shell::ShellProduct& product, QWidget* parent) : QDialog(parent) {
-    const shell::AboutModel a = shell::about(product, hostSupportRows());
+    const shell::AboutModel a =
+        shell::about(product, hostSupportRows(), parent ? displayFacts(*parent->window()) : shell::DisplayFacts{});
     setObjectName(shell::names::kAboutDialog);
     setWindowTitle(QString::fromStdString(a.title));
     setWindowModality(Qt::WindowModal);
@@ -44,13 +45,14 @@ ShellAbout::ShellAbout(const shell::ShellProduct& product, QWidget* parent) : QD
         link->setTextInteractionFlags(Qt::TextBrowserInteraction);
         l->addWidget(link);
     }
-    if (!a.support.empty()) {
-        // Selectable, so a part can be copied too; Copy takes all of it.
-        auto* heading = new QLabel(QStringLiteral("<b>%1</b>").arg(QString::fromUtf8(shell::kSupportHeading)), this);
-        heading->setObjectName(QStringLiteral("about-support"));
+    // Each section under its heading, selectable, so a part can be copied
+    // too; Copy takes all of it.
+    for (const auto& section : a.sections) {
+        auto* heading = new QLabel(QStringLiteral("<b>%1</b>").arg(QString::fromStdString(section.heading).toHtmlEscaped()), this);
+        heading->setObjectName(QStringLiteral("about-section"));
         l->addSpacing(heading->fontMetrics().height() / 2);
         l->addWidget(heading);
-        for (const auto& [label, value] : a.support) {
+        for (const auto& [label, value] : section.rows) {
             auto* row = new QLabel(QString::fromStdString(label + ": " + value), this);
             row->setWordWrap(true);
             row->setTextInteractionFlags(Qt::TextSelectableByMouse);

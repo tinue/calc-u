@@ -108,25 +108,53 @@ struct ShellProduct {
 std::string nameAndSavePrompt(const ShellProduct&, const std::string& place);
 
 // The About dialog: the product's name, "Version <v> (<build>)",
-// its texts and links in order, then "Support Information" (when it has a
-// row: "Package" and "Built" from the product, then the host's rows such
-// as Page, Browser, OS, Hardware), and the buttons Copy and OK.
+// its texts and links in order, then its sections, each a heading over
+// "Label: value" rows: "Support Information" ("Package" and "Built" from
+// the product, then the host's rows such as Page, Browser, OS, Hardware)
+// and "Display" (displayRows); a section without a row is left out. The
+// buttons are Copy and OK.
 using SupportRows = std::vector<std::pair<std::string, std::string>>;   // label, value
+struct AboutSection {
+    std::string heading;
+    SupportRows rows;
+};
 struct AboutModel {
     std::string title;     // "About <name>"
     std::string name;
     std::string version;   // "Version 1.2.3 (abc123)"
     std::vector<std::string> lines;
     std::vector<std::pair<std::string, std::string>> links;
-    SupportRows support;
+    std::vector<AboutSection> sections;
 };
-inline constexpr const char* kSupportHeading = "Support Information";
+
+// What the frontend measures of the screen its window is on, when About
+// opens. Reported and the window are in the system's own units (points,
+// logical or CSS pixels); `scale` is pixels per such unit; `panel` the
+// screen's native mode in pixels, where the system tells it (macOS, whose
+// "looks like" modes draw more pixels than the panel has). Zero, empty:
+// not known.
+struct DisplaySize {
+    int width = 0, height = 0;
+};
+struct DisplayFacts {
+    std::string windowing;   // Linux: "Wayland", "X11", "X11 on Wayland"
+    std::string screen;      // the screen's name
+    DisplaySize reported;
+    double scale = 0;
+    DisplaySize panel;
+    DisplaySize window;
+};
+// One row per fact known: Windowing, Screen, Reported, Scale, Actual (the
+// pixels drawn: Reported × Scale), Panel (only where it differs from
+// Actual), Window; sizes as "2560 × 1440", the scale as "2" or "1.25".
+SupportRows displayRows(const DisplayFacts&);
+
 // `host`: what the frontend knows of where it runs; a row with an empty
-// value is left out.
-AboutModel about(const ShellProduct&, const SupportRows& host = {});
+// value is left out. `display`: the Display section's facts.
+AboutModel about(const ShellProduct&, const SupportRows& host = {}, const DisplayFacts& display = {});
 // What Copy puts on the clipboard: the visible texts as plain text, one per
-// line, without the links (they name only places to go), and the support
-// rows as "Label: value" under their heading after a blank line.
+// line, without the links (they name only places to go), and each section
+// after a blank line: its heading, then its rows as "Label: value".
 std::string aboutText(const AboutModel&);
 
 // The state topics the product's items follow (their checkedBy), each once:

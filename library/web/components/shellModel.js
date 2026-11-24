@@ -16,6 +16,7 @@
 //     {seq, text, question, command}, seq numbering the notices queued
 //   calcuShellKeyAt(map, scale, x, y); calcuShellPointer(map, scale) → {down, move, up, releaseAll}
 //   calcuShellHostRows(nav, hints, loc) → [[label, value]]: Page, Browser, OS, Hardware
+//   calcuShellDisplayFacts(win) → {reported, scale, window}: About's Display facts
 //   calcuShellList, calcuShellText, calcuShellAvailability: reading the topics' Values
 
 const CALCU_SHELL_ACTIONS = {
@@ -210,6 +211,19 @@ function calcuShellPointer(map, scale) {
   };
 }
 
+// About's Display facts (shell::DisplayFacts) of the window `win`: the
+// screen as the browser reports it (CSS pixels), its scale
+// (devicePixelRatio, which the page's zoom changes too) and the window's
+// inner size. A browser names no screen and tells no panel mode.
+function calcuShellDisplayFacts(win) {
+  const size = (w, h) => ({ width: Math.round(w || 0), height: Math.round(h || 0) });
+  return {
+    reported: size(win.screen && win.screen.width, win.screen && win.screen.height),
+    scale: win.devicePixelRatio || 0,
+    window: size(win.innerWidth, win.innerHeight),
+  };
+}
+
 // Where the page runs: Page (`loc`, the page's location: host and path,
 // where it was loaded from), then what the browser tells: Browser, OS,
 // Hardware. `nav`: the navigator; `hints`: the answer of userAgentData's
@@ -258,6 +272,6 @@ function calcuShellHostRows(nav, hints, loc) {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     calcuShellBarFit, calcuShellPaperRowCompact, calcuShellView, calcuShellLoading, calcuShellNotices, calcuShellKeyAt,
-    calcuShellPointer, calcuShellHostRows, calcuShellAvailability, CALCU_SHELL_LOADING_MS,
+    calcuShellPointer, calcuShellHostRows, calcuShellDisplayFacts, calcuShellAvailability, CALCU_SHELL_LOADING_MS,
   };
 }

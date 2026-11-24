@@ -328,7 +328,10 @@ What a window is (`shell::Traits::mobile`), whatever its platform. Desktop
 (Qt, a Web page in a browser tab on a computer) has a menu bar; mobile
 (the Swift frontend on iOS, the installed Web app, a browser that asks
 for the mobile site) has none, and its control bar keeps only what is
-used while the machine runs.
+used while the machine runs. A desktop Web page is the full app (the
+app page in a browser tab: all a desktop window offers, the paper in its
+own window too) or the demo (the component embedded in another page:
+nothing that opens windows of its own).
 _Avoid_: platform, portrait, landscape (for this: a platform is the OS,
 portrait and landscape are layouts)
 

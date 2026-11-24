@@ -96,6 +96,12 @@ view, `barFit`, "Loading…", notices, the pointer).
   Qt always, a Web page in a desktop browser's tab; it has a menu bar.
   Mobile: the iOS app, the installed Web app, a browser asking for the
   mobile site (`calcuShellMobile`); it never has a menu bar.
+- The Web has three kinds of page: the full app (`dist/app/` in a
+  desktop browser's tab: desktop, with all a desktop window offers, such
+  as the paper in its own window, the `paperWindow` prop), the demo (the
+  component embedded in another page, the website's demo: desktop, but
+  nothing that opens windows of its own) and mobile (above: the installed
+  app, the mobile site). Qt is always the full desktop window.
 - More is on every bar, at the right edge (End pushed, More alone in it).
   Load Preset… and Settings… are inside More, never bar buttons.
 - More holds every menu item, in menu order under a heading per menu

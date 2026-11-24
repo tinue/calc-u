@@ -10,13 +10,13 @@ The debug panel stands beside the calculator and the paper on macOS,
 Windows and Linux, on the iPad in landscape and in the browser's wide
 layout; in portrait on the iPhone and the iPad it is a page of its own
 (Settings ▸ Layout ▸ Debug Page in Portrait). It has three tabs: **CALCULATOR**, **CPU** and
-**LOG**.
+**RUN LOG**.
 
 | Tab | Shows | Use it for |
 |---|---|---|
 | CALCULATOR | the program around the next step, the registers, the flags, at the level `program` | stepping through your own program |
 | CPU | the processor's last instructions, at the level `cpu` | following the ROM's own logic one instruction at a time |
-| LOG | the log, the dumps, the TRACE button | recording a trace to study afterwards |
+| RUN LOG | the log, the dumps, the TRACE button | recording a trace to study afterwards |
 
 ## The run-control buttons
 
@@ -94,7 +94,7 @@ the ROM's page changes show in the addresses.
 - **SCOM**, **Memory**, **Prog** and **Vars** write the calculator's own
   registers, its memory, the program or the data registers into the log;
   the bin button empties the tab's view.
-- **LOG** steps the log's level through Off, Info and Debug (a grey,
+- **RUN LOG** steps the log's level through Off, Info and Debug (a grey,
   orange or red dot). At Info the log also shows how a preset is carried
   out, each step as it is done; at Debug the calculator logs each write
   to its registers and memory as well, which is mostly for the developer.

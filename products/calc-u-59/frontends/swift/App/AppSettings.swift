@@ -66,8 +66,6 @@ enum AppSettings {
 /// reads it. The bookmark is a grant, not a setting: the setting is
 /// `[preset] <model>` in Calc-U-59.ini.
 enum StartupPresetGrants {
-    private static let key = "startupPresetBookmarks"
-
     /// The file per model whose scope is open for this run.
     private static var opened: [String: URL] = [:]
 
@@ -78,9 +76,9 @@ enum StartupPresetGrants {
         if scoped { opened[model] = url }
         do {
             let data = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
-            var all = UserDefaults.standard.dictionary(forKey: key) as? [String: Data] ?? [:]
+            var all = UserDefaults.standard.dictionary(forKey: "startupPresetBookmarks") as? [String: Data] ?? [:]
             all[model] = data
-            UserDefaults.standard.set(all, forKey: key)
+            UserDefaults.standard.set(all, forKey: "startupPresetBookmarks")
         } catch {
             TIAppLog.write("The startup preset \(url.path) of the \(model) cannot be kept for the next start: "
                            + error.localizedDescription, level: .warn)
@@ -90,8 +88,8 @@ enum StartupPresetGrants {
     /// The row is set to anything but a chosen file: the grant goes.
     static func drop(for model: String) {
         close(model)
-        var all = UserDefaults.standard.dictionary(forKey: key) as? [String: Data] ?? [:]
-        if all.removeValue(forKey: model) != nil { UserDefaults.standard.set(all, forKey: key) }
+        var all = UserDefaults.standard.dictionary(forKey: "startupPresetBookmarks") as? [String: Data] ?? [:]
+        if all.removeValue(forKey: model) != nil { UserDefaults.standard.set(all, forKey: "startupPresetBookmarks") }
     }
 
     private static func close(_ model: String) {
@@ -102,7 +100,7 @@ enum StartupPresetGrants {
     /// switch the session may read it); one that no longer resolves is
     /// dropped, and the session's start notice says the preset was not read.
     static func openAll() {
-        let kept = UserDefaults.standard.dictionary(forKey: key) as? [String: Data] ?? [:]
+        let kept = UserDefaults.standard.dictionary(forKey: "startupPresetBookmarks") as? [String: Data] ?? [:]
         var left: [String: Data] = [:]
         for (model, data) in kept {
             var stale = false
@@ -116,6 +114,6 @@ enum StartupPresetGrants {
             left[model] = stale ? (try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil,
                                                          relativeTo: nil)) ?? data : data
         }
-        if left != kept { UserDefaults.standard.set(left, forKey: key) }
+        if left != kept { UserDefaults.standard.set(left, forKey: "startupPresetBookmarks") }
     }
 }

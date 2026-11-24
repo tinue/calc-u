@@ -137,7 +137,7 @@ class EmulatorViewModel {
     var debugTab: DebugTab = .live   // persists tab selection across iPhone navigation
     var debugLevel: DebugLevel = .off
     var debugClearID: Int = 0              // incremented on clear to reset Text identity
-    var debugDisplayText: String = ""      // LOG pane text: the bridge's view of the library's `log`
+    var debugDisplayText: String = ""      // RUN LOG pane text: the bridge's view of the library's `log`
     var asmFileName: String = "No file selected"
     var asmWordCount: Int = 0
     var asmStatusMessage: String = "Load a hex opcode file and press Run."

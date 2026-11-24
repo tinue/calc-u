@@ -12,29 +12,28 @@ final class ShellBridgeTests: XCTestCase {
         return t
     }
 
-    /// File, Machine and Help, in that order, with their items.
+    /// The bridge carries the library's menus and bar (their lists are
+    /// pinned by swift_shell_tests.cpp): the menus with their items, the
+    /// model picker first, More last with the menus' items under their
+    /// headings; the PC-100C on the paper panel.
     func test_menus_through_the_bridge() throws {
         let t = try started()
         let menus = t.session.shell.menus
-        XCTAssertEqual(menus.map(\.label), ["File", "Machine", "Help"])
-        XCTAssertEqual(menus.first?.items.first?.itemID, "load-preset")
-        XCTAssertEqual(menus.dropFirst().first?.items.filter { $0.kind != .separator }.map(\.itemID),
-                       ["model", "peripherals", "reset", "cold-boot", "resume"])
-        XCTAssertEqual(menus.last?.items.first?.label, "Calc-U-59 Help")
+        XCTAssertFalse(menus.isEmpty)
+        XCTAssertTrue(menus.allSatisfy { !$0.label.isEmpty && !$0.items.isEmpty })
         // The TI-59 has the card items.
         XCTAssertNotNil(t.session.shell.item("arm-card"))
-        // The model picker first, More last with every menu item under
-        // its heading; the PC-100C on the paper panel.
         let bar = t.session.shell.bar
         XCTAssertEqual(bar.first?.kind, .modelPicker)
         XCTAssertEqual(bar.first?.shown, "59")
         XCTAssertEqual(bar.last?.kind, .more)
         XCTAssertFalse(bar.contains { $0.kind == .placeButton })
         XCTAssertEqual(t.session.shell.paperPlaces.map(\.controlID), ["printer"])
-        let more = bar.first { $0.kind == .more }
-        XCTAssertEqual(more?.choices.filter { $0.kind != .separator }.map(\.itemID),
-                       ["heading-file", "load-preset", "examples", "arm-card", "arm-fresh-card", "settings",
-                        "heading-machine", "model", "peripherals", "reset", "cold-boot", "resume", "heading-help", "help", "show-app-log"])
+        let more = try XCTUnwrap(bar.last?.choices.filter { $0.kind != .separator }.map(\.itemID))
+        XCTAssertEqual(more.first, "heading-file")
+        let menuItems = menus.flatMap(\.items).filter { $0.kind != .separator }.map(\.itemID)
+        XCTAssertFalse(menuItems.isEmpty)
+        XCTAssertTrue(menuItems.allSatisfy { more.contains($0) }, "More lacks menu items: \(menuItems) vs \(more)")
     }
 
     /// An entry that is not available now is disabled, with its reason.
@@ -80,17 +79,16 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertEqual(TIShell.helpURL, "https://calc-u.org/59/")
     }
 
-    /// The rows of this system's settings; a change is
-    /// written at once and comes back in the settings topic.
+    /// The bridge carries the settings dialog (its rows are pinned by
+    /// swift_shell_tests.cpp); a change is written at once and comes back
+    /// in the settings topic.
     func test_settings_rows_and_a_change() throws {
         let t = try started()
         XCTAssertTrue(TestSession.until(5) { !t.session.shell.settingsDialog.isEmpty })
-        let titles = t.session.shell.settingsDialog.map(\.title)
-        XCTAssertEqual(titles, ["General", "Startup presets", "Display", "Keyboard", "Layout", "Tracing", "App log"])
-        // Each startup preset row ends with "Choose…" (the file importer).
-        let presets = t.session.shell.settingsDialog.first { $0.title == "Startup presets" }?.rows ?? []
-        XCTAssertFalse(presets.isEmpty)
-        XCTAssertTrue(presets.allSatisfy { $0.chooseLabel == "Choose…" })
+        let sections = t.session.shell.settingsDialog
+        XCTAssertTrue(sections.contains { $0.title == "App log" })
+        // A row that chooses a file ("Choose…", the file importer).
+        XCTAssertTrue(sections.flatMap(\.rows).contains { !$0.chooseLabel.isEmpty })
         XCTAssertEqual(t.session.shell.setting("display", "led-style"), "modernized")
         t.session.shell.setSetting("display", "led-style", value: "classic")
         XCTAssertTrue(TestSession.until(5) { t.session.shell.setting("display", "led-style") == "classic" })
@@ -117,6 +115,7 @@ final class ShellBridgeTests: XCTestCase {
         XCTAssertTrue(TestSession.until(10) { UIPasteboard.general.items.count > 0 }, "nothing copied")
         XCTAssertEqual(UIPasteboard.general.items.count, 1)
         XCTAssertNotNil(UIPasteboard.general.items.first?["public.png"], "no picture in the entry")
+        XCTAssertNotNil(UIPasteboard.general.items.first?["public.utf8-plain-text"], "no text in the entry")
     }
 
     /// "Loading…" while an operation runs at full

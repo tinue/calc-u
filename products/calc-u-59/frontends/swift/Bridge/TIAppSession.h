@@ -81,7 +81,7 @@ typedef struct {
 /// product topic c59.debug-view: each time its count of requests
 /// grows), the log, and a batch's changes.
 @protocol TIAppSessionDelegate <NSObject>
-- (void)showDebugPanel:(NSInteger)panel;   ///< 0 CALCULATOR, 1 CPU, 2 LOG
+- (void)showDebugPanel:(NSInteger)panel;   ///< 0 CALCULATOR, 1 CPU, 2 RUN LOG
 /// A notice or a refusal is waiting in `shell` (one alert after the other).
 - (void)noticesChanged;
 - (void)changed:(TIChange)changes;
@@ -221,7 +221,7 @@ typedef NS_ENUM(NSInteger, TIAppLogLevel) {
     TIAppLogLevelDebug = 3,
 };
 
-/// The app log of the app (how it ran; not the debugger's LOG): the library's
+/// The app log of the app (how it ran; not the RUN LOG tab's log): the library's
 /// file in `folder` (the sandbox's Library/Logs), each line also in the
 /// system log at its level. Installed once, at the app's start, before the
 /// session; written from any thread.

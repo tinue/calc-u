@@ -5,7 +5,7 @@ class EmulatorController;
 class QPlainTextEdit;
 class QPushButton;
 
-// RUN LOG tab: the debug log (ring buffer tail), dumps (SCOM, Memory, Prog, Vars),
+// RUN LOG tab: the run log (ring buffer tail), dumps (SCOM, Memory, Prog, Vars),
 // clear, the binary TRACE toggle and the log level (StaticDebugContent in
 // App/Views/DebugView.swift).
 class LogWidget : public QWidget {

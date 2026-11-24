@@ -12,7 +12,7 @@
 namespace calcu::qt6 {
 
 const QFont& fixedFont();
-// Its family, quoted for a stylesheet: `font-family: <fixedFamilyCss()>;`.
-QString fixedFamilyCss();
+// It as a stylesheet declaration at `px` pixels: `font: [bold] <px>px "<family>";`.
+QString fixedFontCss(int px, bool bold = false);
 
 } // namespace calcu::qt6

@@ -15,6 +15,7 @@
 #include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpMachine.hpp"
 #include "app/SharpDebugBlock.hpp"
+#include "app/SharpLoaderPart.hpp"
 #include "files/Files.hpp"
 #include "formats/Flow.hpp"
 #include "formats/Number.hpp"
@@ -75,8 +76,7 @@ public:
         if (!m) co_return ItemResult{false, calcu::sessions::kNoMachine, {}};
         switch (way) {
             case ProgramWay::LoadBasic: {
-                const sharp::loaders::BasicLoaded r = sharp::loaders::loadBasic(*m, bytes);
-                sharp::loaders::logNotes(run.session().appLog(), r);
+                const sharp::loaders::BasicLoaded r = loadBasic(*m, bytes, run.session().appLog());
                 if (!r.ok) co_return failed(sharp::loaders::refusal(name, r.refusal));
                 co_return ItemResult{};
             }

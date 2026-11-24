@@ -31,8 +31,8 @@ QLabel* section(QVBoxLayout* into, const QString& title, QWidget* parent) {
     col->setContentsMargins(0, 0, 0, 0);
     col->setSpacing(0);
     auto* head = new QLabel(title, box);
-    head->setStyleSheet((QStringLiteral("color: %2; background: %1; font: bold 9px ") + calcu::qt6::fixedFamilyCss() +
-                         QStringLiteral("; padding: 3px 8px;")).arg(ChromeStyle::rgb(cu59::chrome::kDebugHeader), ChromeStyle::rgb(ChromeStyle::text(0.45))));
+    head->setStyleSheet((QStringLiteral("color: %2; background: %1; ") + calcu::qt6::fixedFontCss(9, true) +
+                         QStringLiteral(" padding: 3px 8px;")).arg(ChromeStyle::rgb(cu59::chrome::kDebugHeader), ChromeStyle::rgb(ChromeStyle::text(0.45))));
     col->addWidget(head);
     auto* body = new QLabel(box);
     body->setTextFormat(Qt::RichText);
@@ -84,8 +84,8 @@ LiveDebugWidget::LiveDebugWidget(EmulatorController& controller, QWidget* parent
     stepsCol->setContentsMargins(0, 0, 0, 0);
     stepsCol->setSpacing(0);
     auto* stepsHead = new QLabel(QStringLiteral("PROGRAM STEPS"), stepsBox);
-    stepsHead->setStyleSheet((QStringLiteral("color: %2; background: %1; font: bold 9px ") + calcu::qt6::fixedFamilyCss() +
-                              QStringLiteral("; padding: 3px 8px;")).arg(ChromeStyle::rgb(cu59::chrome::kDebugHeader), ChromeStyle::rgb(ChromeStyle::text(0.45))));
+    stepsHead->setStyleSheet((QStringLiteral("color: %2; background: %1; ") + calcu::qt6::fixedFontCss(9, true) +
+                              QStringLiteral(" padding: 3px 8px;")).arg(ChromeStyle::rgb(cu59::chrome::kDebugHeader), ChromeStyle::rgb(ChromeStyle::text(0.45))));
     stepsCol->addWidget(stepsHead);
     m_steps = new QListWidget(stepsBox);
     m_steps->setFixedHeight(165);
@@ -124,7 +124,7 @@ void LiveDebugWidget::refreshHeader() { m_header->refresh(baseFontSize()); }
 void LiveDebugWidget::refresh() {
     const cu59::LiveDebugSnapshot& s = m_controller.liveSnapshot();
     const int fs = baseFontSize() + 2;
-    const QString font = (QStringLiteral("font-family: ") + calcu::qt6::fixedFamilyCss() + QStringLiteral("; font-size: %1px;")).arg(fs);
+    const QString font = calcu::qt6::fixedFontCss(fs);
     auto set = [&](QLabel* l, const QString& html) { l->setText(QStringLiteral("<div style='%1'>%2</div>").arg(font, html)); };
     const QString sp = QStringLiteral("&nbsp;&nbsp;&nbsp;");
 

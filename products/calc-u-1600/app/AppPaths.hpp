@@ -1,23 +1,19 @@
 #pragma once
-#include <set>
 #include <string>
 #include <utility>
 
 #include "app/Settings.hpp"
-#include "applog/AppLog.hpp"
 #include "settings/HostDirs.hpp"
 #include "settings/Paths.hpp"
 
 // ── AppPaths: where the app's files live ─────────────────────────────────
 //
-// The save folder (~/Calc-U-1600 unless overridden in Settings), the
-// cassette folder, the file a by-name save of a module, disk or cassette goes to,
-// and how a path is shown to the user. The places come from the library
-// (calcu::settings::Paths): the frontend passes the host's
-// folders (calcu::settings::HostDirs: home, settings base, and on the Web
-// the save folder) and the bundled folders (BundleDirs: *.module.yaml /
-// *.floppy.yaml templates and ROM images, read only). Folders the app
-// writes to are created when asked for.
+// The bundled folders and how a path is shown to the user. The places the
+// app writes to come from the library (places(), calcu::settings::Paths):
+// the frontend passes the host's folders (calcu::settings::HostDirs: home,
+// settings base, and on the Web the save folder) and the bundled folders
+// (BundleDirs: *.module.yaml / *.floppy.yaml templates and ROM images, read
+// only).
 namespace cu1600 {
 
 // The bundled folders the frontend passes.
@@ -53,49 +49,19 @@ public:
     std::string bundledExamplesDir() const;
     // The library's places (settings file, save folder, ...).
     const calcu::settings::Paths& places() const { return m_paths; }
-    // Where a folder that cannot be created is told (none: nowhere).
-    void useAppLog(calcu::applog::AppLog& log) { m_appLog = &log; }
 
     // A preset reference -- a path, or an "examples:" one -- as a path.
     std::string resolvePresetRef(const std::string& ref) const;
 
-    // The save folder without the Settings override: ~/Calc-U-1600 (home
-    // dir, non-dotted) on Qt6, the passed one on the Web; created if
-    // missing.
-    std::string defaultInstanceDir() const;
-
-    // The save folder: [storage] save-folder if set (Qt6), else
-    // defaultInstanceDir(). Where battery-card instances and saved disks
-    // live right now (Paths::saveFolder(); the media part reads places()).
-    std::string instanceDir() const;
-
-    // `path` the way every label shows one: under defaultInstanceDir() as
-    // "~/Calc-U-1600/...", else under the home folder as "~/...", else as
-    // is. A screenshot run's throwaway home thus reads like a fresh install's.
+    // `path` the way every label shows one: under the home folder as
+    // "~/...", else as is. A screenshot run's throwaway home thus reads
+    // like a fresh install's.
     std::string displayPath(const std::string& path) const;
-
-
-    // Cassettes: [storage] cassette-folder if set, else "Cassettes"
-    // inside instanceDir(); created on demand. Cassette definitions and their
-    // sounds live there.
-    std::string cassetteDir() const;
-
-    // [trace] folder / [serial] link-folder if set, else
-    // instanceDir(): where traces go (the library's trace session) and where
-    // the serial ports' PTY symlinks live. The Web has no trace folder
-    // (traceDir() is empty); its serial link folder is the save
-    // folder.
-    std::string traceDir() const;
-    std::string serialLinkDir() const;
-
 
 private:
     const std::string& orResources(const std::string& dir) const { return dir.empty() ? m_bundle.bundledResources : dir; }
-    void makeDirs(const std::string& dir) const;
     calcu::settings::Paths m_paths;
     BundleDirs m_bundle;
-    calcu::applog::AppLog* m_appLog = nullptr;
-    mutable std::set<std::string> m_unmade;   // told once each
 };
 
 

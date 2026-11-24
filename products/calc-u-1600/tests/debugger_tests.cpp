@@ -203,7 +203,7 @@ tracetest::TraceSummary sessionTrace(const char* model, const std::string& steps
     CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
     const auto* t = f.state<dbg::TraceState>(dbg::kTraceTopic);
     CHECK(t && !t->running);   // the operation's end ends a trace left open
-    return tracetest::readTrace(f.paths->traceDir() + "/" + file);
+    return tracetest::readTrace(f.paths->places().traceFolder().value_or("") + "/" + file);
 }
 
 void checkWellFormed(const tracetest::TraceSummary& s) {
@@ -301,7 +301,7 @@ TEST(button_trace_is_named_after_the_model) {
     CHECK(f.ok(dbg::kTraceCommand, Value::object({{"off", true}})));
     t = f.state<dbg::TraceState>(dbg::kTraceTopic);
     CHECK(t && !t->running);
-    const auto s = tracetest::readTrace(f.paths->traceDir() + "/CALCU1500A_TRACE.bin");
+    const auto s = tracetest::readTrace(f.paths->places().traceFolder().value_or("") + "/CALCU1500A_TRACE.bin");
     checkWellFormed(s);
     CHECK(s.traceEventCount > 0);
 
@@ -363,7 +363,7 @@ TEST(preset_trace_ends_at_the_limit_with_a_notice) {
     CHECK(f.start("PC-1600"));
     const fs::path preset = writePreset(f, "long.pc1600", "format-version: 2\nmodel: PC-1600\nkeys:\n  - trace: long.bin\n  - wait: 8s\n");
     CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
-    const std::string path = f.paths->traceDir() + "/long.bin";
+    const std::string path = f.paths->places().traceFolder().value_or("") + "/long.bin";
     CHECK(fs::exists(path) && fs::file_size(path) <= 1024 * 1024);
     CHECK(fs::exists(path) && fs::file_size(path) > 1000 * 1000);   // MiB, not 1'000'000 bytes
     checkWellFormed(tracetest::readTrace(path));
@@ -384,7 +384,7 @@ TEST(button_trace_ends_at_the_limit_with_a_notice) {
     }
     const auto* t = f.state<dbg::TraceState>(dbg::kTraceTopic);
     CHECK(t && !t->running);
-    const std::string path = f.paths->traceDir() + "/CALCU1600_TRACE.bin";
+    const std::string path = f.paths->places().traceFolder().value_or("") + "/CALCU1600_TRACE.bin";
     CHECK(fs::exists(path) && fs::file_size(path) <= 1024 * 1024);
     checkWellFormed(tracetest::readTrace(path));
     CHECK(limitNotice(f));

@@ -57,6 +57,23 @@ inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::
     return s;
 }
 
+/// The host of a test's session: `clock` as its wall clock, the jitter seed
+/// 59 (the same pacing at every run) and `appLog` at every level (null: no
+/// app log). `start` stays the test's to set.
+inline calcu::shell::HostSessionSetup hostSetup(calcu::pacing::WallClock clock,
+                                                calcu::applog::AppLog* appLog = nullptr) {
+    calcu::shell::HostSessionSetup host;
+    host.clock = std::move(clock);
+    host.jitterSeed = 59u;
+    host.appLog = appLog;
+    if (appLog) host.appLogLevel = calcu::applog::AppLogLevel::Debug;
+    return host;
+}
+/// The same on the test's own wall time `now`, 1 ms on at every reading.
+inline calcu::shell::HostSessionSetup hostSetup(calcu::pacing::WallTime& now, calcu::applog::AppLog* appLog = nullptr) {
+    return hostSetup([&now] { return now += std::chrono::milliseconds(1); }, appLog);
+}
+
 /// The files of the save folder, in memory (a file access of the test's).
 struct MapFileIO final : calcu::media::FileAccess {
     mutable std::map<std::string, std::string> cards;   ///< by path; the constant memory is "cards/ti58c.memory.yaml"
@@ -118,14 +135,10 @@ struct SessionRig {
         cu59::TIAppSetup s = appSetup(file, o.model, *paths);
         if (!o.examplesFolder.empty()) s.examplesFolder = o.examplesFolder;
         s.files = std::move(o.files);
-        calcu::shell::HostSessionSetup host;
-        host.clock = [this] { return now += std::chrono::milliseconds(1); };
-        host.jitterSeed = 59u;
+        calcu::shell::HostSessionSetup host = hostSetup(now, &appLog);
         host.before = std::move(o.before);
         host.after = std::move(o.after);
         host.start = o.start;
-        host.appLog = &appLog;
-        host.appLogLevel = calcu::applog::AppLogLevel::Debug;
         app = cu59::makeAppSession(std::move(s), std::move(host));
         me = session().listen(fe, std::move(o.services));
         // The library's start (makeAppSession sent it): until the machine is ready for keys.

@@ -1,5 +1,6 @@
 #include "shell/SettingsModel.hpp"
 #include "files/FileCache.hpp"
+#include "settings/Paths.hpp"
 #include "shell/Inputs.hpp"
 #include <algorithm>
 
@@ -26,14 +27,6 @@ const Value* rowOf(const Value& settings, const std::string& section, const std:
     for (const auto& r : read::elements(settings, "rows"))
         if (read::text(r, "section") == section && read::text(r, "key") == key) return &r;
     return nullptr;
-}
-
-// `path` with the home folder written as `~`.
-std::string withTilde(const std::string& path, const std::string& home) {
-    if (home.empty() || path.rfind(home, 0) != 0) return path;
-    if (path.size() == home.size()) return "~";
-    if (path[home.size()] == '/' || path[home.size()] == '\\') return "~" + path.substr(home.size());
-    return path;
 }
 
 } // namespace
@@ -106,13 +99,13 @@ std::vector<ShownSection> dialog(const Value& settings, const Value& presetList,
                 if (!listed) {   // a chosen file; one in the Web's file cache by its name
                     const std::string cache = read::text(presetList, "cacheFolder");
                     s.choices.emplace_back(s.value, files::liesIn(s.value, cache) ? files::plainFileName(s.value)
-                                                                                 : withTilde(s.value, home));
+                                                                                 : settings::withTilde(s.value, home));
                 }
                 s.chooseLabel = kChooseLabel;
                 break;
             }
             case Widget::Folder:
-                s.shown = withTilde(read::text(*r, "inUse"), home);
+                s.shown = settings::withTilde(read::text(*r, "inUse"), home);
                 break;
             case Widget::Choice:
                 if (!row.choices.empty()) {   // exactly these; a value not among them as written

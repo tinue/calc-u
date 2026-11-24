@@ -157,7 +157,7 @@ TEST(roms_missing_topic_without_a_machine) {
     s.files = std::make_shared<apprig::Files>();
     s.roms.missing.files = {calcu::roms::FileProblem{"TMC0583.txt", calcu::roms::Problem::Missing, {}, {}}};
     const std::string expected = calcu::roms::describe(s.roms.missing);
-    auto app = cu59::makeAppSession(std::move(s), [&] { return now += std::chrono::milliseconds(1); }, 59u, {}, {}, false);
+    auto app = cu59::makeAppSession(std::move(s), testroms::hostSetup(now));
     calcu::sessions::test::TestFrontend fe;
     const auto me = app.session->listen(fe, {});
     const auto start = app.session->send(me, calcu::sessions::Command{calcu::sessions::kStartCommand, Value::object({})});

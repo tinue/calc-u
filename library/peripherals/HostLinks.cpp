@@ -6,7 +6,7 @@
 namespace calcu::peripherals {
 
 HostLinks::HostLinks(HostLinkRules rules, std::optional<std::string> folder, HostLinkFactory factory)
-    : rules_(std::move(rules)), folder_(std::move(folder)), factory_(std::move(factory)), ownFactory_(!factory_) {}
+    : rules_(std::move(rules)), folder_(std::move(folder)), factory_(std::move(factory)) {}
 
 HostLinks::Link* HostLinks::find(const std::string& fileName) {
     for (auto& l : links_)
@@ -32,15 +32,10 @@ void HostLinks::machineChanged(machine::Machine& m) {
             if (!l) {
                 auto* port = machine::capabilityAs<SerialPort>(m, e.id);
                 if (!port || !(rule->openAtOnce || port->used())) continue;
-                std::unique_ptr<HostLink> made;
-                if (ownFactory_) {
-                    std::string why;
-                    made = openHostLink(folder_, rule->fileName, &why);
-                    if (!made && !why.empty())
-                        problems_.push_back("The serial port file " + rule->fileName + " has no host link: " + why + ".");
-                } else {
-                    made = factory_(folder_, rule->fileName);
-                }
+                std::string why;
+                std::unique_ptr<HostLink> made = factory_(folder_, rule->fileName, &why);
+                if (!made && !why.empty())
+                    problems_.push_back("The serial port file " + rule->fileName + " has no host link: " + why + ".");
                 links_.push_back(Link{rule->fileName, std::move(made), std::nullopt, {}, {}});
                 l = &links_.back();
             }

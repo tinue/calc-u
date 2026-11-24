@@ -324,24 +324,18 @@ private:
     calcu::sessions::StateTopic* m_cue = nullptr;
 };
 
-/// The session of a native frontend: the library's
-/// app session with TIAppPart::sessionParts() (every part in the one order),
-/// the part owned by the session (AppSessionSetup::owned), which lets it go
-/// first, paced on `clock` (the host's wall clock; the steady clock's time
-/// since its epoch in the apps), and the library's `start` sent once (the startup
-/// model with its startup preset, or its built-in default). `before`: the
-/// host's own parts, after the control part (the library's SettingsPart, tests);
-/// `after`: parts behind the product's (tests of TIWebPart; the Web engine
-/// builds its own, frontends/web/bindings.cpp). Single-threaded: built,
-/// called and destroyed on the host's session thread.
-calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, calcu::pacing::WallClock clock,
-                                                          std::optional<std::uint32_t> jitterSeed = std::nullopt,
-                                                          std::vector<calcu::sessions::SessionPart*> before = {},
-                                                          std::vector<calcu::sessions::SessionPart*> after = {},
-                                                          bool start = true);
-/// The same on the library's host builder (calcu::shell::makeHostSession):
-/// a frontend host's settings for the library's SettingsPart (Qt6, Swift), its
-/// parts, clock and `start`; `host.owned` is the part's.
+/// The session of a native frontend on the library's host builder
+/// (calcu::shell::makeHostSession): the library's app session with
+/// TIAppPart::sessionParts() (every part in the one order), the part owned
+/// by the session (`host.owned`), which lets it go first, paced on
+/// `host.clock` (the steady clock's time since its epoch in the apps), and
+/// the library's `start` sent once when `host.start` asks for it (the startup
+/// model with its startup preset, or its built-in default). `host.before`:
+/// the host's own parts, after the control part, with the library's
+/// SettingsPart over `host.settings` (Qt6, Swift); `host.after`: parts behind
+/// the product's (tests of TIWebPart; the Web engine builds its own,
+/// frontends/web/bindings.cpp). Single-threaded: built, called and destroyed
+/// on the host's session thread.
 calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, calcu::shell::HostSessionSetup host);
 
 /// The steady clock as the session's wall clock, and back (the library's).

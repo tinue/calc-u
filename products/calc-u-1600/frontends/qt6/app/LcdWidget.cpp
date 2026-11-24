@@ -10,10 +10,6 @@
 
 namespace {
 
-// The platform's fixed-width font (calcu::qt6::fixedFont), resolved once;
-// paintPC1500/1600 only set its size and weight, which are cheap, at 60 Hz.
-const QFont& fixedWidthFont() { return calcu::qt6::fixedFont(); }
-
 // Layout constants and colours: app/LcdLayout.hpp.
 using namespace cu1600::lcd;
 
@@ -91,7 +87,7 @@ void LcdWidget::paintPC1500(QPainter& painter) {
     const double topInset = effectiveHeight * kP15IndicatorTopInsetFraction;
     const double matrixTopGap = effectiveHeight * kP15MatrixTopGapFraction;
 
-    QFont font = fixedWidthFont();
+    QFont font = calcu::qt6::fixedFont();   // only size and weight set: cheap at 60 Hz
     font.setWeight(QFont::DemiBold);
     font.setPixelSize(std::max(1, static_cast<int>(fontSize)));
     painter.setFont(font);
@@ -126,7 +122,7 @@ void LcdWidget::paintPC1600(QPainter& painter) {
     const double rowHeight = totalHeight * kP16RowHeightFraction;
     const double rowTop = totalHeight * kP16IndicatorRowTop;
 
-    QFont font = fixedWidthFont();
+    QFont font = calcu::qt6::fixedFont();   // only size and weight set: cheap at 60 Hz
     font.setWeight(QFont::Medium);
     font.setPixelSize(std::max(1, static_cast<int>(fontSize)));
 

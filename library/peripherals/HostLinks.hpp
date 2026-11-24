@@ -34,8 +34,9 @@ struct HostLinkRule {
     bool openAtOnce = false;
 };
 using HostLinkRules = std::function<std::optional<HostLinkRule>(const machine::CapabilityEntry&)>;
-using HostLinkFactory =
-    std::function<std::unique_ptr<HostLink>(const std::optional<std::string>& folder, const std::string& fileName)>;
+// openHostLink's signature: `problem` takes why no link was made.
+using HostLinkFactory = std::function<std::unique_ptr<HostLink>(const std::optional<std::string>& folder,
+                                                                 const std::string& fileName, std::string* problem)>;
 
 struct HostLinkStatus {
     std::string fileName;
@@ -46,9 +47,9 @@ struct HostLinkStatus {
 
 class HostLinks {
 public:
-    // folder: Paths::serialLinkFolder(). The factory defaults to
-    // openHostLink (tests inject their own).
-    HostLinks(HostLinkRules, std::optional<std::string> folder, HostLinkFactory = {});
+    // folder: Paths::serialLinkFolder(). The factory: openHostLink, or a
+    // test's own.
+    HostLinks(HostLinkRules, std::optional<std::string> folder, HostLinkFactory = openHostLink);
 
     void machineChanged(machine::Machine&);   // after a build, attach, detach, replace: rebind by rule
     void machineGone();                       // no machine: every link unbound
@@ -74,7 +75,6 @@ private:
     std::optional<std::string> folder_;
     HostLinkFactory factory_;
     std::vector<Link> links_;
-    bool ownFactory_ = false;   // openHostLink, which says why it gives no link
     std::vector<std::string> problems_;
     void noteProblems();
 };

@@ -24,8 +24,8 @@ AsmOverlayBox::AsmOverlayBox(EmulatorController& controller, QWidget* parent) : 
     col->addWidget(sectionTitle(QStringLiteral("ASM OVERLAY"), this));
 
     auto* box = new QWidget(this);
-    box->setStyleSheet((QStringLiteral("QWidget { background: %1; } QLabel { font-family: ") + calcu::qt6::fixedFamilyCss() +
-                        QStringLiteral("; font-size: 11px; }"))
+    box->setStyleSheet((QStringLiteral("QWidget { background: %1; } QLabel { ") + calcu::qt6::fixedFontCss(11) +
+                        QStringLiteral(" }"))
                            .arg(ChromeStyle::rgb(cu59::chrome::kSection)));
     auto* boxCol = new QVBoxLayout(box);
     boxCol->setContentsMargins(10, 10, 10, 10);

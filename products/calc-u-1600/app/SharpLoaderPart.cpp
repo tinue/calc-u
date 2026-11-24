@@ -14,6 +14,14 @@
 
 namespace cu1600 {
 
+sharp::loaders::BasicLoaded loadBasic(calcu::machine::Machine& m, const std::vector<std::uint8_t>& image,
+                                      calcu::applog::AppLog& log) {
+    sharp::loaders::BasicLoaded r = sharp::loaders::loadBasic(m, image);
+    for (const std::string& w : r.warnings) log.warn(w);
+    for (const std::string& d : r.details) log.debug(d);
+    return r;
+}
+
 using calcu::sessions::CommandOutcome;
 using calcu::sessions::Done;
 using calcu::sessions::OperationContext;
@@ -187,8 +195,7 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
         auto img = imageOf(a);
         if (auto* why = std::get_if<std::string>(&img)) return Refused{sharp::loaders::refusal(name, *why)};
         if (!ctx.machine()) return Refused{calcu::sessions::kNoMachine};
-        const sharp::loaders::BasicLoaded r = sharp::loaders::loadBasic(*ctx.machine(), std::get<0>(img));
-        sharp::loaders::logNotes(ctx.appLog(), r);
+        const sharp::loaders::BasicLoaded r = loadBasic(*ctx.machine(), std::get<0>(img), ctx.appLog());
         if (!r.ok) return Refused{sharp::loaders::refusal(name, r.refusal)};
         return Done{};
     });

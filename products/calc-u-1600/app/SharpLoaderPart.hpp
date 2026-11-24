@@ -1,6 +1,11 @@
 #pragma once
+#include <cstdint>
 #include <string>
+#include <vector>
 
+#include "Loaders.hpp"
+#include "applog/AppLog.hpp"
+#include "machine/Machine.hpp"
 #include "sessions/SessionPart.hpp"
 #include "typing/TypingPart.hpp"
 
@@ -16,6 +21,11 @@
 // operations; every one is refused while an operation runs.
 
 namespace cu1600 {
+
+// A BASIC image into the machine (sharp::loaders::loadBasic), its warnings
+// and details into the app log: every way of loading BASIC at once.
+sharp::loaders::BasicLoaded loadBasic(calcu::machine::Machine& m, const std::vector<std::uint8_t>& image,
+                                      calcu::applog::AppLog& log);
 
 class SharpLoaderPart final : public calcu::sessions::SessionPart {
 public:

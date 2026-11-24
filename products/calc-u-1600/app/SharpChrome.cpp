@@ -73,21 +73,17 @@ calcu::shell::ChromeColours dark() {
     k.output = grey(32);
     k.outputText = grey(255, 210);
     k.outputBorder = grey(90);
-    auto set = [&k](std::string_view name, Colour c) {
-        for (auto& [n, v] : k.more)
-            if (n == name) v = c;
-    };
-    set(chrome::kControl, grey(58));
-    set(chrome::kControlHover, grey(69));
-    set(chrome::kControlPressed, grey(80));
-    set(chrome::kSeparator, grey(74));
-    set(colour::kMenu, Colour{44, 44, 46, 250});
-    set(colour::kMenuText, grey(232));
-    set(colour::kMenuBorder, grey(255, 31));
-    set(colour::kLink, Colour::rgb(0x5aa9ff));
-    set(colour::kAlert, Colour::rgb(0xff6b6b));
-    set(colour::kBanner, Colour::rgb(0x4a3f10));
-    set(colour::kBannerText, Colour::rgb(0xffe9a0));
+    k.setNamed(chrome::kControl, grey(58));
+    k.setNamed(chrome::kControlHover, grey(69));
+    k.setNamed(chrome::kControlPressed, grey(80));
+    k.setNamed(chrome::kSeparator, grey(74));
+    k.setNamed(colour::kMenu, Colour{44, 44, 46, 250});
+    k.setNamed(colour::kMenuText, grey(232));
+    k.setNamed(colour::kMenuBorder, grey(255, 31));
+    k.setNamed(colour::kLink, Colour::rgb(0x5aa9ff));
+    k.setNamed(colour::kAlert, Colour::rgb(0xff6b6b));
+    k.setNamed(colour::kBanner, Colour::rgb(0x4a3f10));
+    k.setNamed(colour::kBannerText, Colour::rgb(0xffe9a0));
     return k;
 }
 

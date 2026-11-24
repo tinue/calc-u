@@ -17,8 +17,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <filesystem>
 #include <fcntl.h>
 #include <mutex>
+#include <system_error>
 #include <poll.h>
 #include <sys/stat.h>
 #include <termios.h>
@@ -39,9 +41,10 @@ constexpr std::size_t kRxHighWater = 8192;
 // with why in `problem`.
 std::string makeLink(const std::string& target, std::string folder, const std::string& name, std::string& problem) {
     problem.clear();
-    // EEXIST is no failure: a folder the user granted exists.
-    if (::mkdir(folder.c_str(), 0755) != 0 && errno != EEXIST)
-        problem = "the folder " + folder + " cannot be made: " + std::strerror(errno);
+    // Made with its parents when missing; a folder the user granted exists.
+    std::error_code made;
+    std::filesystem::create_directories(folder, made);
+    if (made) problem = "the folder " + folder + " cannot be made: " + made.message();
     // A folder given as "/private/tmp/" must not give "/private/tmp//...".
     while (folder.size() > 1 && folder.back() == '/') folder.pop_back();
     if (folder == "/") folder.clear();

@@ -45,10 +45,6 @@ std::optional<calcu::peripherals::HostLinkRule> serialFileFor(const CapabilityEn
     return std::nullopt;
 }
 
-std::optional<std::string> folderOrNone(const std::string& dir) {
-    return dir.empty() ? std::nullopt : std::optional<std::string>(dir);
-}
-
 
 
 // The catalogue with the module definitions: the bundled ones and the ROM
@@ -119,7 +115,7 @@ calcu::parts::LibraryPartsSetup SharpAppPart::librarySetup() {
         rule->openAtOnce = true;
         return rule;
     };
-    s.serialLinkFolder = folderOrNone(m_paths.serialLinkDir());
+    s.serialLinkFolder = m_paths.places().serialLinkFolder();
     s.presetRules = &m_rules;
     s.bundle = &m_bundle;
     s.papers = sharpPrinterPapers();
@@ -339,7 +335,7 @@ bool SharpAppPart::serialLinked(const std::string& fileName) const {
 }
 
 void SharpAppPart::refreshSerialLinkDirectory() {
-    m_lib.peripherals().hostLinks().moveTo(folderOrNone(m_paths.serialLinkDir()));
+    m_lib.peripherals().hostLinks().moveTo(m_paths.places().serialLinkFolder());
     ++m_serialMoves;
     refreshTopics();
 }

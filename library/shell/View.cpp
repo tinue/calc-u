@@ -21,8 +21,9 @@ View view(const ViewInputs& in) {
     v.panelsAlone = in.mobile && turned && v.side == ViewSide::Below && v.panelsFit &&
                     v.faceplateWidth < in.faceplateUsableWidth;
     const double across = v.side == ViewSide::Beside ? v.room : in.width;
-    v.debuggerFits = v.panelsFit && !v.panelsAlone && in.debuggerMinWidth > 0 &&
-                     across >= in.panelsMinWidth + in.debuggerMinWidth && in.height >= in.debuggerMinHeight;
+    const bool besideThem = in.panelsAreDebugger ||
+                            (in.debuggerMinWidth > 0 && across >= in.panelsMinWidth + in.debuggerMinWidth);
+    v.debuggerFits = v.panelsFit && !v.panelsAlone && besideThem && in.height >= in.debuggerMinHeight;
     return v;
 }
 

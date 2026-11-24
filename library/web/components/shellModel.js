@@ -65,8 +65,10 @@ function calcuShellPaperRowCompact(sizes, rowWidth) {
 // panels alone where the faceplate would be narrower than
 // faceplateUsableWidth (a phone).
 // inputs: {width, height, faceplateAspect, fixedWidth, fixedHeight,
-// panelsMinWidth, panelsMinHeight, debuggerMinWidth, debuggerMinHeight, mobile,
-// faceplateUsableWidth}; debuggerFits: the debugger beside the panels.
+// panelsMinWidth, panelsMinHeight, debuggerMinWidth, debuggerMinHeight,
+// panelsAreDebugger, mobile, faceplateUsableWidth}; debuggerFits: the
+// debugger beside the panels (panelsAreDebugger: the panels are the
+// debugger alone, it fits where they do and the window is high enough).
 function calcuShellView(inputs) {
   const i = inputs;
   const boxWidth = Math.max(0, i.width - (i.fixedWidth || 0));
@@ -84,8 +86,9 @@ function calcuShellView(inputs) {
   const panelsAlone = !!i.mobile && turned && side === "below" && panelsFit &&
     faceplateWidth < (i.faceplateUsableWidth || 0);
   const across = side === "beside" ? room : i.width;
-  const debuggerFits = panelsFit && !panelsAlone && (i.debuggerMinWidth || 0) > 0 &&
-    across >= (i.panelsMinWidth || 0) + i.debuggerMinWidth && i.height >= (i.debuggerMinHeight || 0);
+  const besideThem = !!i.panelsAreDebugger ||
+    ((i.debuggerMinWidth || 0) > 0 && across >= (i.panelsMinWidth || 0) + i.debuggerMinWidth);
+  const debuggerFits = panelsFit && !panelsAlone && besideThem && i.height >= (i.debuggerMinHeight || 0);
   return { side, panelsFit, panelsAlone, debuggerFits, faceplateWidth, faceplateHeight, room };
 }
 

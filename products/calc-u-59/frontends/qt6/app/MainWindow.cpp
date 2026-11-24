@@ -17,6 +17,7 @@
 #include "qt6/PaperPanel.hpp"
 #include "qt6/SessionHost.hpp"
 #include "qt6/Shell.hpp"
+#include "qt6/WindowPlacing.hpp"
 #include "shell/Inputs.hpp"
 #include "shell/View.hpp"
 #include <QCloseEvent>
@@ -208,7 +209,7 @@ void MainWindow::applyView() {
     const calcu::shell::View v = calcu::shell::view(
         cu59::viewInputs(m_splitter->width(), m_splitter->height(), 2 * m_splitter->handleWidth(), false, own));
     const bool wide = v.side == calcu::shell::ViewSide::Beside && v.panelsFit;
-    const bool debugger = own ? wide && m_splitter->height() >= s.debuggerMinHeight : v.debuggerFits;
+    const bool debugger = v.debuggerFits;
     if (own) m_printerPage = false;
     m_paged = !wide && !own;
     m_calculator->setVisible(wide || !m_printerPage);
@@ -240,20 +241,17 @@ void MainWindow::closeEvent(QCloseEvent* e) {
 // of the three panels.
 void MainWindow::restoreWindowState() {
     const cu59::settings::WindowState w = AppSettings::settings().windowState();
-    resize(static_cast<int>(w.place.width), static_cast<int>(w.place.height));
-    if (w.place.x && w.place.y) move(static_cast<int>(*w.place.x), static_cast<int>(*w.place.y));
+    calcu::qt6::applyWindowPlace(this, w.place);
     if (w.calculatorWidth && w.printerWidth && w.debugWidth)
         m_splitter->setSizes({static_cast<int>(*w.calculatorWidth), static_cast<int>(*w.printerWidth),
                               static_cast<int>(*w.debugWidth)});
 }
 
 void MainWindow::saveWindowState() {
-    const QRect g = normalGeometry();
-    const QPoint at = isMaximized() || isFullScreen() ? g.topLeft() : pos();
     // The columns' widths as last seen side by side, the paper among them
     // (with the paper in its own window its column is 0: kept as it was).
     cu59::settings::WindowState w = AppSettings::settings().windowState();
-    w.place = {at.x(), at.y(), g.width(), g.height()};
+    w.place = calcu::qt6::windowPlaceOf(this);
     const QList<int> sizes = m_splitter->sizes();
     if (sizes.size() == 3 && sizes[0] > 0 && sizes[1] > 0 && sizes[2] > 0) {
         w.calculatorWidth = sizes[0];

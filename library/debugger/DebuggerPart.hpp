@@ -74,7 +74,7 @@ private:
 };
 
 // The debugger's preset steps on the presets' step place (DebuggerSteps.cpp):
-// added before the session is built, as the paper's addPaperStep.
+// added before the session is built, as the paper's addPaperSteps.
 void addDebuggerSteps(presets::Vocabulary&, DebuggerPart&);
 
 } // namespace calcu::debugger

@@ -18,6 +18,7 @@ endif()
 add_library(calcu_qt6 STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/PaperPanel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/PaperWindow.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/WindowPlacing.cpp        # a window's [window] place, applied and read
   ${CMAKE_CURRENT_SOURCE_DIR}/ChromeStyle.cpp          # stylesheets over a product's chrome
   ${CMAKE_CURRENT_SOURCE_DIR}/PaperPainter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ClipboardService.cpp

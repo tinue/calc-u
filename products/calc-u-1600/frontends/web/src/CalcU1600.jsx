@@ -123,12 +123,11 @@ const C1600_PANELS = { paper: () => null };
 const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, barModelLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [], placesOnPaper: [] };
 
 // The props: the shared ones of embedProps
-// (width, keyboard, layout, preset, height, model, workerUrl). One layout:
+// (width, keyboard, layout, preset, height, model, workerUrl, paperWindow).
+// One layout:
 // `layout` takes "auto" only (the default); embedProps ignores another value
 // with a console warning. `model` is the model's name (PC-1600); `preset` a
-// path of the bundle, with or without `examples:`. The product's own:
-// `paperWindow` (the app page): the page offers the paper's own window
-// (never on mobile).
+// path of the bundle, with or without `examples:`.
 function CalcU1600(props) {
   const embedded = embedProps(props, { name: "CalcU1600", layouts: ["auto"], layout: "auto" });
   const { width, height, keyboard } = embedded;
@@ -247,10 +246,9 @@ function CalcU1600(props) {
 
   const s = useCalcuShell(shell, product, CALCU_SHELL_WEB_TRAITS);
   sRef.current = s;
-  // The paper's own window (desktop only): never in the row then.
-  const paperWindowOffered = !!embedded.rest.paperWindow && !s.traits.mobile;
-  const paperWindow = useCalcuPaperWindow(shell, { offered: paperWindowOffered, title: "Calc-U-1600 — Printer", notify: tell });
-  const ownWindow = paperWindowOffered ? { own: paperWindow.own, toggle: paperWindow.toggle } : undefined;
+  // The paper's own window: never in the row then.
+  const paperWindow = useCalcuPaperWindow(shell, { paperWindow: embedded.paperWindow, product: "Calc-U-1600", notify: tell });
+  const ownWindow = paperWindow.ownWindow;
   // The product's chrome (app/SharpChrome) as the root's custom properties,
   // light or dark with the system.
   const dark = useColourScheme();

@@ -300,7 +300,7 @@ private:
 };
 } // namespace
 
-void addPaperStep(presets::Vocabulary& v, PaperPart& part) {
+void addPaperSteps(presets::Vocabulary& v, PaperPart& part) {
     PaperPart* p = &part;
     for (const bool cut : {true, false})
         v.add(presets::StepDef{cut ? "cut-paper" : "copy-paper", presets::StepDef::Value::None,

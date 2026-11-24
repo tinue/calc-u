@@ -185,3 +185,21 @@ TEST(view_debugger_fits) {
     CHECK(shell::view(w).panelsAlone);
     CHECK(!shell::view(w).debuggerFits);
 }
+
+// The panels are the debugger alone (the paper in its own window): it
+// fits where they do and the window is high enough, its width the panels'.
+TEST(view_panels_are_the_debugger) {
+    auto in = tall(800, 900, false);   // room for the printer only
+    in.debuggerMinWidth = 220;
+    in.debuggerMinHeight = 560;
+    CHECK(!shell::view(in).debuggerFits);
+    in.panelsAreDebugger = true;
+    CHECK(shell::view(in).debuggerFits);
+    in.height = 500;   // too low
+    CHECK(shell::view(in).panelsFit);
+    CHECK(!shell::view(in).debuggerFits);
+    in = tall(600, 900, false);   // no room beside
+    in.panelsAreDebugger = true;
+    CHECK(!shell::view(in).panelsFit);
+    CHECK(!shell::view(in).debuggerFits);
+}

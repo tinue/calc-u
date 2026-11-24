@@ -148,7 +148,7 @@ calcu::shell::ViewInputs viewInputs(double width, double height, double extraWid
     in.mobile = mobile;
     if (paperOwnWindow) {
         in.panelsMinWidth = s.debuggerMinWidth;
-        in.debuggerMinWidth = 0;
+        in.panelsAreDebugger = true;
     }
     return in;
 }

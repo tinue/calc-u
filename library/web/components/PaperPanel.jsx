@@ -252,7 +252,7 @@ function CalcuPaperPanel({ shell, owner, ownerPlace, hint, controls: given, send
             </button>
           )}
           {ownWindow && (
-            <button type="button" className="calcu-paper-action calcu-paper-window" data-calcu="paper-window"
+            <button type="button" className="calcu-paper-action" data-calcu="paper-window"
               title={ownWindow.own ? "Back to Main Window" : "Open in Own Window"}
               aria-label={ownWindow.own ? "Back to Main Window" : "Open in Own Window"}
               onClick={ownWindow.toggle}><CalcuPaperIcon kind={ownWindow.own ? "in" : "out"} /></button>

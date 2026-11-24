@@ -37,6 +37,11 @@ struct ViewInputs {
     // side (below: across the window's width) and the least height of the
     // window; 0: the product has none.
     double debuggerMinWidth = 0, debuggerMinHeight = 0;
+    // The panels are the debugger alone (the paper in a window of its
+    // own): panelsMinWidth/panelsMinHeight are the debugger's, and the
+    // debugger fits where the panels do and the window is
+    // debuggerMinHeight high.
+    bool panelsAreDebugger = false;
     // The least faceplate width whose keys a finger can use (the chrome's
     // faceplateUsableWidth). A mobile window turned against the faceplate's
     // orientation, with the room below taking the panels, shows the panels

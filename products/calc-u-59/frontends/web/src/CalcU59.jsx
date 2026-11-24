@@ -165,21 +165,20 @@ const embeddedWide = () => ({
 /// app/'s chrome, cu59::viewInputs): beside the faceplate with the panels
 /// fitting, the wide layout; else the pages. With the paper in its own
 /// window (`own`) the panels are the debugger alone: beside the faceplate
-/// where its width and height fit, else the calculator alone.
+/// where its width and height fit, else the calculator alone. The room is
+/// the client's below the menu bar (Qt6: the window's below its menu bar).
 function autoView(width, height, menuHeight, own) {
   const sizes = CHROME_SIZES;
   const view = calcuShellView({
-    width, height, faceplateAspect: CANVAS_ASPECT, fixedWidth: 2 * FACE_PADDING,
-    fixedHeight: menuHeight + sizes.barHeight + 2 * FACE_PADDING,
+    width, height: height - menuHeight, faceplateAspect: CANVAS_ASPECT, fixedWidth: 2 * FACE_PADDING,
+    fixedHeight: sizes.barHeight + 2 * FACE_PADDING,
     panelsMinWidth: own ? sizes.debuggerMinWidth : sizes.panelsMinWidth, panelsMinHeight: sizes.panelsMinHeight,
-    debuggerMinWidth: own ? 0 : sizes.debuggerMinWidth, debuggerMinHeight: sizes.debuggerMinHeight, mobile: CALCU_SHELL_MOBILE,
+    debuggerMinWidth: sizes.debuggerMinWidth, debuggerMinHeight: sizes.debuggerMinHeight, panelsAreDebugger: own,
+    mobile: CALCU_SHELL_MOBILE,
   });
   const fits = view.side === "beside" && view.panelsFit;
-  if (own) {
-    const debuggerFits = fits && height - menuHeight >= sizes.debuggerMinHeight;
-    return { wide: debuggerFits, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth, debugger: debuggerFits };
-  }
-  return { wide: fits, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth, debugger: fits && view.debuggerFits };
+  const debuggerFits = fits && view.debuggerFits;
+  return { wide: own ? debuggerFits : fits, printerMin: sizes.printerMinWidth, printerMax: sizes.printerMaxWidth, debugger: debuggerFits };
 }
 
 /// `rules` is embeddedWide() or (layout="auto") autoView(): the artwork
@@ -248,14 +247,12 @@ const C59_NO_PRODUCT = { name: "Calc-U-59", acts: {} };
 // keyboard (on by default), layout ("portrait", the default, "wide" or
 // "auto"; embedProps ignores another value with a console warning), preset
 // (a bundled preset's path, with or without `examples:`), height, model (by
-// its name) and workerUrl, and the product's own settings. model and preset
-// are read once, at mount.
+// its name), workerUrl and paperWindow, and the product's own settings.
+// model and preset are read once, at mount.
 function CalcU59(props) {
-  const { width, keyboard, layout, preset, height, model: modelProp, workerUrl, rest } =
+  const { width, keyboard, layout, preset, height, model: modelProp, workerUrl, paperWindow: paperWindowProp, rest } =
     embedProps(props, { name: "CalcU59", layouts: ["portrait", "wide", "auto"], layout: "portrait" });
-  // paperWindow: the page offers the paper's own window (the app page;
-  // never an embed, never mobile).
-  const { settings = true, paperWindow: paperWindowProp = false } = rest;
+  const { settings = true } = rest;
   // The traces the session hands over (the RUN LOG tab), kept by the page's host services.
   const traces = React.useRef(null);
   if (!traces.current) traces.current = createC59Traces();
@@ -279,10 +276,12 @@ function CalcU59(props) {
   // is its notice. The picker offers the preset extensions and all files.
   const openFiles = (files, way) => calcuOpenFiles((name, args) => shell.send(name, args), files, way);
 
-  // The paper's own window; its notice is the shell's, made below.
+  // The paper's own window, only with layout="auto": the fixed layouts
+  // have no view that gives the paper's room to the debugger. Its notice
+  // is the shell's, made below.
   const notifyRef = React.useRef(null);
   const paperWindow = useCalcuPaperWindow(shell, {
-    offered: auto && !CALCU_SHELL_MOBILE && !!paperWindowProp, title: "Calc-U-59 — Printer",
+    paperWindow: auto && paperWindowProp, product: "Calc-U-59",
     notify: (text) => { if (notifyRef.current) notifyRef.current(text); },
   });
 
@@ -373,8 +372,7 @@ function CalcU59(props) {
   const drop = calcuFileDrop(shell ? openFiles : null);
 
   const paper = s.panels.find((p) => p.kind === "paper") || {};
-  const ownWindow = auto && !CALCU_SHELL_MOBILE && paperWindowProp
-    ? { own: paperWindow.own, toggle: paperWindow.toggle } : undefined;
+  const ownWindow = paperWindow.ownWindow;
   const page = { shell, s, faceplate: maps[model] || null, model, paper, menuHeight: menuBar ? MENU_HEIGHT : 0,
     paperWindow, ownWindow };
   const romsMissing = !!s.romsMissing && !s.started;

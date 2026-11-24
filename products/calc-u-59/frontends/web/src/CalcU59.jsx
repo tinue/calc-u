@@ -305,7 +305,7 @@ function CalcU59(props) {
   const dark = useColourScheme();
   const chromeStyle = React.useMemo(() => calcuChromeStyle(chrome, dark), [chrome, dark]);
   const traits = React.useMemo(() => traitsFor(settings), [settings]);
-  const s = useCalcuShell(shell, product, traits, { layout: portrait ? "portrait" : "wide", version: CALC_VERSION, build: CALC_BUILD });
+  const s = useCalcuShell(shell, product, traits, { layout: portrait ? "portrait" : "wide" });
   notifyRef.current = s.notify;
   const cs = s.inputs.controlState;
   const model = (cs && cs.model) || modelProp || "TI-59";

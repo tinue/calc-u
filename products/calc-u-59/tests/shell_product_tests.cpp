@@ -80,7 +80,7 @@ TEST(help_address_about_texts_and_links) {
     CHECK(a.links.size() == 3 && a.links[1].second == "https://github.com/tinue/calc-u/issues");
     CHECK(a.links.size() == 3 && a.links[2].second == "https://github.com/tinue/calc-u/blob/main/products/calc-u-59/PRIVACY.md");
     // The page's form carries the links.
-    CHECK(shell::toValue(p).find("aboutLinks") != nullptr);
+    CHECK(shell::toValue(a).find("links")->elements()->size() == 3);
 }
 
 TEST(settings_spec_per_frontend_and_layout) {

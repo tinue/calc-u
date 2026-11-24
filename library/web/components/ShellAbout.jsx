@@ -1,17 +1,17 @@
-// ShellAbout -- the About dialog of the React set: the product's name, its version and build, the texts and
-// links the product gives, the Support Information (build time, the page's address and what the browser
-// tells of where it runs, calcuShellHostRows), Copy (about-copy: calcuShellAboutText, the visible texts as plain text) and OK.
+// ShellAbout -- the About dialog of the React set, as the worker serves it (useCalcuShell's
+// `about`, shell::about): the product's name, its version and build, the texts and links the
+// product gives, the Support Information (build time, the page's address and what the browser
+// tells of where it runs), Copy (about-copy: the model's text, shell::aboutText) and OK.
 // Name: about-dialog.
 
 function ShellAbout({ shell }) {
   const s = shell;
-  const host = useShellHostRows();
-  const a = calcuShellAbout(s.product, host);
+  const a = s.about;
+  if (!a) return null;   // the About item comes with the models
   const copy = () => {
-    const text = calcuShellAboutText(a);
     const refused = (e) => calcuAppLog("warn", `About: Copy failed: ${calcuErrorText(e)}`);
     try {
-      navigator.clipboard.writeText(text).catch(refused);
+      navigator.clipboard.writeText(a.text).catch(refused);
     } catch (e) {
       refused(e);
     }
@@ -30,27 +30,10 @@ function ShellAbout({ shell }) {
       ))}
       {a.support.length > 0 && (
         <div className="calcu-shell-about-support" data-calcu="about-support">
-          <div><b>{CALCU_SHELL_SUPPORT_HEADING}</b></div>
+          <div><b>{a.supportHeading}</b></div>
           {a.support.map(([label, value]) => <div key={label}>{label}: {value}</div>)}
         </div>
       )}
     </ShellModal>
   );
-}
-
-// The browser's rows: at once from the user agent string, then from
-// Chromium's client hints when they come (the rows are the last part of the
-// dialog, so nothing above them moves).
-function useShellHostRows() {
-  const [rows, setRows] = React.useState(() => calcuShellHostRows(window.navigator, null, window.location));
-  React.useEffect(() => {
-    const hints = window.navigator.userAgentData;
-    if (!hints || typeof hints.getHighEntropyValues !== "function") return undefined;
-    let live = true;
-    hints.getHighEntropyValues(["platformVersion", "architecture", "bitness", "model", "fullVersionList"])
-      .then((h) => { if (live) setRows(calcuShellHostRows(window.navigator, h, window.location)); })
-      .catch(() => {});
-    return () => { live = false; };
-  }, []);
-  return rows;
 }

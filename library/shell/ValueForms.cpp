@@ -169,19 +169,27 @@ Value toValue(const Rect& r) { return Value::object({{"x", r.x}, {"y", r.y}, {"w
 Value toValue(const ShellProduct& p) {
     Value::Array items;
     for (const auto& i : p.items) items.push_back(Value::object({{"id", i.id}, {"label", i.label}}));
-    Value::Object out{{"name", Value(p.name)},
-                      {"helpUrl", Value(p.helpUrl)},
-                      {"aboutLabel", Value(p.aboutLabel)},
-                      {"aboutLines", strings(p.aboutLines)}};
-    if (!p.aboutLinks.empty()) {   // only when there is one
-        Value::Array links;
-        for (const auto& [label, url] : p.aboutLinks) links.push_back(Value(Value::Array{Value(label), Value(url)}));
-        out.push_back({"aboutLinks", Value(std::move(links))});
-    }
-    out.push_back({"presetUploads", Value(p.presetUploads)});
-    out.push_back({"nameAndSave", Value::object({{"slotButtons", p.nameAndSave.slotButtons}})});
-    out.push_back({"items", Value(std::move(items))});
-    return Value(std::move(out));
+    return Value::object({{"name", p.name},
+                          {"helpUrl", p.helpUrl},
+                          {"presetUploads", p.presetUploads},
+                          {"nameAndSave", Value::object({{"slotButtons", p.nameAndSave.slotButtons}})},
+                          {"items", Value(std::move(items))}});
+}
+
+Value toValue(const AboutModel& a) {
+    auto rows = [](const std::vector<std::pair<std::string, std::string>>& v) {
+        Value::Array out;
+        for (const auto& [l, r] : v) out.push_back(Value(Value::Array{Value(l), Value(r)}));
+        return Value(std::move(out));
+    };
+    return Value::object({{"title", a.title},
+                          {"name", a.name},
+                          {"version", a.version},
+                          {"lines", strings(a.lines)},
+                          {"links", rows(a.links)},
+                          {"supportHeading", kSupportHeading},
+                          {"support", rows(a.support)},
+                          {"text", aboutText(a)}});
 }
 
 Value toValue(const HitMap& m) {

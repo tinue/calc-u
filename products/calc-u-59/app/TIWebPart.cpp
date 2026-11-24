@@ -147,8 +147,8 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     auto req = [&s](const char* name, std::function<ReplyMessage(const Value&)> f) {
         s.request(sessions::RequestName{name}, [f = std::move(f)](const Value& a, SessionContext&) { return f(a); });
     };
-    // The product's data for the page (its help address, About, the
-    // uploads' accept list) and the chrome (TIChrome); the page adds its acts.
+    // The product's data for the page (its help address, the uploads'
+    // accept list) and the chrome (TIChrome); the page adds its acts.
     req("c59.shell-product", [](const Value& a) {
         const calcu::shell::ShellProduct p = shellProduct(textArg(a, "version"), textArg(a, "build"));
         return answer("c59.shell-product", Value::object({{"product", calcu::shell::toValue(p)},

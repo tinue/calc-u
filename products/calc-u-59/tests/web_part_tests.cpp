@@ -139,7 +139,6 @@ TEST(web_shell_product_per_layout) {
     const Value answer = r.ask("c59.shell-product", Value::object({{"version", "3.0.0"}}));
     const Value* product = answer.find("product");
     CHECK(product && product->find("name") && *product->find("name")->string() == "Calc-U-59");
-    CHECK(product && product->find("aboutLinks") && product->find("aboutLinks")->elements()->size() == 3);
     CHECK(answer.find("chrome") != nullptr);
     const auto rows = [](const char* layout) {
         std::string out;

@@ -11,7 +11,7 @@
 // The shell's models kept over a session's messages, for a host that draws
 // them somewhere else: the Web's worker feeds it every message it passes to
 // the page and posts value() whenever it changed, so the page draws the
-// menus, the bar, the panels and the settings dialog the C++ models make.
+// menus, the bar, the panels, the settings dialog and About the C++ models make.
 
 namespace calcu::shell {
 
@@ -19,7 +19,14 @@ struct ModelSetup {
     ShellProduct product;
     DialogSpec spec;
     Traits traits;
+    SupportRows host;   // About's rows of where the page runs
 };
+
+// The page's part of the setup, from its `shell` args: the build the page
+// was stamped with (`version`, `build`, `buildTime`: the worker has none of
+// its own; an empty one keeps the product's) and About's rows of where it
+// runs (`host`: [[label, value]]).
+void takePageArgs(ModelSetup&, const sessions::Value& args);
 
 class ModelHost {
 public:
@@ -41,9 +48,10 @@ public:
     bool presetListWanted();
     const sessions::RequestName& presetListRequest() const { return names_.presetList; }
 
-    // {menus, bar, panels, dialog} (ValueForms) and nameAndSave: {place:
-    // prompt}, the Name & Save dialog's prompt (nameAndSavePrompt) for each
-    // place of the topic `media`; null before set().
+    // {menus, bar, panels, dialog, about} (ValueForms; about with the host
+    // rows) and nameAndSave: {place: prompt}, the Name & Save dialog's
+    // prompt (nameAndSavePrompt) for each place of the topic `media`; null
+    // before set().
     sessions::Value value() const;
 
 private:

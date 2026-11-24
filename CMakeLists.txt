@@ -112,8 +112,7 @@ function(calcu_build_id_header name product)
   set(time ${CMAKE_CURRENT_BINARY_DIR}/generated/BuildTime.cpp)
   add_custom_target(${name}
     COMMAND ${CMAKE_COMMAND} -DPRODUCT=${product} -DHEADER=${header} "-DPACKAGE=${CALCU_PACKAGE}"
-            -P ${CMAKE_SOURCE_DIR}/tools/build-id.cmake
-    COMMAND ${CMAKE_COMMAND} -DTIME_SOURCE=${time} -P ${CMAKE_SOURCE_DIR}/tools/build-id.cmake
+            -DTIME_SOURCE=${time} -P ${CMAKE_SOURCE_DIR}/tools/build-id.cmake
     BYPRODUCTS ${header} ${time}
     COMMENT "Build ID and time of ${product}"
     VERBATIM)

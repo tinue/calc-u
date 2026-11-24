@@ -4,6 +4,7 @@
 // SettingsPart, no code of a product.
 #include "TestHarness.hpp"
 #include "TestWindow.hpp"
+#include "qt6/HostInfo.hpp"
 #include "qt6/MediaPicker.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
@@ -550,9 +551,10 @@ TEST(about_dialog_on_widgets) {
     QGuiApplication::clipboard()->clear();
     copy->click();
     const QString copied = QGuiApplication::clipboard()->text();
-    CHECK(copied.startsWith(QStringLiteral("Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\n")));
-    CHECK(copied.contains(QStringLiteral("\n\nSupport Information\nOS: ")));
-    CHECK(!copied.contains(QStringLiteral("example.org")));   // no links
+    // The text's form is shell::aboutText's (help_about_tests.cpp): here the
+    // dialog's model with this host's rows.
+    CHECK(copied == QString::fromStdString(shell::aboutText(shell::about(shell::test::product(), qt6::hostSupportRows()))));
+    CHECK(copied.contains(QStringLiteral("OS: ")));
     CHECK(about->isVisible());   // Copy leaves it open
 }
 

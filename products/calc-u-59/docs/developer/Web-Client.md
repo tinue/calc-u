@@ -116,8 +116,8 @@ the library's topics (`papers`, `paper PC-100C`, `paper-copies`,
 read from the shell. The menus, the bar, the More menu and the settings
 dialog are the library's C++ models, which the worker serves as the topic
 `web.shell` (`docs/formats/web-embed.md` §3.1) for the page's `shell
-{mobile, settings, layout, version, build}` (`TIWebPart::shellSetup`: the
-settings of the layout).
+{mobile, settings, about, version, build, buildTime, host, layout}`
+(`TIWebPart::shellSetup`: the settings of the layout).
 The pointer is the shell's hit rule: the widened key rects,
 distance 0, the display's full-speed hold; a key is fixed when the pointer
 goes down (a drag does not move the press to another key).

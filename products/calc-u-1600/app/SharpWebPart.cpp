@@ -61,8 +61,8 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     };
 
     // ── The shell ───────────────────────────────────────────────────────
-    // The product's data for the page (its help address, About, the
-    // uploads' accept list) with its chrome (SharpChrome), and the
+    // The product's data for the page (its help address, the uploads'
+    // accept list) with its chrome (SharpChrome), and the
     // faceplate's hit map and LCD layout, from the tables Qt6 uses.
     req("c1600.shell-product", [this](const Value&, SessionContext&) {
         return sessions::replyGiven(

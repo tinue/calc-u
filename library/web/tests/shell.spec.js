@@ -175,6 +175,8 @@ test('roms missing', async ({ page }) => {
   await expect(el(page, 'about-version')).toHaveText('Version 1.2.3 (abc123)');
 });
 
+// The form of the text is shell::aboutText's (help_about_tests.cpp): here
+// the wiring, the model's text on the clipboard and the page's rows.
 test('about copies its texts and the support information', async ({ page }) => {
   await start(page);
   await page.evaluate(() => {
@@ -184,16 +186,14 @@ test('about copies its texts and the support information', async ({ page }) => {
   });
   await chooseItem(page, 'help', 'about');
   const support = el(page, 'about-support');
-  await expect(support).toContainText('Support Information');
   await expect(support).toContainText('Built: 2026-11-24T11:49:08Z');
   await expect(support).toContainText('Browser: ');
   await expect(support).toContainText(/Page: (localhost|127\.0\.0\.1):\d+\//);
   await el(page, 'about-copy').click();
   await expect(el(page, 'about-dialog')).toBeVisible();   // Copy leaves it open
   const copied = (await page.evaluate(() => window.calcuCopied))[0];
-  expect(copied.startsWith('Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\nNo code of a product.\n\n' +
-    'Support Information\nBuilt: 2026-11-24T11:49:08Z\nPage: ')).toBe(true);
-  expect(copied).not.toContain('example.org');   // no links
+  expect(copied).toBe(await page.evaluate(() => window.calcuTestShellModel.about.text));
+  expect(copied).toContain('Page: ');
 });
 
 test('help opens', async ({ page }) => {

@@ -1,7 +1,7 @@
 import XCTest
 
 /// The host services the Swift frontend states to its
-/// session, as the session sees them offered.
+/// session, as the session sees them offered: the ones the bridge answers.
 final class HostServicesTests: XCTestCase {
 
     private func offered() throws -> [String] {
@@ -14,11 +14,10 @@ final class HostServicesTests: XCTestCase {
     }
 
     func testStatedServices() throws {
-        let expected = ["clipboard-text", "clipboard-image", "file-picker", "keep-file", "open-url", "haptics"]
+        let expected = ["clipboard-text", "clipboard-image"]
         XCTAssertEqual(Set(TIAppSession.statedHostServices), Set(expected))
         XCTAssertEqual(Set(try offered()), Set(expected))
     }
-
 
     /// No audio sink on either: the key click is the frontend's own.
     func testNoAudioSink() throws {

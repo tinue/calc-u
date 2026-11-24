@@ -14,7 +14,7 @@ LogWidget::LogWidget(EmulatorController& controller, QWidget* parent) : QWidget(
     col->setContentsMargins(0, 0, 0, 0);
     col->setSpacing(0);
 
-    auto* title = new QLabel(QStringLiteral("DEBUG LOG"), this);
+    auto* title = new QLabel(QStringLiteral("RUN LOG"), this);
     title->setAlignment(Qt::AlignCenter);
     title->setStyleSheet(QStringLiteral("color: %2; font-weight: bold; font-size: 11px;"
                                         " background: %1; padding: 6px;").arg(ChromeStyle::rgb(cu59::chrome::kDebugHeader), ChromeStyle::rgb(ChromeStyle::text(0.6))));

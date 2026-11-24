@@ -137,7 +137,7 @@ class EmulatorViewModel {
     var debugTab: DebugTab = .live   // persists tab selection across iPhone navigation
     var debugLevel: DebugLevel = .off
     var debugClearID: Int = 0              // incremented on clear to reset Text identity
-    var debugDisplayText: String = ""      // LOG pane text: the bridge's view of the library's `log`
+    var debugDisplayText: String = ""      // RUN LOG pane text: the bridge's view of the library's `log`
     var asmFileName: String = "No file selected"
     var asmWordCount: Int = 0
     var asmStatusMessage: String = "Load a hex opcode file and press Run."
@@ -525,14 +525,19 @@ class EmulatorViewModel {
     func loadASMOverlayFile(_ url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        // Unread, the session refuses it with a notice; the cause goes to the app log.
-        var text: String?
+        let text = readPicked(url) { try String(contentsOf: $0, encoding: .utf8) }
+        session?.loadAsm(text, fileName: url.lastPathComponent)
+    }
+
+    /// A picked file read inside its open scope; unread (nil), the session
+    /// refuses it with a notice, the cause goes to the app log.
+    private func readPicked<T>(_ url: URL, _ read: (URL) throws -> T) -> T? {
         do {
-            text = try String(contentsOf: url, encoding: .utf8)
+            return try read(url)
         } catch {
             TIAppLog.write("\(url.path) could not be read: \(error.localizedDescription)", level: .warn)
+            return nil
         }
-        session?.loadAsm(text, fileName: url.lastPathComponent)
     }
 
     func runASMOverlay() { session?.runAsm() }
@@ -546,13 +551,7 @@ class EmulatorViewModel {
     /// its security scope). A refusal is the session's notice.
     func loadPreset(_ url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
-        // Unread, the session refuses it with a notice; the cause goes to the app log.
-        var bytes: Data?
-        do {
-            bytes = try Data(contentsOf: url)
-        } catch {
-            TIAppLog.write("\(url.path) could not be read: \(error.localizedDescription)", level: .warn)
-        }
+        let bytes = readPicked(url) { try Data(contentsOf: $0) }
         // The scope stays open until the session has replied.
         session?.openFile(bytes, path: url.path, fileName: url.lastPathComponent, way: "dialog") { _ in
             if scoped { url.stopAccessingSecurityScopedResource() }
@@ -565,7 +564,7 @@ class EmulatorViewModel {
     func chooseStartupPreset(model: String, url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
         session?.chooseStartupPreset(model, path: url.path) { chosen in
-            if chosen { StartupPresetGrants.keep(url, for: model) }
+            if chosen { StartupPresetGrants.keep(url, for: model, scoped: scoped) }
             else if scoped { url.stopAccessingSecurityScopedResource() }
         }
     }
@@ -835,3 +834,9 @@ extension LiveDebugSnapshot {
     }
 }
 
+extension TIAppLog {
+    /// The file importer's failure: nothing was picked, the app goes on.
+    static func filePickerFailed(_ error: Error) {
+        write("The file picker failed: \(error.localizedDescription)", level: .warn)
+    }
+}

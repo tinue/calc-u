@@ -43,7 +43,6 @@ NSString *const TIShellActionShowAppLog = @"show-app-log";
 @end
 
 @interface TIMenu ()
-@property (nonatomic, readwrite, copy) NSString *menuID;
 @property (nonatomic, readwrite, copy) NSString *label;
 @property (nonatomic, readwrite, copy) NSArray<TIMenuItem *> *items;
 @end
@@ -209,16 +208,11 @@ NSInteger keyIndexOf(const std::string &key) {
     NSMutableArray *out = [NSMutableArray array];
     for (const auto &m : shell::menus(self.inputs, product(), self.traits)) {
         TIMenu *t = [[TIMenu alloc] init];
-        t.menuID = ns(m.id);
         t.label = ns(m.label);
         t.items = itemsFrom(m.items);
         [out addObject:t];
     }
     return out;
-}
-
-- (NSArray<TIMenuItem *> *)moreItems {
-    return itemsFrom(shell::moreItems(shell::menus(self.inputs, product(), self.traits)));
 }
 
 static TIBarControl *controlFrom(const shell::BarControl &c, shell::BarGroup group, bool pushed) {

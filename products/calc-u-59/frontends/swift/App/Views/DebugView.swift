@@ -89,7 +89,7 @@ private struct StaticDebugContent: View {
     // MARK: - Header
 
     private var header: some View {
-        Text("DEBUG LOG")
+        Text("RUN LOG")
             .font(.caption.bold())
             .foregroundStyle(Chrome.text.opacity(0.6))
             .frame(maxWidth: .infinity)

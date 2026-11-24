@@ -285,12 +285,12 @@ TIChange changeOf(const cs::TopicName& t) {
     return static_cast<TIChange>(0);
 }
 
-// The host services of the app; no audio sink, the key click is
-// the app's own.
+// The host services of the app: only what answerService answers, since
+// the session's parts ask what is offered. No audio sink or haptics, the
+// key click and feedback are the app's own; files are picked by the app.
 cs::HostServices statedServices() {
     cs::HostServices services;
-    services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage, cs::HostService::FilePicker,
-                        cs::HostService::KeepFile, cs::HostService::OpenUrl, cs::HostService::Haptics};
+    services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage};
     services.clipboardInSteps = true;
     return services;
 }
@@ -556,7 +556,7 @@ void systemLogMirror(calcu::applog::AppLogLevel l, const std::string& line) {
         // Where traces go is the places' by [trace] location,
         // read at each trace start with the folder made and written once;
         // iCloud only while signed in (dirs, above). The stated host
-        // services (the session asks none of them yet).
+        // services.
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
         _shell = [[TIShell alloc] initWithSession:self];

@@ -308,8 +308,8 @@ function LogTab() {
   const mb = (n) => (n / 1e6).toFixed(n < 1e5 ? 2 : 1) + " MB";
   return (
     <div className="calcu-debug-tab">
-      <div className="calcu-debug-header calcu-center"><span className="calcu-debug-title">DEBUG LOG</span></div>
-      <textarea className="calcu-log" ref={ref} readOnly value={text} aria-label="Debug log" />
+      <div className="calcu-debug-header calcu-center"><span className="calcu-debug-title">RUN LOG</span></div>
+      <textarea className="calcu-log" ref={ref} readOnly value={text} aria-label="Run log" />
       <div className="calcu-log-bar">
         {traces.length > 0 && (
           <div className="calcu-traces" aria-label="Trace files">

@@ -86,7 +86,7 @@ struct CalculatorView: View {
             case .success(let picked):
                 urls = picked
             case .failure(let error):
-                TIAppLog.write("The file picker failed: \(error.localizedDescription)", level: .warn)
+                TIAppLog.filePickerFailed(error)
                 return
             }
             guard let url = urls.first else { return }

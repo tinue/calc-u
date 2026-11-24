@@ -56,7 +56,7 @@ module. Set a startup preset for the model to start with your module
 ## Can I see what the emulator does inside?
 
 Yes: the debug panel. CALCULATOR shows the program and the registers,
-CPU the processor's instructions, LOG the log and the TRACE button
+CPU the processor's instructions, RUN LOG the log and the TRACE button
 ([Debugger](07-debugger.md)).
 
 ## How do I get a trace file, and what can I do with it?

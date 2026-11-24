@@ -715,7 +715,7 @@ test('the three debugger tabs, labels and short forms', async ({ page }) => {
   // RUN LOG: a dump into the log, the level button cycles, clear empties the view.
   await debug.getByRole('tab', { name: 'RUN LOG', exact: true }).click();
   await debug.getByRole('button', { name: 'SCOM', exact: true }).click();
-  await expect(debug.getByLabel('Debug log')).toHaveValue(/── SCOM ──/, { timeout: 5000 });
+  await expect(debug.getByLabel('Run log')).toHaveValue(/── SCOM ──/, { timeout: 5000 });
   const level = debug.getByRole('button', { name: /^RUN LOG / });
   await expect(level).toHaveText('RUN LOG ○');
   await level.click();
@@ -724,7 +724,7 @@ test('the three debugger tabs, labels and short forms', async ({ page }) => {
   await level.click();
   await expect(level).toHaveText('RUN LOG ○');
   await debug.getByRole('button', { name: 'Clear the log' }).click();
-  await expect(debug.getByLabel('Debug log')).toHaveValue('');
+  await expect(debug.getByLabel('Run log')).toHaveValue('');
 });
 
 test('FREEZE STEP RESUME of both tabs follow the run state', async ({ page }) => {

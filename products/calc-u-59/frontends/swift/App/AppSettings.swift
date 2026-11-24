@@ -66,8 +66,14 @@ enum AppSettings {
 /// reads it. The bookmark is a grant, not a setting: the setting is
 /// `[preset] <model>` in Calc-U-59.ini.
 enum StartupPresetGrants {
-    /// Kept after the session took the preset; its scope stays open for the run.
-    static func keep(_ url: URL, for model: String) {
+    /// The file per model whose scope is open for this run.
+    private static var opened: [String: URL] = [:]
+
+    /// Kept after the session took the preset; its scope (`scoped`: opened
+    /// by the caller) stays open for the run, the earlier file's is closed.
+    static func keep(_ url: URL, for model: String, scoped: Bool) {
+        close(model)
+        if scoped { opened[model] = url }
         do {
             let data = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
             var all = UserDefaults.standard.dictionary(forKey: "startupPresetBookmarks") as? [String: Data] ?? [:]
@@ -77,6 +83,17 @@ enum StartupPresetGrants {
             TIAppLog.write("The startup preset \(url.path) of the \(model) cannot be kept for the next start: "
                            + error.localizedDescription, level: .warn)
         }
+    }
+
+    /// The row is set to anything but a chosen file: the grant goes.
+    static func drop(for model: String) {
+        close(model)
+        var all = UserDefaults.standard.dictionary(forKey: "startupPresetBookmarks") as? [String: Data] ?? [:]
+        if all.removeValue(forKey: model) != nil { UserDefaults.standard.set(all, forKey: "startupPresetBookmarks") }
+    }
+
+    private static func close(_ model: String) {
+        opened.removeValue(forKey: model)?.stopAccessingSecurityScopedResource()
     }
 
     /// Every kept grant opened for this run (at the start and every model
@@ -92,7 +109,8 @@ enum StartupPresetGrants {
                 TIAppLog.write("The kept startup preset of the \(model) no longer resolves; it is dropped.", level: .warn)
                 continue
             }
-            _ = url.startAccessingSecurityScopedResource()
+            close(model)
+            if url.startAccessingSecurityScopedResource() { opened[model] = url }
             left[model] = stale ? (try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil,
                                                          relativeTo: nil)) ?? data : data
         }

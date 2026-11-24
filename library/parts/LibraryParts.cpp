@@ -47,7 +47,7 @@ LibraryParts::LibraryParts(LibraryPartsSetup s)
     peripherals_ = std::make_unique<peripherals::PeripheralsPart>(setup_.hostLinks, setup_.serialLinkFolder);
     presets_ = std::make_unique<presets::PresetsPart>(
         presets::PresetsSetup{&catalogue, setup_.presetRules, &machineControl_, typing_.get(), setup_.bundle,
-                              places.hostDirs().home, screenshotFolderOf(places)});
+                              places.hostDirs().home, screenshotFolderOf(places), setup_.cacheFolder});
     std::optional<roms::RomsMissing> missing;
     if (!setup_.roms.ok()) missing = setup_.roms.missing;
     startup_ = std::make_unique<startup::StartupPart>(
@@ -73,6 +73,8 @@ LibraryParts::LibraryParts(LibraryPartsSetup s)
     open.kinds = setup_.fileKinds;
     open.maxBytes = setup_.openLimits;
     open.uploadFolder = setup_.uploadFolder;
+    open.cacheFolder = setup_.cacheFolder;
+    open.settings = setup_.settings;
     open_ = std::make_unique<opening::OpenPart>(std::move(open));
     control_ = std::make_unique<control::ControlPart>(
         control::ControlSetup{&catalogue, printersOf(setup_.papers), setup_.controlRules});

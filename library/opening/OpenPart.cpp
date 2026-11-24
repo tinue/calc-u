@@ -1,4 +1,5 @@
 #include "opening/OpenPart.hpp"
+#include "files/FileCache.hpp"
 #include "files/Files.hpp"
 #include "media/MediaPart.hpp"
 #include "opening/Classify.hpp"
@@ -109,6 +110,8 @@ void OpenPart::attach(sessions::SessionSetup& s) {
         }
         return open(*req, c);
     });
+    if (setup_.settings && setup_.presets)
+        s.command(kChooseStartupPresetCommand, [this](const Value& a, SessionContext& c) { return chooseStartup(a, c); });
     s.request(kWouldTakeRequest, [this](const Value& a, SessionContext&) {
         const Value* size = a.find("size");
         std::optional<std::uint64_t> bytes;
@@ -134,6 +137,8 @@ void OpenPart::afterCall(SessionContext& c, pacing::WallTime) {
 }
 
 CommandOutcome OpenPart::open(const OpenRequest& req, SessionContext& c) {
+    // Every uploaded file but the preset (a preset loaded once is not kept).
+    if (req.upload) keep(req.files, presetAmong(req.files), c);
     if (req.files.size() > 1) return openSeveral(req, c);
     // An uploaded preset alone goes into an upload folder as well, so that
     // a file it names is refused with the advice to choose it with it.
@@ -217,10 +222,21 @@ CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) 
             return refuse(c, plainName(f) + " could not be written to " + files::fromPath(folder) + ": " +
                                  files::osReason(errno) + ".");
     }
-    // The first by name of those with a preset extension, else of those
-    // whose text has a model line; each must pass test 1.
+    const OpenedFile* first = presetAmong(req.files);
+    if (!first) return openOne(req.files.front(), req, c);
+    const Classified k = classify(*first, req.way, setup_);
+    if (k.what == Classified::What::Refused) return refuse(c, k.refusal);   // 1b
+    const std::string path = files::fromPath(folder / files::toPath(plainName(*first)));
+    return finish(setup_.presets->loadPreset(Value::object({{"ref", path}, {"upload", Value(true)}}), c),
+                  OpenReply(OpenedAs::Preset, plainName(*first)), c);
+}
+
+// The preset among several files: the first by name of those with a preset
+// extension, else of those whose text has a model line; null: none. Each
+// must still pass test 1.
+const OpenedFile* OpenPart::presetAmong(const std::vector<OpenedFile>& files) const {
     std::vector<const OpenedFile*> byExtension, byContent;
-    for (const OpenedFile& f : req.files) {
+    for (const OpenedFile& f : files) {
         const std::string lower = lowerAscii(plainName(f));
         if (!f.bytes || lower.empty() || lower[0] == '.') continue;
         if (std::any_of(setup_.presetExtensions.begin(), setup_.presetExtensions.end(),
@@ -230,15 +246,57 @@ CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) 
             byContent.push_back(&f);
     }
     auto& list = byExtension.empty() ? byContent : byExtension;
-    if (list.empty()) return openOne(req.files.front(), req, c);
-    const OpenedFile* first = *std::min_element(list.begin(), list.end(), [](const OpenedFile* a, const OpenedFile* b) {
+    if (list.empty()) return nullptr;
+    return *std::min_element(list.begin(), list.end(), [](const OpenedFile* a, const OpenedFile* b) {
         return lowerAscii(plainName(*a)) < lowerAscii(plainName(*b));
     });
-    const Classified k = classify(*first, req.way, setup_);
-    if (k.what == Classified::What::Refused) return refuse(c, k.refusal);   // 1b
-    const std::string path = files::fromPath(folder / files::toPath(plainName(*first)));
-    return finish(setup_.presets->loadPreset(Value::object({{"ref", path}, {"upload", Value(true)}}), c),
-                  OpenReply(OpenedAs::Preset, plainName(*first)), c);
+}
+
+// Into the file cache, flat by name; a file that cannot be kept is opened
+// all the same (the app log says why it is not kept).
+void OpenPart::keep(const std::vector<OpenedFile>& files, const OpenedFile* except, SessionContext& c) const {
+    if (!setup_.cacheFolder) return;
+    for (const OpenedFile& f : files) {
+        if (&f == except || !f.bytes) continue;
+        std::string why;
+        if (!files::keepInCache(files::toPath(*setup_.cacheFolder), plainName(f), f.bytes->data(), f.bytes->size(), &why))
+            c.appLog().warn("The file " + plainName(f) + " was not kept in the file cache: " + why + ".");
+    }
+}
+
+CommandOutcome OpenPart::chooseStartup(const Value& a, SessionContext& c) {
+    const std::string model = sessions::textArg(a, "model");
+    settings::SettingsFile& f = *setup_.settings;
+    if (!f.product().find("preset", model)) return Refused{"There is no startup preset for " + model + "."};
+    std::string ref = sessions::textArg(a, "ref");
+    std::string name = files::plainFileName(ref);
+    if (const Value* list = a.find("files"); list && list->elements()) {
+        if (!setup_.cacheFolder) return Refused{"choose-startup-preset takes files only where there is a file cache."};
+        std::string why;
+        auto req = OpenRequest::fromValue(Value::object({{"files", *list}, {"way", "dialog"}, {"upload", true}}), &why);
+        if (!req) return Refused{why};
+        const OpenedFile* preset = presetAmong(req->files);
+        if (!preset) return refuse(c, "None of the chosen files is a preset.");
+        name = plainName(*preset);
+        keep(req->files, preset, c);
+        const auto kept = files::keepInCache(files::toPath(*setup_.cacheFolder), name, preset->bytes->data(),
+                                             preset->bytes->size(), &why);
+        if (!kept) return refuse(c, "The preset " + name + " could not be kept in the file cache: " + why + ".");
+        ref = files::fromPath(*kept);
+    }
+    if (ref.empty()) return Refused{"choose-startup-preset needs a ref or files."};
+    if (auto why = setup_.presets->checkStartup(ref, machine::ModelId{model})) {
+        const std::string sentence = "The preset " + name + " cannot be the startup preset of the " + model + ": " + *why;
+        c.notice(sentence);
+        c.appLog().warn(sentence);
+        return Refused{sentence};
+    }
+    const settings::SettingsFile::WriteResult w = f.set("preset", model, ref);
+    if (!w.ok) {   // kept for this run, as set-setting keeps a value
+        c.notice("The setting holds until you quit; it was " + w.problem + ".");
+        c.appLog().warn("The startup preset of the " + model + " was not saved: " + w.problem + ".");
+    }
+    return Done{};
 }
 
 } // namespace calcu::opening

@@ -71,6 +71,8 @@ struct SharpAppPartOptions {
     // The Web: where several files of Load Preset… become one folder;
     // unset: none.
     std::optional<std::string> uploadFolder;
+    // The Web: the file cache, where every uploaded file is kept; unset: none.
+    std::optional<std::string> cacheFolder;
 };
 
 // ── SharpAppPart: Calc-U-1600's app layer in the library's app session ───

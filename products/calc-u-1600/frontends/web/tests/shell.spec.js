@@ -192,6 +192,59 @@ test('the web settings', async ({ page }) => {
   expect(keys.filter((k) => k.startsWith('calcu1600/'))).toEqual([]);
 });
 
+// Settings ▸ Startup presets ▸ Choose…: the preset is checked first; a file
+// it names may come with it or from an earlier upload (the file cache), the
+// preset itself is kept only once chosen.
+test('a startup preset of my own', async ({ page }) => {
+  const bas = { name: 'six.bas', mimeType: 'text/plain', buffer: Buffer.from('10 PRINT 6*7\n') };
+  const preset = { name: 'run.pc1600', mimeType: 'text/plain',
+    buffer: Buffer.from('format-version: 2\nmodel: PC-1600\nprogram: { file: six.bas }\nkeys:\n  - type: RUN\n  - expect: 42\n') };
+  const value = async () => {
+    const rows = ((await h.topic(page, 'settings')) || {}).rows || [];
+    return (rows.find((r) => r.section === 'preset' && r.key === 'PC-1600') || {}).value;
+  };
+  const choose = async (files) => {
+    await h.menu(page, 'file', 'settings');
+    const row = page.locator(c('setting-preset-PC-1600'));
+    const chooser = page.waitForEvent('filechooser');
+    await row.selectOption({ label: 'Choose…' });
+    await (await chooser).setFiles(files);
+  };
+  await h.gotoReady(page);
+  await h.notBusy(page);
+  const before = await value();
+  // Alone, its file never chosen: refused, the setting unchanged.
+  await choose([preset]);
+  await expect(page.locator(c('notice'))).toContainText('cannot be the startup preset of the PC-1600', { timeout: 30000 });
+  await expect(page.locator(c('notice'))).toContainText('which was neither chosen with it nor earlier');
+  await page.locator(c('notice-ok')).click();
+  expect(await value()).toBe(before);
+  await page.locator(c('settings-close')).click();
+  // Loaded once with its file: the file is kept, the preset is not.
+  const chooser = page.waitForEvent('filechooser');
+  await h.menu(page, 'file', 'load-preset');
+  await (await chooser).setFiles([bas, preset]);
+  await h.waitForScreen(page, /42/);
+  await h.notBusy(page);
+  // Now the preset alone passes and is kept.
+  await choose([preset]);
+  await expect.poll(value, { timeout: 30000 }).toBe('/persist/cache/run.pc1600');
+  await expect(page.locator(c('notice'))).toHaveCount(0);
+  const row = page.locator(c('setting-preset-PC-1600'));
+  await expect(row.locator('option:checked')).toHaveText('run.pc1600');
+  await page.locator(c('setting-startup-model')).selectOption('PC-1600');
+  await expect.poll(async () => {
+    const rows = ((await h.topic(page, 'settings')) || {}).rows || [];
+    return (rows.find((r) => r.section === 'startup' && r.key === 'model') || {}).value;
+  }).toBe('PC-1600');
+  // A reload starts the PC-1600 with it, from the browser's storage (written a moment later).
+  await page.waitForTimeout(1500);
+  await page.reload();
+  await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
+  await h.waitForScreen(page, /42/);
+  await expect(page.locator(c('notice'))).toHaveCount(0);
+});
+
 test('help and about', async ({ page }) => {
   await page.addInitScript(() => { window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
   await h.gotoReady(page);

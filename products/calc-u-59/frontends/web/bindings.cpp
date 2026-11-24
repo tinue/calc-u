@@ -66,6 +66,7 @@ calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     setup.paths = &parts->settings.paths();
     setup.examplesFolder = start.presetsDir;   // the bundle
     setup.uploadFolder = start.uploadsDir;     // several files of the preset picker's upload
+    if (!start.cacheDir.empty()) setup.cacheFolder = start.cacheDir;   // every uploaded file, kept
     parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));
     parts->web = std::make_unique<cu59::TIWebPart>();
     parts->web->bind(*parts->app);

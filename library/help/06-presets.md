@@ -156,9 +156,22 @@ compared (a line of text, a number) is the product's: see its part.
 A **startup preset** is the preset a model is built from when the
 product starts with that model, or when you switch to that model. Set
 one per model in **Settings ▸ Startup presets**: "None", the startup
-presets the product bundles for that model, or (on Windows and
-Linux) any preset file with "Choose…". It is kept in the settings
-file under `[preset]` ([Settings](08-settings.md)).
+presets the product bundles for that model, or any preset file of your
+own with "Choose…". It is kept in the settings file under `[preset]`
+([Settings](08-settings.md)).
+
+"Choose…" opens the file dialog of the platform: on the desktop and on
+the iPhone and iPad, a preset file; in the browser, the preset together
+with the files it names, as in Load Preset…. The preset is checked
+before it is set, as a start would read it: one that names a file that
+is not there, or is for another model, is not set, and a notice says
+why.
+
+In the browser, a startup preset chosen this way is kept in the
+browser's storage, and so is every file opened in the browser (with
+Load Preset…, Import Media…, a drop). A preset whose files were opened
+before can therefore be chosen alone. A preset loaded with Load Preset…
+is not kept itself; only the files that came with it are.
 
 - Without a startup preset, a model is built as the product's built-in
   default machine.

@@ -13,6 +13,8 @@
 //   "name-and-save" | null), s.naming (the place Name & Save is open for),
 //   s.nameAndSavePrompts ({place: prompt}, the models' nameAndSave)
 //   s.choose(item), s.setSetting(section, key, value), s.closeNotice(yes), s.close()
+//   s.chooseStartupPreset(model): the settings row's "Choose…", the preset
+//   picked with its files (`choose-startup-preset`: checked, then kept)
 //   s.notify(text): a notice of the page's own, queued with the session's
 //   s.nameAndSave(place): the Name & Save dialog of a media place (ShellDialogs),
 //   for the place's submenu, the slot pickers' buttons and the product's own
@@ -119,6 +121,15 @@ function useCalcuShell(shell, product, traits, shellArgs) {
       sendChecked("load-preset", { content: text, name: files[0].name });
     });
   };
+  // The preset with every file it names, or alone when they were chosen
+  // before (the session keeps every uploaded file in its file cache).
+  const chooseStartupPreset = (model) => {
+    calcuPickFiles(product.presetUploads || "", true).then(async (files) => {
+      if (!files.length) return;
+      const named = await Promise.all(files.map((f) => f.arrayBuffer().then((b) => ({ name: f.name, bytes: new Uint8Array(b) }))));
+      sendChecked("choose-startup-preset", { model, files: named });
+    });
+  };
   const nameAndSave = (place) => {
     setNaming(place);
     setOpen("name-and-save");
@@ -152,7 +163,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
     started: !!controlState, romsMissing: romsMissing || null,
     loading: loading.current.shown(calcuShellNow()),
     notice: current,
-    choose, sendChecked, nameAndSave,
+    choose, sendChecked, nameAndSave, chooseStartupPreset,
     setSetting: (section, key, value) => sendChecked("set-setting", { section, key, value }),
     closeNotice: (yes) => {
       const again = notices.current.answer(!!yes);

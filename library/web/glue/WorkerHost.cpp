@@ -1,5 +1,6 @@
 #include "web/glue/WorkerHost.hpp"
 #include "web/glue/MessageCodec.hpp"
+#include "files/FileCache.hpp"
 #include "files/Files.hpp"
 #include <emscripten.h>
 #include <exception>
@@ -104,6 +105,7 @@ WorkerHost::WorkerHost(const AppSessionFactory& factory, val start)
     start_.dirs.settingsBase = text(dirs, "settingsBase");
     start_.dirs.saveFolder = text(dirs, "saveFolder");
     start_.dirs.home = text(dirs, "home");
+    start_.cacheDir = text(dirs, "cache");
     const val storage = start["storage"];
     start_.storage = storageModeNamed(text(storage, "mode"));
     start_.storageSentence = text(storage, "sentence");
@@ -252,6 +254,11 @@ void WorkerHost::answerFilePicker(s::CallId ask, val message) {
                 else   // left out of the pick
                     log_->warn("The picked file " + file + " cannot be written to " + path + ": " +
                                calcu::files::osReason(errno));
+                std::string why;   // kept for a preset chosen later without it
+                if (out && !start_.cacheDir.empty() &&
+                    !calcu::files::keepInCache(calcu::files::toPath(start_.cacheDir), file, bytes->bytes()->data(),
+                                               bytes->bytes()->size(), &why))
+                    log_->warn("The picked file " + file + " was not kept in the file cache: " + why + ".");
             }
         a.result = s::Value(std::move(paths));
     }

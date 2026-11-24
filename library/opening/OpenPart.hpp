@@ -2,6 +2,7 @@
 #include "opening/FileKind.hpp"
 #include "opening/OpenRequest.hpp"
 #include "sessions/SessionPart.hpp"
+#include "settings/SettingsFile.hpp"
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -14,6 +15,13 @@
 // `load-preset` ({ref} from its folder, {content, name} as its content), a
 // medium the media part's reads of opened files and `media.open-file`. A
 // refusal of theirs becomes the open part's notice.
+//
+// `choose-startup-preset {model, ref | files: [{name, bytes}]}`: the
+// settings dialog's "Choose…". The preset (a path; or, on the Web, chosen
+// with its files, which all go into the file cache) is checked as the
+// startup load reads it; only then it becomes [preset] <model>. A preset
+// that does not pass is a notice with the reason, the setting unchanged.
+// Never held back while an operation runs.
 
 namespace calcu::presets {
 class PresetsPart;
@@ -32,7 +40,11 @@ struct OpenSetup {
     std::vector<FileKind*> kinds;                  // in the product's order
     std::map<Way, std::uint64_t> maxBytes;         // a way not listed has no limit
     std::optional<std::string> uploadFolder;       // where several files become one folder (Web: /uploads)
+    std::optional<std::string> cacheFolder;        // the Web's file cache: every uploaded file is kept there
+    settings::SettingsFile* settings = nullptr;    // [preset]; null: no choose-startup-preset
 };
+
+inline const sessions::CommandName kChooseStartupPresetCommand{"choose-startup-preset"};
 
 class OpenPart final : public sessions::SessionPart {
 public:
@@ -47,6 +59,9 @@ private:
     sessions::CommandOutcome openOne(const OpenedFile&, const OpenRequest&, sessions::SessionContext&);
     sessions::CommandOutcome openMedium(const OpenedFile&, const OpenRequest&, sessions::SessionContext&);
     sessions::CommandOutcome openSeveral(const OpenRequest&, sessions::SessionContext&);
+    sessions::CommandOutcome chooseStartup(const sessions::Value&, sessions::SessionContext&);
+    void keep(const std::vector<OpenedFile>&, const OpenedFile* except, sessions::SessionContext&) const;
+    const OpenedFile* presetAmong(const std::vector<OpenedFile>&) const;
 
     OpenSetup setup_;
     std::optional<OpenRequest> kept_;

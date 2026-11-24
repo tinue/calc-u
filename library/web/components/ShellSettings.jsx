@@ -2,8 +2,13 @@
 // a section per group of the dialog model, a change sent as `set-setting` at
 // once, Close as the only button. It follows the `settings` topic and is
 // held back by nothing. Folder rows show the folder in use with "Reset" (a
-// Web frontend has no folder picker). Names: settings-dialog,
+// Web frontend has no folder picker). A startup preset row ends with the
+// model's "Choose…" (`row.choose`), which opens the file picker; the row
+// shows the stored value until the settings topic changes. Names: settings-dialog,
 // setting-<section>-<key>, settings-close.
+
+// No setting has it as its value: a file path or bundle path never starts with NUL.
+const CALCU_CHOOSE_VALUE = "\u0000choose";
 
 function ShellSettingRow({ s, row }) {
   const r = row.row;
@@ -11,9 +16,12 @@ function ShellSettingRow({ s, row }) {
   const set = (v) => s.setSetting(r.section, r.key, v);
   let control = null;
   if (r.widget === "startup-model" || r.widget === "choice" || r.widget === "startup-preset") {
+    const chooses = r.widget === "startup-preset" && !!row.choose;
+    const changed = (v) => { if (chooses && v === CALCU_CHOOSE_VALUE) s.chooseStartupPreset(r.key); else set(v); };
     control = (
-      <select data-calcu={name} value={row.value} onChange={(e) => set(e.target.value)}>
+      <select data-calcu={name} value={row.value} onChange={(e) => changed(e.target.value)}>
         {row.choices.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        {chooses && <option key={CALCU_CHOOSE_VALUE} value={CALCU_CHOOSE_VALUE}>{row.choose}</option>}
       </select>
     );
   } else if (r.widget === "folder") {

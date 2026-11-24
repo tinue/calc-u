@@ -61,6 +61,7 @@ inline const sessions::CommandName kScreenKeyDown{"screen-key-down"};
 inline const sessions::CommandName kScreenKeyUp{"screen-key-up"};
 inline const sessions::CommandName kSpeed{"speed"};
 inline const sessions::CommandName kSetSetting{"set-setting"};
+inline const sessions::CommandName kChooseStartupPreset{"choose-startup-preset"};   // opening's OpenPart
 inline const sessions::CommandName kRememberFolder{"remember-folder"};
 inline const sessions::CommandName kRememberWindow{"remember-window"};
 } // namespace commands

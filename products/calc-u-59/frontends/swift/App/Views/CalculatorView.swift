@@ -26,7 +26,8 @@ struct CalculatorView: View {
     }
 
     private static let asmTypes = [UTType(filenameExtension: "asm") ?? .plainText]
-    private static let presetTypes = [
+    /// The presets' types (Load Preset…, Settings ▸ Choose…).
+    static let presetTypes = [
         UTType(filenameExtension: "ti59") ?? .data,
         UTType(filenameExtension: "ti58") ?? .data,
         UTType(filenameExtension: "ti58c") ?? .data

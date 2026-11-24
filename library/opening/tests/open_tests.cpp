@@ -3,6 +3,7 @@
 #include "OpenRig.hpp"
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
+#include "files/Files.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <algorithm>
 
@@ -320,7 +321,7 @@ TEST(uploaded_preset_without_a_file_it_names_refused_with_the_advice) {
     calcu::testing::TempFolder up("calcu-uploads");
     OpenRig r(withUploads(up));
     const std::string advice =
-        "The preset game.test-seg names the file data.testdisk.yaml, which was not chosen with it: "
+        "The preset game.test-seg names the file data.testdisk.yaml, which was neither chosen with it nor earlier: "
         "choose the preset together with every file it names.";
     // Alone: a folder of its own, the same advice.
     OpenRequest q;
@@ -383,4 +384,99 @@ TEST(preset_alone_as_content_refused_when_it_names_files) {
     const auto* a = r.opened(file("game.test-seg", keys("test-dot", "  - test-disk: { file: data.testdisk.yaml }\n")), Way::Drop, true);
     CHECK(a && !a->done && a->reason.find("handed over without its folder") != std::string::npos);
     CHECK(hasText(r.notices(), "handed over without its folder"));
+}
+
+// ── The file cache (the Web) ──
+
+namespace {
+OpenRigOptions withCache(const calcu::testing::TempFolder& up, const calcu::testing::TempFolder& cache,
+                         std::string model = "test-seg") {
+    OpenRigOptions o = withUploads(up, std::move(model));
+    o.cacheFolder = cache.str();
+    return o;
+}
+Value filesValue(const std::vector<OpenedFile>& files) {
+    Value::Array a;
+    for (const auto& f : files) a.push_back(Value::object({{"name", f.name}, {"bytes", Value(Value::Bytes(*f.bytes))}}));
+    return Value(std::move(a));
+}
+} // namespace
+
+TEST(uploaded_files_kept_in_the_cache_but_not_the_preset) {
+    calcu::testing::TempFolder up("calcu-uploads"), cache("calcu-cache");
+    OpenRig r(withCache(up, cache));
+    OpenRequest q;
+    q.files = {file("data.testdisk.yaml", disk("Data", "d").text()),
+               file("game.test-seg", keys("test-dot", "  - test-disk: { file: data.testdisk.yaml }\n"))};
+    q.way = Way::Dialog;
+    q.upload = true;
+    const CallId c = r.open(q);
+    r.fixture.callWhileBusy();
+    CHECK(r.fixture.fe.reply(c) && r.fixture.fe.reply(c)->done);
+    CHECK(std::filesystem::exists(cache.path() / "data.testdisk.yaml"));
+    CHECK(!std::filesystem::exists(cache.path() / "game.test-seg"));   // loaded once: not kept
+    // The preset alone later: the file it names comes from the cache.
+    OpenRequest alone;
+    alone.files = {q.files[1]};
+    alone.way = Way::Dialog;
+    alone.upload = true;
+    const CallId again = r.open(alone);
+    r.fixture.callWhileBusy();
+    CHECK(r.fixture.fe.reply(again) && r.fixture.fe.reply(again)->done);
+    CHECK_EQ(r.fixture.drive() ? r.fixture.drive()->bytes() : std::string(), std::string("d"));
+}
+
+TEST(choose_startup_preset_with_files_kept_and_set) {
+    calcu::testing::TempFolder up("calcu-uploads"), cache("calcu-cache");
+    OpenRig r(withCache(up, cache));
+    const std::vector<OpenedFile> chosen = {
+        file("data.testdisk.yaml", disk("Data", "d").text()),
+        file("own.test-seg", keys("test-dot", "  - test-disk: { file: data.testdisk.yaml }\n"))};
+    const CallId c = r.fixture.send("choose-startup-preset", Value::object({{"model", "test-dot"}, {"files", filesValue(chosen)}}));
+    r.fixture.call();
+    const auto* reply = r.fixture.fe.reply(c);
+    CHECK(reply && reply->done);
+    CHECK(std::filesystem::exists(cache.path() / "own.test-seg") && std::filesystem::exists(cache.path() / "data.testdisk.yaml"));
+    CHECK_EQ(r.fixture.settings->text("preset", "test-dot"), calcu::files::fromPath(cache.path() / "own.test-seg"));
+}
+
+TEST(choose_startup_preset_alone_finds_files_chosen_earlier) {
+    calcu::testing::TempFolder up("calcu-uploads"), cache("calcu-cache");
+    OpenRig r(withCache(up, cache));
+    const OpenedFile preset = file("own.test-seg", keys("test-dot", "  - test-disk: { file: data.testdisk.yaml }\n"));
+    const std::string before = r.fixture.settings->text("preset", "test-dot");
+    // Never chosen: refused with the reason, the setting unchanged.
+    CallId c = r.fixture.send("choose-startup-preset", Value::object({{"model", "test-dot"}, {"files", filesValue({preset})}}));
+    r.fixture.call();
+    const auto* reply = r.fixture.fe.reply(c);
+    CHECK(reply && !reply->done);
+    CHECK(hasText(r.notices(), "The preset own.test-seg cannot be the startup preset of the test-dot: own.test-seg, line 4: "
+                               "The preset own.test-seg names the file data.testdisk.yaml, which was neither chosen with it nor earlier"));
+    CHECK_EQ(r.fixture.settings->text("preset", "test-dot"), before);
+    // The medium opened before (an upload): kept, so the preset alone passes.
+    const auto* m = r.opened(file("data.testdisk.yaml", disk("Data", "d").text()), Way::Drop, true);
+    CHECK(m && m->done);
+    c = r.fixture.send("choose-startup-preset", Value::object({{"model", "test-dot"}, {"files", filesValue({preset})}}));
+    r.fixture.call();
+    reply = r.fixture.fe.reply(c);
+    CHECK(reply && reply->done);
+    CHECK_EQ(r.fixture.settings->text("preset", "test-dot"), calcu::files::fromPath(cache.path() / "own.test-seg"));
+}
+
+TEST(choose_startup_preset_by_path_checked_first) {
+    calcu::testing::TempFolder dir("calcu-open");
+    dir.write("dot.test-seg", header("test-dot"));
+    dir.write("seg.test-seg", header("test-seg"));
+    OpenRig r;
+    CallId c = r.fixture.send("choose-startup-preset", Value::object({{"model", "test-seg"}, {"ref", dir / "dot.test-seg"}}));
+    r.fixture.call();
+    CHECK(r.fixture.fe.reply(c) && !r.fixture.fe.reply(c)->done);   // a preset for another model
+    CHECK(hasText(r.notices(), "The preset dot.test-seg cannot be the startup preset of the test-seg: "));
+    c = r.fixture.send("choose-startup-preset", Value::object({{"model", "test-seg"}, {"ref", dir / "seg.test-seg"}}));
+    r.fixture.call();
+    CHECK(r.fixture.fe.reply(c) && r.fixture.fe.reply(c)->done);
+    CHECK_EQ(r.fixture.settings->text("preset", "test-seg"), dir / "seg.test-seg");
+    c = r.fixture.send("choose-startup-preset", Value::object({{"model", "no-such"}, {"ref", dir / "seg.test-seg"}}));
+    r.fixture.call();
+    CHECK(r.fixture.fe.reply(c) && !r.fixture.fe.reply(c)->done);
 }

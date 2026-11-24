@@ -259,6 +259,7 @@ class EmulatorViewModel {
                 continuation.resume()
             }
         }
+        StartupPresetGrants.openAll()   // before `start` reads the startup presets
         let start = TISessionStart()
         start.settingsBase = AppSettings.applicationSupportBase.path
         start.settingsFile = AppSettings.launchSettingsFile
@@ -555,6 +556,17 @@ class EmulatorViewModel {
         // The scope stays open until the session has replied.
         session?.openFile(bytes, path: url.path, fileName: url.lastPathComponent, way: "dialog") { _ in
             if scoped { url.stopAccessingSecurityScopedResource() }
+        }
+    }
+
+    /// Settings ▸ Startup presets ▸ Choose…: the session checks the preset
+    /// (a refusal is its notice) and sets it; then the file's grant is kept
+    /// for the next start, its scope open for this run.
+    func chooseStartupPreset(model: String, url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        session?.chooseStartupPreset(model, path: url.path) { chosen in
+            if chosen { StartupPresetGrants.keep(url, for: model) }
+            else if scoped { url.stopAccessingSecurityScopedResource() }
         }
     }
 

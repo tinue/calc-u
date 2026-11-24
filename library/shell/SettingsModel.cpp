@@ -1,4 +1,5 @@
 #include "shell/SettingsModel.hpp"
+#include "files/FileCache.hpp"
 #include "shell/Inputs.hpp"
 #include <algorithm>
 
@@ -111,7 +112,12 @@ std::vector<ShownSection> dialog(const Value& settings, const Value& presetList,
                     s.choices.emplace_back(ref, description.empty() ? name : name + " — " + description);
                     listed = listed || ref == s.value;
                 }
-                if (!listed) s.choices.emplace_back(s.value, withTilde(s.value, home));
+                if (!listed) {   // a chosen file; one in the Web's file cache by its name
+                    const std::string cache = read::text(presetList, "cacheFolder");
+                    s.choices.emplace_back(s.value, files::liesIn(s.value, cache) ? files::plainFileName(s.value)
+                                                                                 : withTilde(s.value, home));
+                }
+                s.chooseLabel = kChooseStartupPreset;
                 break;
             }
             case Widget::Folder:

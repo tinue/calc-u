@@ -9,6 +9,11 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(EmulatorViewModel.self) var viewModel
     @Environment(\.dismiss) private var dismiss
+    /// The model whose startup preset "Choose…" picks (the file importer is open).
+    @State private var choosingFor: String?
+
+    /// No setting has it as its value: "Choose…" opens the file importer.
+    private static let chooseTag = "\u{0}choose"
 
     var body: some View {
         NavigationStack {
@@ -24,6 +29,20 @@ struct SettingsView: View {
                 }
         }
         .frame(maxHeight: .infinity)
+        .fileImporter(
+            isPresented: Binding(get: { choosingFor != nil }, set: { if !$0 { choosingFor = nil } }),
+            allowedContentTypes: CalculatorView.presetTypes,
+            allowsMultipleSelection: false
+        ) { result in
+            let model = choosingFor
+            choosingFor = nil
+            switch result {
+            case .success(let urls):
+                if let model, let url = urls.first { viewModel.chooseStartupPreset(model: model, url: url) }
+            case .failure(let error):
+                TIAppLog.write("The file picker failed: \(error.localizedDescription)", level: .warn)
+            }
+        }
         .noticeAlert(viewModel)
     }
 
@@ -80,11 +99,15 @@ struct SettingsView: View {
             } else {
                 Picker(row.label, selection: Binding(
                     get: { row.value },
-                    set: { viewModel.setSetting(row.section, row.key, $0) }
+                    set: {
+                        if $0 == Self.chooseTag { choosingFor = row.key }   // the row shows what is set
+                        else { viewModel.setSetting(row.section, row.key, $0) }
+                    }
                 )) {
                     ForEach(Array(row.choiceValues.enumerated()), id: \.offset) { i, value in
                         Text(row.choiceLabels[i]).tag(value)
                     }
+                    if !row.chooseLabel.isEmpty { Text(row.chooseLabel).tag(Self.chooseTag) }
                 }
                 .accessibilityIdentifier(id)
             }

@@ -158,7 +158,8 @@ Load Preset…**.
 `[preset] PC-1500`, `[preset] PC-1500A`, `[preset] PC-1600`,
 [Settings](08-settings.md)). Each model's list offers the startup presets
 the product comes with, each as its name and description; **Choose…**
-(on the desktop) takes a preset file of your own. A model switch starts with no modules and no peripherals, so a
+takes a preset file of your own (in the browser, with the files it
+names; [Startup presets](../../../library/help/06-presets.md#startup-presets)). A model switch starts with no modules and no peripherals, so a
 startup preset is how a model gets its usual hardware.
 
 The PC-1600's bundled startup preset:

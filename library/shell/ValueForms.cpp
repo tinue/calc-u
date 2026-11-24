@@ -155,7 +155,8 @@ Value toValue(const std::vector<ShownSection>& sections) {
         Value::Array rows;
         for (const auto& r : s.rows)
             rows.push_back(Value::object({{"row", dialogRow(r.row)}, {"value", r.value}, {"shown", r.shown},
-                                          {"choices", pairs(r.choices)}, {"resettable", r.resettable},
+                                          {"choices", pairs(r.choices)}, {"choose", r.chooseLabel},
+                                          {"resettable", r.resettable},
                                           {"min", r.min ? Value(*r.min) : Value()},
                                           {"max", r.max ? Value(*r.max) : Value()}}));
         out.push_back(Value::object({{"title", s.title}, {"rows", Value(std::move(rows))}}));

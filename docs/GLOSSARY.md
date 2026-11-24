@@ -392,8 +392,14 @@ A mapping that addresses a resource by exactly one of `file:`, `name:`,
 
 **Startup preset**:
 The preset a machine is built from when the product starts or the model is
-switched.
+switched: a bundled one, or a file of the user's own chosen with
+"Choose…", checked before it is set.
 _Avoid_: default preset
+
+**File cache**:
+The Web's folder in the browser's kept storage (`<mount>/cache`) that holds
+every file the page uploaded, by its name, and the startup presets chosen
+there, so that a preset whose files were uploaded before can be chosen alone.
 
 **Example**:
 A preset in a product's `examples/` folder that shows what it can do;

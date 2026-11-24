@@ -225,6 +225,38 @@ test('the web settings per layout', async ({ page }) => {
   await expect(el(page, 'setting-trace-max-file-size-mb')).toHaveCount(0);
 });
 
+// Settings ▸ Startup presets ▸ Choose…: checked first, then kept in the
+// browser's storage (the file cache) and set; over a reload it is the start.
+test('a startup preset of my own', async ({ page }) => {
+  await gotoReady(page);
+  const choose = async (file) => {
+    await el(page, 'menu-file').click();
+    await el(page, 'item-settings').click();
+    const chooser = page.waitForEvent('filechooser');
+    await el(page, 'setting-preset-TI-59').selectOption({ label: 'Choose…' });
+    await (await chooser).setFiles(file);
+  };
+  // A preset for another model: refused, the row as it was.
+  await choose({ name: 'other.ti58', mimeType: 'text/plain', buffer: Buffer.from('format-version: 2\nmodel: TI-58\n') });
+  await expect(el(page, 'notice')).toContainText('cannot be the startup preset of the TI-59');
+  await el(page, 'notice-ok').click();
+  await expect(el(page, 'setting-preset-TI-59').locator('option:checked')).not.toHaveText('other.ti58');
+  await el(page, 'settings-close').click();
+  // One for the TI-59: set, shown by its name.
+  await choose({ name: 'mine.ti59', mimeType: 'text/plain',
+    buffer: Buffer.from('format-version: 2\nmodel: TI-59\n') });
+  await expect(el(page, 'setting-preset-TI-59').locator('option:checked')).toHaveText('mine.ti59', { timeout: 30000 });
+  await expect(el(page, 'notice')).toHaveCount(0);
+  await el(page, 'setting-startup-model').selectOption({ label: 'TI-59' });
+  await expect(el(page, 'setting-startup-model')).toHaveValue('TI-59');
+  await page.waitForTimeout(1500);   // the browser's storage is written a moment later
+  await gotoReady(page);
+  await el(page, 'menu-file').click();
+  await el(page, 'item-settings').click();
+  await expect(el(page, 'setting-preset-TI-59').locator('option:checked')).toHaveText('mine.ti59');
+  await expect(el(page, 'notice')).toHaveCount(0);
+});
+
 // "Loading…" and the notice dialog.
 test('loading and the notice dialog', async ({ page }) => {
   await gotoReady(page);

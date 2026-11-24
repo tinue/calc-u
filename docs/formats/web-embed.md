@@ -229,12 +229,12 @@ the worker or a message from it that cannot be read. The page shows
 "`<Product>` could not start: `<failure>`" (without a failure:
 "`<Product>` could not start."), or, when the failure comes once it is
 `running`, "`<Product>` stopped: `<failure>`" ("`<Product>` stopped.").
-The app log gets one error line, "`<Product>` stopped: `<failure>`" with
+The app log gets one error line, the same sentence, with
 the `detail` (where in the worker, the stack) below it. A failure names what went wrong: a file
 that could not be fetched (`<path> could not be fetched (<status>)`), the
 engine that did not load or start, an abort, an uncaught exception in a
-call. A command or request after the failure gets `done: false, reason:
-"The product could not start."`.
+call. A command or request waiting or sent after the failure gets `done: false, reason:
+"The product could not start."` (once `running`: `"The product stopped."`).
 
 When a write to the store is refused later, the worker sends
 `web.storage` with `unavailable` and the stream item `{sentence}` on the

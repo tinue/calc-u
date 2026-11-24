@@ -33,4 +33,16 @@ AppLogLevel appLogLevelOfSetting(std::string_view v) {
     return named ? *named : defaultAppLogLevel();
 }
 
+RunAppLogLevel appLogLevelOfArgument(std::string_view value) {
+    if (const auto named = appLogLevelNamed(value)) return {named, ""};
+    return {std::nullopt, "--app-log-level takes error, warn, info or debug, not " + std::string(value) + "."};
+}
+
+RunAppLogLevel appLogLevelOfArguments(const std::vector<std::string>& args) {
+    RunAppLogLevel out;
+    for (std::size_t i = 0; i + 1 < args.size(); ++i)
+        if (args[i] == "--app-log-level") out = appLogLevelOfArgument(args[i + 1]);
+    return out;
+}
+
 } // namespace calcu::applog

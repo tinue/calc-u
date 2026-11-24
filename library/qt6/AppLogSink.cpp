@@ -1,17 +1,17 @@
 #include "qt6/AppLogSink.hpp"
 
 #include <QDir>
+#include <QString>
 #include <QtGlobal>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <exception>
-#include <memory>
-#include <mutex>
+#include <optional>
+#include <vector>
 
-#include "applog/AppLogFile.hpp"
 #include "qt6/HostInfo.hpp"
 #include "settings/PlatformBase.hpp"
+#include "shell/HostAppLog.hpp"
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -23,34 +23,13 @@ namespace {
 
 namespace cs = calcu::settings;
 
-// The file guarded by a lock; the level is the outer log's (write() leaves
-// out what is above it), the file itself takes every line.
-class GuardedAppLog final : public applog::AppLog {
-public:
-    GuardedAppLog(std::string path, const std::string& header, applog::AppLogLevel level)
-        : AppLog(level), file_(std::move(path), header, applog::AppLogLevel::Debug, &mirror) {}
-    const applog::AppLogFile& file() const { return file_; }
-
-protected:
-    void put(applog::AppLogLevel l, std::string_view text) override {
-        const std::lock_guard<std::mutex> hold(lock_);
-        file_.write(l, text);
-    }
-
-private:
-    static void mirror(applog::AppLogLevel, const std::string& line) {
+void mirror(applog::AppLogLevel, const std::string& line) {
 #ifdef Q_OS_WIN
-        OutputDebugStringW(reinterpret_cast<const wchar_t*>(QString::fromStdString(line + "\n").utf16()));
+    OutputDebugStringW(reinterpret_cast<const wchar_t*>(QString::fromStdString(line + "\n").utf16()));
 #else
-        std::fputs((line + "\n").c_str(), stderr);
+    std::fputs((line + "\n").c_str(), stderr);
 #endif
-    }
-    std::mutex lock_;
-    applog::AppLogFile file_;
-};
-
-std::unique_ptr<GuardedAppLog> installed;
-std::optional<applog::AppLogLevel> runLevel;
+}
 
 applog::AppLogLevel levelOf(QtMsgType t) {
     switch (t) {
@@ -64,7 +43,7 @@ applog::AppLogLevel levelOf(QtMsgType t) {
 }
 
 void qtMessage(QtMsgType type, const QMessageLogContext&, const QString& msg) {
-    appLog().write(levelOf(type), msg.toStdString());
+    shell::hostAppLog().write(levelOf(type), msg.toStdString());
     if (type == QtFatalMsg) std::abort();
 }
 
@@ -80,7 +59,7 @@ void terminated() {
     } else {
         what = "no exception (std::terminate was called)";
     }
-    appLog().error("The app ended: " + what);
+    shell::hostAppLog().error("The app ended: " + what);
     std::abort();
 }
 
@@ -103,27 +82,10 @@ std::string platformPath(const std::string& productName) {
 
 void installAppLog(const std::string& productName, const std::string& version, const std::string& build, int argc,
                    char** argv) {
-    std::string badLevel;
-    for (int i = 1; i + 1 < argc; ++i)
-        if (std::strcmp(argv[i], "--app-log-level") == 0) {
-            runLevel = applog::appLogLevelNamed(argv[i + 1]);
-            if (!runLevel) badLevel = argv[i + 1];
-        }
-    std::string header = productName + " " + version + " (" + build + ")";
-    for (const auto& [label, value] : hostSupportRows())
-        if (!value.empty()) header += ", " + label + ": " + value;
-    installed = std::make_unique<GuardedAppLog>(platformPath(productName), header,
-                                                runLevel.value_or(applog::defaultAppLogLevel()));
-    if (!installed->file().problem().empty()) std::fprintf(stderr, "%s\n", installed->file().problem().c_str());
-    if (!badLevel.empty()) installed->warn("--app-log-level takes error, warn, info or debug, not " + badLevel + ".");
+    shell::installHostAppLog(platformPath(productName), applog::headerLine(productName, version, build, hostSupportRows()),
+                             std::vector<std::string>(argv, argv + argc), &mirror);
     qInstallMessageHandler(qtMessage);
     std::set_terminate(terminated);
 }
-
-applog::AppLog& appLog() { return installed ? static_cast<applog::AppLog&>(*installed) : applog::nullAppLog(); }
-
-std::optional<applog::AppLogLevel> appLogLevelOfRun() { return runLevel; }
-
-QString appLogFilePath() { return installed ? QString::fromStdString(installed->file().path()) : QString(); }
 
 } // namespace calcu::qt6

@@ -96,7 +96,7 @@ TEST(saved_file_with_bundled_name_not_listed_and_logged) {
     }));
     const KindState* k = f.state()->kindState("test-disk");
     CHECK(k && k->instances.empty() && k->templates.size() == 1);
-    CHECK(hasLine(f.appLogLines(), "copy.testdisk.yaml carries the name of a bundled test disk"));
+    CHECK(hasLine(f.appLog.take(), "copy.testdisk.yaml carries the name of a bundled test disk"));
 }
 
 TEST(module_slot_one_list_of_names) {
@@ -166,10 +166,10 @@ TEST(unreadable_medium_not_listed_one_log_line_per_start) {
     }));
     const KindState* k = f.state()->kindState("test-disk");
     CHECK(k && k->instances.size() == 1 && k->instances[0].name == "Good");
-    const auto lines = f.appLogLines();
+    const auto lines = f.appLog.take();
     CHECK(hasLine(lines, "The test disk file Broken.testdisk.yaml cannot be read: It is not a test-disk file."));
     CHECK(f.ok("media.refresh"));
-    CHECK(!hasLine(f.appLogLines(), "Broken.testdisk.yaml"));   // once per start
+    CHECK(!hasLine(f.appLog.take(), "Broken.testdisk.yaml"));   // once per start
 }
 
 namespace {

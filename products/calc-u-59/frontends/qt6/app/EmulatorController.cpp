@@ -7,7 +7,7 @@
 #include "TIMagneticCardKind.hpp"
 #include "control/ControlState.hpp"
 #include "debugger/RunState.hpp"
-#include "qt6/AppLogSink.hpp"
+#include "shell/HostAppLog.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "shell/Inputs.hpp"
 #include "typing/TypingTopics.hpp"
@@ -69,8 +69,8 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
     calcu::shell::HostSessionSetup host;
     host.settings = &settings;
     host.clock = clock;
-    host.appLog = &calcu::qt6::appLog();
-    host.appLogLevel = calcu::qt6::appLogLevelOfRun();
+    host.appLog = &calcu::shell::hostAppLog();
+    host.appLogLevel = calcu::shell::hostAppLogLevelOfRun();
     cs::HostServices services;
     services.offered = {cs::HostService::ClipboardImage, cs::HostService::ClipboardText, cs::HostService::OpenUrl};
     services.clipboardInSteps = true;

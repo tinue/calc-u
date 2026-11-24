@@ -21,9 +21,9 @@ fs::path olderOf(const fs::path& p) {
 }
 } // namespace
 
-AppLogFile::AppLogFile(std::string path, std::string_view header, AppLogLevel level,
+AppLogFile::AppLogFile(std::string path, std::string_view header,
                        std::function<void(AppLogLevel, const std::string&)> mirror, std::uintmax_t rotateAt)
-    : AppLog(level), path_(std::move(path)), mirror_(std::move(mirror)) {
+    : path_(std::move(path)), mirror_(std::move(mirror)) {
     const fs::path p = utf8Path(path_);
     std::error_code ec;
     if (p.has_parent_path()) fs::create_directories(p.parent_path(), ec);
@@ -42,7 +42,7 @@ AppLogFile::AppLogFile(std::string path, std::string_view header, AppLogLevel le
     append(AppLogLevel::Info, formatLine(std::chrono::system_clock::now(), AppLogLevel::Info, header));
 }
 
-void AppLogFile::put(AppLogLevel l, std::string_view text) {
+void AppLogFile::write(AppLogLevel l, std::string_view text) {
     append(l, formatLine(std::chrono::system_clock::now(), l, text));
 }
 

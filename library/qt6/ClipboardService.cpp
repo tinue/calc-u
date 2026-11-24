@@ -1,5 +1,5 @@
 #include "qt6/ClipboardService.hpp"
-#include "qt6/AppLogSink.hpp"
+#include "shell/HostAppLog.hpp"
 #include "qt6/MacClipboard.h"
 #include "sessions/Args.hpp"
 #include <QClipboard>
@@ -58,7 +58,7 @@ ServiceAnswer ClipboardService::answer(const ServiceAsk& ask) {
             delete m;
             if (macSetClipboardImage(image, image.width() * 72.0 / dpi, image.height() * 72.0 / dpi, text))
                 return ServiceAnswer{true, Value(), {}};
-            appLog().debug("Clipboard: the picture went through Qt, without its physical size (Cocoa did not take it).");
+            shell::hostAppLog().debug("Clipboard: the picture went through Qt, without its physical size (Cocoa did not take it).");
             m = imageEntry(ask.args, &problem);
             if (!m) return ServiceAnswer{false, Value(), problem.toStdString()};
         }

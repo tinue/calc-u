@@ -17,6 +17,7 @@
 #include "opening/OpenRequest.hpp"
 #include "Version.h"
 #include "qt6/AppLogSink.hpp"
+#include "shell/HostAppLog.hpp"
 #include "qt6/FileOpening.hpp"
 #include "qt6/MacHost.hpp"
 #ifdef CALCU_ATTACH
@@ -53,6 +54,10 @@ int main(int argc, char** argv) {
                                        QStringLiteral("Accept a debugger on 127.0.0.1:<port> for this run (Settings unchanged)."),
                                        QStringLiteral("port"));
     parser.addOption(dapOption);
+    // Read by installAppLog before Qt; declared so that parse() takes it.
+    parser.addOption(QCommandLineOption(QStringLiteral("app-log-level"),
+                                        QStringLiteral("The app log's level for this run: error, warn, info or debug."),
+                                        QStringLiteral("level")));
 #ifdef CALCU_ATTACH
     // Development and test builds offer harness attach
     // (`--attach-port N`, else 59059; 0: the system picks); the screenshot
@@ -94,7 +99,7 @@ int main(int argc, char** argv) {
     const auto applyDapPort = [&dapPort](MachineController* controller) {
         if (!dapPort || !controller) return;
         if (const std::optional<std::string> refused = controller->setDapRunPort(*dapPort))
-            calcu::qt6::appLog().warn("--dap " + std::to_string(*dapPort) + ": " + *refused);
+            calcu::shell::hostAppLog().warn("--dap " + std::to_string(*dapPort) + ": " + *refused);
     };
 
 #ifdef CALCU_ATTACH
@@ -114,7 +119,7 @@ int main(int argc, char** argv) {
         const std::string attachProblem =
             window.host().openAttach(*attachProduct, calcu::qt6::SessionHost::attachPortFrom(QCoreApplication::arguments()),
                                      window.controller()->app().libraryParts());
-        if (!attachProblem.empty()) calcu::qt6::appLog().warn("The harness attach is not open: " + attachProblem);
+        if (!attachProblem.empty()) calcu::shell::hostAppLog().warn("The harness attach is not open: " + attachProblem);
 #endif
         window.start();
         fileOpen.setHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });

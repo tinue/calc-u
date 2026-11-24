@@ -1,6 +1,6 @@
 #include "qt6/Shell.hpp"
 #include "media/MediaTopics.hpp"
-#include "qt6/AppLogSink.hpp"
+#include "shell/HostAppLog.hpp"
 #include "qt6/FaceplateInput.hpp"
 #include "qt6/NameAndSaveDialog.hpp"
 #include "qt6/PanelArea.hpp"
@@ -333,9 +333,9 @@ void Shell::openHelp() {
 
 // The app log's file in the platform's viewer (Console on macOS).
 void Shell::showAppLog() {
-    const QString path = appLogFilePath();
+    const QString path = QString::fromStdString(shell::hostAppLogPath());
     if (path.isEmpty()) return;
-    if (!choosers_.openUrl(QUrl::fromLocalFile(path))) appLog().warn("The app log " + path.toStdString() + " could not be shown.");
+    if (!choosers_.openUrl(QUrl::fromLocalFile(path))) shell::hostAppLog().warn("The app log " + path.toStdString() + " could not be shown.");
 }
 
 QString Shell::startFolder(const std::string& kind) const {

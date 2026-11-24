@@ -88,12 +88,12 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
         } else if (a == "--app-log-level") {
             auto v = value("--app-log-level");
             if (!v) return 2;
-            const auto l = applog::appLogLevelNamed(*v);
-            if (!l) {
-                io.err("--app-log-level takes error, warn, info or debug: " + *v + "\n");
+            const applog::RunAppLogLevel l = applog::appLogLevelOfArgument(*v);
+            if (!l.level) {
+                io.err(l.problem + "\n");
                 return 2;
             }
-            options.appLogLevel = *l;
+            options.appLogLevel = *l.level;
         } else if (a == "--clock") {
             auto v = value("--clock");
             if (!v) return 2;

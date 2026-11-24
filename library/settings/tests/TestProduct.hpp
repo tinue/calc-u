@@ -2,6 +2,7 @@
 #include "Files.hpp"
 #include "TempFolder.hpp"
 #include "settings/Declaration.hpp"
+#include "settings/WindowPlace.hpp"
 #include <atomic>
 #include <chrono>
 #include <filesystem>
@@ -47,7 +48,10 @@ inline const ProductDecl& testProduct() {
             family::openFolder("presets"),
             family::openFolder("programs"),
             family::windowNumber("width", 900),
+            family::windowFlag(kPaperOwnWindowKey, "The paper in its own window."),
         };
+        for (KeyDecl& k : family::windowPlace(kPaperWindowPrefix, kPaperWindowWidth, kPaperWindowHeight))
+            d.keys.push_back(std::move(k));
         KeyDecl flag = testKey("test", "flag", ValueKind::Boolean, "false");
         flag.help = "A boolean.";
         KeyDecl style = testKey("test", "style", ValueKind::Choice, "one", {"one", "two"});

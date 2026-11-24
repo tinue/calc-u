@@ -3,9 +3,12 @@
 #include <QEvent>
 #include "control/ControlState.hpp"
 #include "qt6/PaperPanel.hpp"
+#include "qt6/PaperWindow.hpp"
+#include "settings/WindowPlace.hpp"
 #include "qt6/SessionHost.hpp"
 #include "shell/ObjectNames.hpp"
 #include <QHBoxLayout>
+#include <utility>
 
 namespace calcu::qt6 {
 
@@ -17,6 +20,7 @@ PanelArea::PanelArea(SessionHost& host, QWidget* parent) : QWidget(parent), host
     factories_["paper"] = [this](QWidget* p) -> QWidget* {
         auto* panel = new PaperPanel(p);
         panel->setSender([this](const sessions::CommandName& n, sessions::Value a) { host_.send(n, std::move(a)); });
+        connect(panel, &PaperPanel::ownWindowRequested, this, &PanelArea::setPaperOwnWindow);
         return panel;
     };
     // The paper panel is there from the start, so it takes the paper topics
@@ -25,6 +29,47 @@ PanelArea::PanelArea(SessionHost& host, QWidget* parent) : QWidget(parent), host
     QWidget* paper = factories_["paper"](this);
     panels_["paper"] = paper;
     layout_->addWidget(paper, 1);
+}
+
+PanelArea::~PanelArea() { delete paperWindow_; }   // a top-level window of its own, with the paper panel in it
+
+void PanelArea::offerPaperOwnWindow(settings::SettingsFile* file, QString title) {
+    ownWindowOffered_ = true;
+    windowFile_ = file;
+    windowTitle_ = std::move(title);
+    if (auto* paper = qobject_cast<PaperPanel*>(panel("paper"))) paper->setOwnWindowOffered(true);
+}
+
+void PanelArea::setPaperOwnWindow(bool own) {
+    auto* paper = qobject_cast<PaperPanel*>(panel("paper"));
+    if (!paper || !ownWindowOffered_ || own == paperOwnWindow()) return;
+    if (own) {
+        paperIndex_ = layout_->indexOf(paper);
+        layout_->removeWidget(paper);
+        paperWindow_ = new PaperWindow(windowFile_, windowTitle_, window());
+        paperWindow_->take(paper);
+        connect(paperWindow_, &PaperWindow::closed, this, [this] { setPaperOwnWindow(false); });
+        styleChrome();
+        paperWindow_->show();
+        paperWindow_->raise();
+        paperWindow_->activateWindow();
+    } else {
+        PaperWindow* w = std::exchange(paperWindow_, nullptr);
+        w->savePlace();
+        w->release(paper);
+        paper->setParent(this);
+        layout_->insertWidget(paperIndex_, paper, 1);   // back where it was among the panels
+        paper->setVisible(!left_["paper"]);
+        w->hide();
+        w->deleteLater();
+    }
+    paper->setOwnWindow(own);
+    if (windowFile_) windowFile_->set("window", settings::kPaperOwnWindowKey, own ? "true" : "false");
+    emit paperOwnWindowChanged(own);
+}
+
+void PanelArea::closePaperWindow() {
+    if (paperWindow_) paperWindow_->hideKeepingOwn();
 }
 
 void PanelArea::registerPanel(std::string kind, Factory f) {
@@ -67,12 +112,13 @@ void PanelArea::set(const std::vector<shell::Panel>& panels) {
                 paper->setPlaces(std::move(places));
             }
         }
-        w->setVisible(!left_[p.kind]);
+        if (!(paperWindow_ && p.kind == "paper")) w->setVisible(!left_[p.kind]);   // in its own window: always shown
     }
 }
 
 void PanelArea::setShown(const std::string& kind, bool shown) {
     left_[kind] = !shown;
+    if (paperWindow_ && kind == "paper") return;   // in its own window: always shown
     if (QWidget* w = panel(kind)) w->setVisible(shown);
 }
 
@@ -84,6 +130,7 @@ void PanelArea::setChrome(const shell::Chrome* c) {
 void PanelArea::styleChrome() {
     if (!chrome_) return;
     const shell::ChromeColours& c = chrome_->colours(chrome::darkAppearance(this));
+    if (paperWindow_) paperWindow_->setBackground(chrome::qcolour(c.window));
     for (auto& [kind, w] : panels_)
         if (auto* paper = qobject_cast<PaperPanel*>(w)) paper->setChrome(c, chrome_->sizes);
 }

@@ -7,6 +7,8 @@
 #include "qt6/MediaPicker.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
+#include "qt6/PaperWindow.hpp"
+#include "settings/WindowPlace.hpp"
 #include "qt6/RunControlButtons.hpp"
 #include "qt6/ShellControlBar.hpp"
 #include "qt6/ShellSettingsDialog.hpp"
@@ -760,4 +762,90 @@ TEST(bar_fitted_below_a_faceplate) {
     w.settle();
     CHECK(!bar->showsLabels() && !label->isVisibleTo(bar) && !more->text().contains(QStringLiteral("More")));
     CHECK(std::abs(bar->maximumWidth() - bar->sizeHint().width()) < 4);
+}
+
+// The paper's own window: the same panel moved there and back, its place
+// and the setting in the settings file; closing it puts the paper back.
+TEST(paper_own_window_moves_the_panel_and_remembers) {
+    TestWindow w(true, TestWindow::defaultOptions(), {}, true);
+    w.window.resize(600, 400);
+    w.window.show();
+    w.settle();
+    auto* area = w.find<qt6::PanelArea>(names::kPanelArea);
+    auto* paper = qobject_cast<qt6::PaperPanel*>(area->panel("paper"));
+    auto* button = paper->findChild<QToolButton*>(QStringLiteral("paper-window"));
+    CHECK(button && button->isVisible());
+    CHECK_EQ(button->toolTip().toStdString(), std::string("Open in Own Window"));
+    w.command("tsp.plug", Value::object({{"place", "printer"}, {"peripheral", "test-dotter"}}));
+    w.step();
+    int changes = 0;
+    QObject::connect(area, &qt6::PanelArea::paperOwnWindowChanged, [&changes] { ++changes; });
+
+    button->click();
+    w.settle();
+    CHECK(area->paperOwnWindow() && changes == 1);
+    qt6::PaperWindow* own = area->paperWindow();
+    CHECK(own && own->isVisible() && own->isWindow());
+    CHECK(paper->window() == own && area->panel("paper") == paper);   // the same panel, its paper kept
+    CHECK_EQ(own->windowTitle().toStdString(), std::string("Test-Product — Printer"));
+    CHECK_EQ(button->toolTip().toStdString(), std::string("Back to Main Window"));
+    CHECK(w.file.boolean("window", settings::kPaperOwnWindowKey));
+    // The control state's panels leave it shown in its own window.
+    area->setShown("paper", false);
+    w.part.publish("control-state", shell::test::controlValue());
+    w.step();
+    CHECK(paper->isVisible());
+    area->setShown("paper", true);
+
+    own->resize(333, 444);
+    own->move(120, 90);
+    w.settle();
+    own->close();   // closing the window puts the paper back
+    w.settle();
+    CHECK(!area->paperOwnWindow() && changes == 2);
+    CHECK(paper->window() == &w.window && paper->isVisible());
+    CHECK_EQ(button->toolTip().toStdString(), std::string("Open in Own Window"));
+    CHECK(!w.file.boolean("window", settings::kPaperOwnWindowKey));
+    const settings::WindowPlace place = settings::windowPlace(w.file, settings::kPaperWindowPrefix);
+    CHECK(place.width == 333 && place.height == 444 && place.x && place.y);
+}
+
+// The main window's close takes the paper's window with it, still its own:
+// the next start opens it again.
+TEST(paper_own_window_closes_with_main_window_and_comes_back) {
+    {
+        TestWindow w(true, TestWindow::defaultOptions(), {}, true);
+        w.window.show();
+        w.settle();
+        auto* area = w.find<qt6::PanelArea>(names::kPanelArea);
+        area->setPaperOwnWindow(true);
+        w.settle();
+        qt6::PaperWindow* own = area->paperWindow();
+        CHECK(own && own->isVisible());
+        w.window.close();
+        w.settle();
+        CHECK(area->paperOwnWindow() && own && !own->isVisible());
+        CHECK(w.file.boolean("window", settings::kPaperOwnWindowKey));
+    }
+    TestWindow again(true, TestWindow::defaultOptions(), {}, true);
+    again.settle();
+    auto* area = again.find<qt6::PanelArea>(names::kPanelArea);
+    CHECK(!area->paperOwnWindow());
+    again.file.set("window", settings::kPaperOwnWindowKey, "true");   // as the last run left it
+    again.shell->restorePaperWindow();
+    again.settle();
+    CHECK(area->paperOwnWindow() && area->paperWindow()->isVisible());
+}
+
+// Without the window settings (a mobile window, a test) there is no own
+// window and no button.
+TEST(paper_own_window_not_offered_without_settings) {
+    TestWindow w;
+    w.window.show();
+    w.settle();
+    auto* area = w.find<qt6::PanelArea>(names::kPanelArea);
+    auto* button = area->panel("paper")->findChild<QToolButton*>(QStringLiteral("paper-window"));
+    CHECK(button && !button->isVisible());
+    area->setPaperOwnWindow(true);
+    CHECK(!area->paperOwnWindow());
 }

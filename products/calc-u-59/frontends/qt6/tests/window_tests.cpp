@@ -419,6 +419,35 @@ TEST(narrow_window_pages_short_window_no_debugger) {
     CHECK(!f.w().paged() && calculator->isVisible() && panels->isVisible() && debug->isVisible() && !chevron->isVisible());
 }
 
+// The paper in its own window: the splitter keeps the calculator and the
+// debugger, which takes the room; the debugger beside the faceplate in a
+// window too narrow for three columns; no pages. Back: three columns.
+TEST(paper_own_window_debugger_takes_the_room) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f;
+    calcu::qt6::PanelArea* area = f.w().shell().panelArea();
+    QWidget* paper = area->panel("paper");
+    QWidget* debug = f.w().splitter()->widget(2);
+    auto* button = paper->findChild<QToolButton*>(QStringLiteral("paper-window"));
+    CHECK(button && button->isVisible());
+    if (!button) return;
+    f.w().resize(760, 900);   // the printer beside the faceplate, no room for the debugger too
+    f.run(50);
+    CHECK(!f.w().paged() && area->isVisible() && !debug->isVisible());
+    button->click();
+    f.run(50);
+    CHECK(area->paperOwnWindow() && paper->isVisible() && paper->window() != &f.w());
+    CHECK(!area->isVisible() && debug->isVisible() && !f.w().paged());
+    f.w().resize(400, 900);   // too narrow for the debugger: the calculator alone, no pages
+    f.run(50);
+    CHECK(!debug->isVisible() && f.w().splitter()->widget(0)->isVisible() && !f.w().pageChevron()->isVisible());
+    f.w().resize(1200, 900);
+    f.run(50);
+    button->click();
+    f.run(50);
+    CHECK(!area->paperOwnWindow() && area->isVisible() && paper->window() == &f.w() && debug->isVisible());
+}
+
 // ── The faceplate's input ─────────────────────────────────────────────────
 
 TEST(key_under_pointer_ti59_ti58) {

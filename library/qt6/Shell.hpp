@@ -1,5 +1,6 @@
 #pragma once
 #include "qt6/SessionHost.hpp"
+#include "settings/SettingsFile.hpp"
 #include "shell/BarModel.hpp"
 #include "shell/Chrome.hpp"
 #include "shell/HitMap.hpp"
@@ -47,6 +48,10 @@ struct ShellOptions {
     shell::Traits traits{true, true, false};
     shell::InputNames names{};
     std::function<void()> copyScreen;   // Edit ▸ Copy Screen, where the product has it
+    // The product's settings file, for the paper's own window on a desktop
+    // window: [window] paper-own-window and the window's place. None: the
+    // paper stays in the main window (no button).
+    settings::SettingsFile* windowSettings = nullptr;
 };
 
 // The file and folder dialogs and the browser (the tests replace them).
@@ -122,6 +127,14 @@ public:
     QString startFolder(const std::string& kind) const;
     void rememberFolder(const std::string& kind, const QString& file);
     const ShellChoosers& choosers() const { return choosers_; }
+    // The paper in its own window again where [window] paper-own-window
+    // says so (at the main window's first show).
+    void restorePaperWindow();
+
+protected:
+    // The main window shown (the paper's own window again, as last time)
+    // and closed (the paper's window goes with it).
+    bool eventFilter(QObject*, QEvent*) override;
 
 private:
     void refresh(const QString& topic);
@@ -156,6 +169,7 @@ private:
     std::function<QPointF()> origin_;
     QTimer* loadingTimer_;
     std::string runningModel_;
+    bool shownOnce_ = false;
 };
 
 } // namespace calcu::qt6

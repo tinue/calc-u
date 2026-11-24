@@ -94,6 +94,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 #endif
     calcu::qt6::ShellOptions options;
     options.copyScreen = [this] { copyScreen(); };
+    options.windowSettings = &AppSettings::settings().file();
     m_shell = new calcu::qt6::Shell(*this, host(), product(), cu1600::settingsSpec(true, serialPorts), std::move(options));
     m_shell->setChrome(cu1600::sharpChrome());
     auto* layout = new QVBoxLayout(central);
@@ -160,7 +161,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // Pay the audio backend's first-start cost right after startup.
     QTimer::singleShot(0, this, [this] { m_controller->attachAudio(m_audio->sink()); });
 
-    resize(AppSettings::windowSize());
+    // The main window's place and normal size as it was closed.
+    const calcu::settings::WindowPlace place = AppSettings::settings().windowPlace();
+    resize(static_cast<int>(place.width), static_cast<int>(place.height));
+    if (place.x && place.y) move(static_cast<int>(*place.x), static_cast<int>(*place.y));
+    connect(m_shell->panelArea(), &calcu::qt6::PanelArea::paperOwnWindowChanged, this, [this] { applyPanels(); });
     setFocus();
     setAcceptDrops(true);
 }
@@ -184,7 +189,10 @@ MainWindow::~MainWindow() {
 void MainWindow::start() { m_controller->start(); }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    AppSettings::setWindowSize(size());
+    // A maximised window comes back at its last normal size.
+    const QRect g = normalGeometry();
+    const QPoint at = isMaximized() || isFullScreen() ? g.topLeft() : pos();
+    AppSettings::settings().setWindowPlace({at.x(), at.y(), g.width(), g.height()});
     // What a medium still has to save is written when the session closes
     // (MachineController's destructor: AppSession::close()).
     QMainWindow::closeEvent(event);
@@ -643,7 +651,8 @@ void MainWindow::applyPanels() {
         if (calcu::shell::read::text(p, "kind") == "paper")
             if (const calcu::sessions::Value* o = p.find("owner")) paperOwner = calcu::shell::read::text(*o, "peripheral");
     const bool printer = calcu::shell::read::flag(productEntry(cs, cu1600::kCe158PrinterPanelEntry), "shown");
-    const bool paper = m_debuggerFits || !paperOwner.empty();
+    // The paper in its own window is never in the row: the INSPECTOR takes it.
+    const bool paper = !m_shell->panelArea()->paperOwnWindow() && (m_debuggerFits || !paperOwner.empty());
     m_panels->setShown("paper", paper);
     m_ce158Printer->setVisible(printer);
     m_inspector->setVisible(m_debuggerFits || !(paper || printer));

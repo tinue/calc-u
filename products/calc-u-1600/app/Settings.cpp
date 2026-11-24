@@ -46,8 +46,12 @@ cs::ProductDecl makeDecl() {
     d.keys.push_back(cs::family::serialLinkFolder());
     for (OpenFolder f : {OpenFolder::Samples, OpenFolder::Basic, OpenFolder::Assembly, OpenFolder::HostDrive})
         d.keys.push_back(cs::family::openFolder(openFolderKind(f)));
-    d.keys.push_back(cs::family::windowNumber("width", Settings::kDefaultWindowWidth));
-    d.keys.push_back(cs::family::windowNumber("height", Settings::kDefaultWindowHeight));
+    for (cs::KeyDecl& k : cs::family::windowPlace("", Settings::kDefaultWindowWidth, Settings::kDefaultWindowHeight))
+        d.keys.push_back(std::move(k));
+    d.keys.push_back(cs::family::windowFlag(cs::kPaperOwnWindowKey,
+                                            "The printer's paper in a window of its own: true or false (Qt6)."));
+    for (cs::KeyDecl& k : cs::family::windowPlace(cs::kPaperWindowPrefix, cs::kPaperWindowWidth, cs::kPaperWindowHeight))
+        d.keys.push_back(std::move(k));
     return d;
 }
 

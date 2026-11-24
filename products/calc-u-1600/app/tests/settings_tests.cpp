@@ -48,7 +48,11 @@ TEST(settings_declaration_keys_and_defaults) {
         {"debug.dap-port", "32168"},        {"serial.link-folder", ""},
         {"folders.presets", ""},            {"folders.basic-programs", ""},
         {"folders.machine-code", ""},       {"folders.host-drive", ""},
+        {"window.x", ""},                   {"window.y", ""},
         {"window.width", "900"},            {"window.height", "700"},
+        {"window.paper-own-window", "false"},
+        {"window.paper-x", ""},             {"window.paper-y", ""},
+        {"window.paper-width", "400"},      {"window.paper-height", "640"},
     };
     std::vector<std::pair<std::string, std::string>> actual;
     for (const cs::KeyDecl& k : d.keys) actual.emplace_back(k.section + "." + k.key, k.defaultValue);
@@ -59,8 +63,10 @@ TEST(settings_declaration_keys_and_defaults) {
     for (const cs::KeyDecl& k : d.keys)
         if (k.writtenByApp) byApp.insert(k.section + "." + k.key);
     CHECK((byApp == std::set<std::string>{"startup.last-model", "folders.presets", "folders.basic-programs",
-                                          "folders.machine-code", "folders.host-drive", "window.width",
-                                          "window.height"}));
+                                          "folders.machine-code", "folders.host-drive", "window.x", "window.y",
+                                          "window.width", "window.height", "window.paper-own-window",
+                                          "window.paper-x", "window.paper-y", "window.paper-width",
+                                          "window.paper-height"}));
 
     // [startup] model accepts last and the three models.
     const cs::KeyDecl* model = d.find("startup", "model");
@@ -142,14 +148,15 @@ TEST(window_size_default_900x700_and_kept) {
     {
         cs::SettingsFile file = cs::SettingsFile::open(cu1600::settingsDecl(), path);
         cu1600::Settings s(file);
-        CHECK(s.windowWidth() == 900 && s.windowHeight() == 700);
-        s.setWindowSize(1024, 640);
+        CHECK(s.windowPlace() == (cs::WindowPlace{std::nullopt, std::nullopt, 900, 700}));
+        s.setWindowPlace({-30, 40, 1024, 640});
     }
     cs::SettingsFile again = cs::SettingsFile::open(cu1600::settingsDecl(), path);
     cu1600::Settings s(again);
-    CHECK(s.windowWidth() == 1024 && s.windowHeight() == 640);
+    CHECK(s.windowPlace() == (cs::WindowPlace{-30, 40, 1024, 640}));
     const std::string text = readText(path);
     CHECK(text.find("width = 1024") != std::string::npos && text.find("height = 640") != std::string::npos);
+    CHECK(text.find("x = -30") != std::string::npos && text.find("y = 40") != std::string::npos);
 }
 
 // The first start has every default and writes the file at
@@ -182,7 +189,7 @@ TEST(first_start_defaults_and_writes_file) {
 
     cu1600::Settings s(file);
     CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
-    CHECK(s.windowWidth() == 900 && s.file().integer("debug", "dap-port") == 32168 && s.file().integer("trace", "max-file-size-mb") == 50);
+    CHECK(s.windowPlace().width == 900 && s.file().integer("debug", "dap-port") == 32168 && s.file().integer("trace", "max-file-size-mb") == 50);
 
     // The save folder is ~/Calc-U-1600 on Qt6.
     cu1600::AppPaths paths(s, dirs, cu1600::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});

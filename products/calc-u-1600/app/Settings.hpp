@@ -6,6 +6,7 @@
 #include "machine/Ids.hpp"
 #include "settings/Declaration.hpp"
 #include "settings/SettingsFile.hpp"
+#include "settings/WindowPlace.hpp"
 
 // ── Settings: Calc-U-1600's keys, and typed calls over the settings file ──
 //
@@ -56,16 +57,13 @@ public:
     // 1024-65535.
     static constexpr int kDefaultDapPort = 32168;
 
-    // [window] width / height -- last user-resized main-window size,
-    // restored on the next launch (default 900x700: the panels below the faceplate).
+    // [window] x / y / width / height -- the main window's place and its
+    // normal size, restored on the next launch (default 900x700: the panels
+    // below the faceplate).
     static constexpr int kDefaultWindowWidth = 900;
     static constexpr int kDefaultWindowHeight = 700;
-    int windowWidth() const { return static_cast<int>(m_file.integer("window", "width")); }
-    int windowHeight() const { return static_cast<int>(m_file.integer("window", "height")); }
-    void setWindowSize(int width, int height) {
-        m_file.set("window", "width", std::to_string(width));
-        m_file.set("window", "height", std::to_string(height));
-    }
+    calcu::settings::WindowPlace windowPlace() const { return calcu::settings::windowPlace(m_file, ""); }
+    void setWindowPlace(const calcu::settings::WindowPlace& p) { calcu::settings::setWindowPlace(m_file, "", p); }
 
     // [startup] model -- which model to boot into: "last" (the default)
     // reuses lastUsedModel(), or one of "PC-1500"/"PC-1500A"/"PC-1600"

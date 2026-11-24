@@ -15,7 +15,7 @@ namespace calcu::qt6::test {
 using namespace std::chrono_literals;
 
 TestWindow::TestWindow(bool withControlState, ShellOptions options,
-                       const std::function<void(shell::ShellProduct&)>& change)
+                       const std::function<void(shell::ShellProduct&)>& change, bool paperWindow)
     : file(settings::SettingsFile::open(settings::test::testProduct(), home.str() + "/settings/Test-Product.ini")),
       part(withControlState) {
     clock.step = 1ms;   // the pacer's full speed ends when its allowance is used up (ScriptedClock.hpp)
@@ -47,6 +47,7 @@ TestWindow::TestWindow(bool withControlState, ShellOptions options,
     auto product = shell::test::product();
     product.items[0].act = [this] { ++productActs; };
     if (change) change(product);
+    if (paperWindow) options.windowSettings = &file;
     shell = new Shell(window, *host, std::move(product), shell::familySections(settings::test::testProduct()), options);
     column->addWidget(faceplate);
     column->addWidget(shell->romsMissingView());

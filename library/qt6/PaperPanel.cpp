@@ -106,6 +106,36 @@ QIcon actionIcon(Action a, const QColor& on, const QColor& off) {
     return icon;
 }
 
+// The paper's own window: a window with an arrow out of it, or (in the
+// own window) an arrow back into the main window; in the pill's text
+// colour, drawn on a 16-point grid like Copy and Cut.
+QIcon ownWindowIcon(bool back, const QColor& colour) {
+    QPixmap pm = transparentPixmap(QSize(kActionIconPoints, kActionIconPoints));
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.scale(kActionIconPoints / 16.0, kActionIconPoints / 16.0);
+    QPen pen(colour, 1.4);
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    p.setPen(pen);
+    p.setBrush(Qt::NoBrush);
+    // The window, open at its top right where the arrow goes.
+    QPainterPath frame;
+    frame.moveTo(7.5, 2.5);
+    frame.lineTo(2.5, 2.5);
+    frame.lineTo(2.5, 13.5);
+    frame.lineTo(13.5, 13.5);
+    frame.lineTo(13.5, 8.5);
+    p.drawPath(frame);
+    const QPointF in(7.5, 8.5), out(14, 2);
+    const QPointF tip = back ? in : out, tail = back ? out : in;
+    p.drawLine(tail, tip);
+    const qreal d = back ? 4 : -4;   // the arrowhead's legs along the box's edges
+    p.drawLine(tip, tip + QPointF(0, -d));
+    p.drawLine(tip, tip + QPointF(d, 0));
+    return QIcon(pm);
+}
+
 // The platform's printer icon; Qt before 6.7 (Ubuntu 24.04's 6.4) knows
 // only the theme's name for it.
 QIcon printerIcon() {
@@ -144,7 +174,19 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     viewToggle_->setObjectName(QStringLiteral("paper-view-toggle"));
     viewToggle_->setCheckable(true);
     viewToggle_->setToolTip(tr("Switches between the marks and the text"));
-    header->addWidget(viewToggle_, 0, 2, Qt::AlignRight | Qt::AlignVCenter);
+    // The own-window button at the right edge, the view control (which
+    // comes and goes) left of it: the button never moves.
+    windowButton_ = new QToolButton(this);
+    windowButton_->setFocusPolicy(Qt::NoFocus);
+    windowButton_->setObjectName(QStringLiteral("paper-window"));
+    windowButton_->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    windowButton_->setIconSize(QSize(kActionIconPoints, kActionIconPoints));
+    windowButton_->hide();   // until the shell offers the own window (setOwnWindowOffered)
+    auto* right = new QHBoxLayout;
+    right->setContentsMargins(0, 0, 0, 0);
+    right->addWidget(viewToggle_);
+    right->addWidget(windowButton_);
+    header->addLayout(right, 0, 2, Qt::AlignRight | Qt::AlignVCenter);
     header->setColumnStretch(0, 1);
     header->setColumnStretch(2, 1);
     outer->addWidget(header_);
@@ -204,6 +246,8 @@ PaperPanel::PaperPanel(QWidget* parent) : QWidget(parent) {
     connect(toastTimer_, &QTimer::timeout, toast_, &QWidget::hide);
 
     connect(viewToggle_, &QToolButton::toggled, this, [this](bool on) { showText(on); });
+    connect(windowButton_, &QToolButton::clicked, this, [this] { emit ownWindowRequested(!ownWindow_); });
+    setOwnWindow(false);
     connect(copy_, &QToolButton::clicked, this, [this] {
         send(paper::kPaperCopyCommand, Value::object({{"owner", ownerName()}}));
     });
@@ -343,8 +387,10 @@ void PaperPanel::setChrome(const shell::ChromeColours& c, const shell::ChromeSiz
     pal.setColor(QPalette::Text, qcolour(c.named(shell::colour::kPaperText)));
     text_->setPalette(pal);
     const QIcon printer = printerIcon();
+    windowText_ = qcolour(c.pillText);
+    setOwnWindow(ownWindow_);
     for (QToolButton* b : header_->findChildren<QToolButton*>())
-        if (b != viewToggle_) b->setIcon(placeIcon(printer, b->isChecked() ? plugged_ : unplugged_));
+        if (b != viewToggle_ && b != windowButton_) b->setIcon(placeIcon(printer, b->isChecked() ? plugged_ : unplugged_));
     for (const auto& ctl : controls_)
         if (ctl.form == machine::ControlForm::Switch)
             if (auto* b = controlsBox_->findChild<QToolButton*>(QString::fromStdString("paper-control-" + ctl.id.value)))
@@ -363,6 +409,17 @@ void PaperPanel::applyCompact() {
     for (const auto& c : controls_)
         if (auto* b = controlsBox_->findChild<QToolButton*>(QString::fromStdString("paper-control-" + c.id.value)))
             b->setText(QString::fromStdString(compact_ ? c.shortLabel : c.label));
+}
+
+void PaperPanel::setOwnWindowOffered(bool offered) { windowButton_->setVisible(offered); }
+
+void PaperPanel::setOwnWindow(bool own) {
+    ownWindow_ = own;
+    const QString label = own ? tr("Back to Main Window") : tr("Open in Own Window");
+    windowButton_->setToolTip(label);
+    windowButton_->setAccessibleName(label);
+    windowButton_->setText(label);
+    windowButton_->setIcon(ownWindowIcon(own, windowText_.isValid() ? windowText_ : palette().color(QPalette::ButtonText)));
 }
 
 void PaperPanel::resizeEvent(QResizeEvent* e) {

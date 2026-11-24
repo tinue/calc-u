@@ -117,6 +117,31 @@ So a plot made on one model is still on the paper when you attach the
 same printer to another model. A paper feed without printing makes the
 paper longer, and the panel shows the blank paper.
 
+## The paper in its own window
+
+On a computer the paper panel can have a window of its own, which you
+move and size like any other window. The button at the right edge of
+the panel's header (a window with an arrow out of it, **Open in Own
+Window**) moves the panel there; the paper, the printer's controls, Copy
+and Cut go with it, and the paper stays as it was. The room the panel
+leaves in the main window goes to the product's other panels.
+
+In its own window the same button (**Back to Main Window**) moves the
+panel back; closing the window does the same. The paper still fills the
+width of its window and scrolls up and down.
+
+The product remembers where the panel is and the window's place and
+size: after a quit it starts with the paper in its own window again
+where you left it. In a browser the window is a small window of its own
+without the browser's address bar and menus; a browser that blocks such
+windows on a start keeps the paper in the page and says so, and the
+button opens it again. A window that you closed with the main window
+comes back on the next start; the machine pauses while the browser tab
+with the faceplate is hidden, as it does without a paper window.
+
+On a phone or a tablet, and in a page that embeds the product, the
+paper always stays in the main window.
+
 ## Copy and Cut
 
 - **Copy** puts a picture of the whole paper on the clipboard, at the

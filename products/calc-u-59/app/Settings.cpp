@@ -54,10 +54,8 @@ cs::ProductDecl makeDecl() {
                             "Feedback on a key press: off, haptic or click (Swift on iOS, Web)."));
     for (OpenFolder f : {OpenFolder::Presets, OpenFolder::AsmOverlays})
         d.keys.push_back(cs::family::openFolder(openFolderKind(f)));
-    d.keys.push_back(windowOptional("x", "window's left edge"));
-    d.keys.push_back(windowOptional("y", "window's top edge"));
-    d.keys.push_back(cs::family::windowNumber("width", WindowState{}.width));
-    d.keys.push_back(cs::family::windowNumber("height", WindowState{}.height));
+    for (cs::KeyDecl& k : cs::family::windowPlace("", WindowState{}.place.width, WindowState{}.place.height))
+        d.keys.push_back(std::move(k));
     d.keys.push_back(windowOptional("calculator-width", "calculator panel's width"));
     d.keys.push_back(windowOptional("printer-width", "printer panel's width"));
     d.keys.push_back(windowOptional("debug-width", "debug panel's width"));
@@ -69,6 +67,10 @@ cs::ProductDecl makeDecl() {
     debugPage.writtenByApp = true;
     debugPage.help = "The debugger as a third page in portrait: true or false (Swift on iOS).";
     d.keys.push_back(debugPage);
+    d.keys.push_back(cs::family::windowFlag(cs::kPaperOwnWindowKey,
+                                            "The printer's paper in a window of its own: true or false (Qt6)."));
+    for (cs::KeyDecl& k : cs::family::windowPlace(cs::kPaperWindowPrefix, cs::kPaperWindowWidth, cs::kPaperWindowHeight))
+        d.keys.push_back(std::move(k));
     return d;
 }
 
@@ -101,10 +103,7 @@ const char* openFolderKind(OpenFolder folder) {
 
 WindowState Settings::windowState() const {
     WindowState w;
-    w.x = number(m_file, "x");
-    w.y = number(m_file, "y");
-    w.width = number(m_file, "width").value_or(w.width);
-    w.height = number(m_file, "height").value_or(w.height);
+    w.place = cs::windowPlace(m_file, "");
     w.calculatorWidth = number(m_file, "calculator-width");
     w.printerWidth = number(m_file, "printer-width");
     w.debugWidth = number(m_file, "debug-width");
@@ -112,10 +111,7 @@ WindowState Settings::windowState() const {
 }
 
 void Settings::setWindowState(const WindowState& w) {
-    setNumber(m_file, "x", w.x);
-    setNumber(m_file, "y", w.y);
-    setNumber(m_file, "width", w.width);
-    setNumber(m_file, "height", w.height);
+    cs::setWindowPlace(m_file, "", w.place);
     setNumber(m_file, "calculator-width", w.calculatorWidth);
     setNumber(m_file, "printer-width", w.printerWidth);
     setNumber(m_file, "debug-width", w.debugWidth);

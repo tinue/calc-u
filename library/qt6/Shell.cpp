@@ -11,10 +11,12 @@
 #include "qt6/ShellMenus.hpp"
 #include "qt6/ShellNotices.hpp"
 #include "qt6/ShellSettingsDialog.hpp"
+#include "settings/WindowPlace.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QEvent>
 #include <QEventLoop>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -80,9 +82,32 @@ Shell::Shell(QMainWindow& window, SessionHost& host, shell::ShellProduct product
     connect(&host_, &SessionHost::topicChanged, this, [pending](const QString&) { pending->start(); });
     askPresetList();
     refresh(QString());
+    if (options_.windowSettings && !options_.traits.mobile) {
+        panels_->offerPaperOwnWindow(options_.windowSettings, q(product_.name) + QStringLiteral(" — Printer"));
+        window_.installEventFilter(this);
+    }
 }
 
 Shell::~Shell() = default;
+
+void Shell::restorePaperWindow() {
+    if (options_.windowSettings && options_.windowSettings->boolean("window", settings::kPaperOwnWindowKey))
+        panels_->setPaperOwnWindow(true);
+}
+
+bool Shell::eventFilter(QObject* o, QEvent* e) {
+    if (o == &window_) {
+        if (e->type() == QEvent::Show && !shownOnce_) {
+            shownOnce_ = true;
+            // After the main window has its place: the paper's window
+            // beside it where it has none of its own.
+            QTimer::singleShot(0, this, [this] { restorePaperWindow(); });
+        } else if (e->type() == QEvent::Close) {
+            panels_->closePaperWindow();
+        }
+    }
+    return QObject::eventFilter(o, e);
+}
 
 QWidget* Shell::controlBar() { return bar_; }
 

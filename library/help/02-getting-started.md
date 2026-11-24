@@ -62,7 +62,11 @@ greyed out; where the platform shows tooltips, its tooltip says why.
   ([Debugger](07-debugger.md)).
 - **`<Product>` Help** opens this help on calc-u.org in your browser.
   **About `<Product>`** shows the product's name, its version, its
-  build and links to its source and to support.
+  build and links to its source and to support, and under **Support
+  Information** when the build was made and what it runs on: the
+  operating system and the computer (in the browser: the browser, and
+  what the browser tells of the system). **Copy** puts the texts on the
+  clipboard as plain text, without the links: paste them into a bug report.
 
 On macOS, Settings…, About and Quit are in the application menu, as on
 every Mac program. In the browser there is no Quit.

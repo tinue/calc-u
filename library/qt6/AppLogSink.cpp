@@ -1,7 +1,6 @@
 #include "qt6/AppLogSink.hpp"
 
 #include <QDir>
-#include <QSysInfo>
 #include <QtGlobal>
 #include <cstdio>
 #include <cstdlib>
@@ -11,6 +10,7 @@
 #include <mutex>
 
 #include "applog/AppLogFile.hpp"
+#include "qt6/HostInfo.hpp"
 #include "settings/PlatformBase.hpp"
 
 #ifdef Q_OS_WIN
@@ -109,9 +109,9 @@ void installAppLog(const std::string& productName, const std::string& version, c
             runLevel = applog::appLogLevelNamed(argv[i + 1]);
             if (!runLevel) badLevel = argv[i + 1];
         }
-    const std::string header = productName + " " + version + " (" + build + ") " +
-                               QSysInfo::prettyProductName().toStdString() + ", " +
-                               QSysInfo::currentCpuArchitecture().toStdString();
+    std::string header = productName + " " + version + " (" + build + ")";
+    for (const auto& [label, value] : hostSupportRows())
+        if (!value.empty()) header += ", " + label + ": " + value;
     installed = std::make_unique<GuardedAppLog>(platformPath(productName), header,
                                                 runLevel.value_or(applog::defaultAppLogLevel()));
     if (!installed->file().problem().empty()) std::fprintf(stderr, "%s\n", installed->file().problem().c_str());

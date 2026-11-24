@@ -38,6 +38,7 @@ const SPLITTERS = 1 + 5;  // the line after the calculator, the divider before t
 const MENU_HEIGHT = 26;
 const CALC_VERSION = "__CALC_VERSION__";
 const CALC_BUILD = "__CALC_BUILD__";   // tools/build-id.cmake
+const CALC_BUILD_TIME = "__CALC_BUILD_TIME__";
 
 /// The artwork's width that `height` leaves room for, and the column height for an artwork width.
 const faceWidthFor = (height) => (height - CHROME_SIZES.barHeight - 2 * FACE_PADDING) * CANVAS_ASPECT;
@@ -296,7 +297,7 @@ function CalcU59(props) {
   // No Copy Screen.
   const { product, chrome } = useShellProduct(shell, {
     request: "c59.shell-product", args: { layout: portrait ? "portrait" : "wide", version: CALC_VERSION, build: CALC_BUILD },
-    fallback: C59_NO_PRODUCT, version: CALC_VERSION, build: CALC_BUILD, copyScreen: null, openFiles,
+    fallback: C59_NO_PRODUCT, version: CALC_VERSION, build: CALC_BUILD, buildTime: CALC_BUILD_TIME, copyScreen: null, openFiles,
     acts: { "arm-card": () => setCardDialog("arm"), "arm-fresh-card": () => setCardDialog("fresh") },
   });
   // The product's chrome (app/TIChrome) as the root's custom properties.

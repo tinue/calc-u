@@ -5,7 +5,7 @@
 
 namespace calcu::shell {
 
-AboutModel about(const ShellProduct& p) {
+AboutModel about(const ShellProduct& p, const SupportRows& host) {
     AboutModel a;
     a.title = p.aboutLabel.empty() ? "About " + p.name : p.aboutLabel;
     // "About Calc-U-1600…" as a menu label: the dialog's title has no ellipsis.
@@ -16,7 +16,20 @@ AboutModel about(const ShellProduct& p) {
     a.version = "Version " + p.version + (p.build.empty() ? std::string() : " (" + p.build + ")");
     a.lines = p.aboutLines;
     a.links = p.aboutLinks;
+    if (!p.buildTime.empty()) a.support.emplace_back("Built", p.buildTime);
+    for (const auto& row : host)
+        if (!row.second.empty()) a.support.push_back(row);
     return a;
+}
+
+std::string aboutText(const AboutModel& a) {
+    std::string out = a.name + "\n" + a.version + "\n";
+    for (const auto& line : a.lines) out += line + "\n";
+    if (!a.support.empty()) {
+        out += std::string("\n") + kSupportHeading + "\n";
+        for (const auto& [label, value] : a.support) out += label + ": " + value + "\n";
+    }
+    return out;
 }
 
 std::string nameAndSavePrompt(const ShellProduct& p, const std::string& place) {

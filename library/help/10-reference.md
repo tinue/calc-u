@@ -105,7 +105,8 @@ has finished, unless a `skip-wait:` stands between them.
 | `screenshot` | a file name, without `/` or `\` | saves a picture of the display into the save folder; on the Web, as a download |
 | `trace` | a file name, without `/` or `\`, or `off` | starts or ends a trace ([Debugger](07-debugger.md#traces)) |
 | `elapsed-time` | `start` or `report` | notes the emulated time, or writes the time since then (or since the preset started) to the log as `m:ss.mmm` |
-| `cut-paper` | none | cuts the paper of the printer that is plugged in; without one, nothing happens |
+| `cut-paper` | none | copies the paper of the printer that is plugged in to the clipboard, then cuts it (in the browser it only cuts); without one, nothing happens |
+| `copy-paper` | none | copies the paper of the printer that is plugged in to the clipboard (in the browser it does nothing); without one, nothing happens |
 | `saveas` | `{ place: …, as: live\|template, name: … }` or `file:` instead of `name:` | Name & Save of the medium or module at a place ([Media](04-media.md)) |
 | `pause`, `pause-on-start`, `step`, `resume`, `debug-panel` | as in [Debugger](07-debugger.md#debugger-steps-in-a-preset) | drive the debugger, where the product defines them |
 

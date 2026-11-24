@@ -129,7 +129,8 @@ and [DiskWorks.pc1600](https://github.com/tinue/calc-u/blob/main/products/calc-u
 | `- screenshot: shot.png` | Saves the LCD's picture, as Copy Screen does, in the save folder; in the browser it is a download |
 | `- sync-clock:` | Sets the computer's clock from your computer's. Put it last: a preset runs at full speed, so the clock runs ahead |
 | `- trace: run.bin` / `- trace: off` | Starts or stops a CPU trace ([Debugger](07-debugger.md)) |
-| `- cut-paper:` | Cuts the paper of the plotter that is plugged in |
+| `- cut-paper:` | Copies the paper of the plotter that is plugged in to the clipboard, then cuts it; in the browser it only cuts |
+| `- copy-paper:` | Copies the paper of the plotter that is plugged in to the clipboard; in the browser it does nothing |
 
 The debugger steps of the family (`pause:`, `step:`, `resume:`) are not
 available on the Sharp models.

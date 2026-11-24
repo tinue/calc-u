@@ -61,8 +61,8 @@ void PaperPart::attach(SessionSetup& s) {
         if (!f.paper) return Refused{f.refusal};
         return copy(c, *entryOf(f.paper), false);
     });
-    // Cut: copied, then cut, also when the copy did not succeed; the step
-    // cut-paper: without a copy (`copy: false`), also an empty paper.
+    // Cut: copied, then cut, also when the copy did not succeed; the
+    // harness's cut-paper without a copy (`copy: false`), also an empty paper.
     s.command(kPaperCutCommand, [this](const sessions::Value& a, SessionContext& c) -> CommandOutcome {
         sync(c);
         const Found f = find(c, ownerArg(a));
@@ -219,10 +219,20 @@ std::vector<std::pair<std::string, const Paper*>> PaperPart::papers() const {
 
 void PaperPart::cutPlugged(SessionContext& c) {
     sync(c);
-    if (Entry* e = plugged(c)) {
-        e->paper->cut();
-        publish();
+    Entry* e = plugged(c);
+    if (!e) return;
+    if (!e->paper->empty() && c.hostCopiesInSteps()) {
+        copy(c, *e, true);
+        return;
     }
+    e->paper->cut();
+    publish();
+}
+
+void PaperPart::copyPlugged(SessionContext& c) {
+    sync(c);
+    Entry* e = plugged(c);
+    if (e && !e->paper->empty() && c.hostCopiesInSteps()) copy(c, *e, false);
 }
 
 // The picture is made before the ask; a cut follows the ask, whatever the
@@ -270,29 +280,34 @@ CommandOutcome PaperPart::copy(SessionContext& c, Entry& e, bool cutAfter) {
 // ── the step and the conformance check ──────────────────────────────────
 
 namespace {
-class CutPaperItem final : public presets::Item {
+class PaperItem final : public presets::Item {
 public:
-    explicit CutPaperItem(PaperPart& p) : part_(p) {}
+    PaperItem(PaperPart& p, bool cut) : part_(p), cut_(cut) {}
     Task<presets::ItemResult> carryOut(presets::RunContext& run) override {
-        part_.cutPlugged(run.session());
+        if (cut_)
+            part_.cutPlugged(run.session());
+        else
+            part_.copyPlugged(run.session());
         co_return presets::ItemResult{};
     }
     presets::After after() const override { return presets::After::TakenEffect; }
     bool needsRunningMachine() const override { return false; }
-    std::string logText() const override { return "cut-paper"; }
+    std::string logText() const override { return cut_ ? "cut-paper" : "copy-paper"; }
 
 private:
     PaperPart& part_;
+    bool cut_;
 };
 } // namespace
 
 void addPaperStep(presets::Vocabulary& v, PaperPart& part) {
     PaperPart* p = &part;
-    v.add(presets::StepDef{"cut-paper", presets::StepDef::Value::None,
-                           [p](const formats::YamlNode&, presets::ReadContext&) -> std::unique_ptr<presets::Item> {
-                               return std::make_unique<CutPaperItem>(*p);
-                           },
-                           false, false});
+    for (const bool cut : {true, false})
+        v.add(presets::StepDef{cut ? "cut-paper" : "copy-paper", presets::StepDef::Value::None,
+                               [p, cut](const formats::YamlNode&, presets::ReadContext&) -> std::unique_ptr<presets::Item> {
+                                   return std::make_unique<PaperItem>(*p, cut);
+                               },
+                               false, false});
 }
 
 std::optional<std::string> checkPaperOutput(machine::Machine& m, const PeripheralId& printer, const PaperDescription& d) {

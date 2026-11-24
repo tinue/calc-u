@@ -41,6 +41,9 @@ inline std::optional<HostService> serviceNamed(std::string_view name) {
 struct HostServices {
     std::set<HostService> offered;
     bool recordsSound = false;   // a host that records all sound instead of playing it (the harness)
+    // The clipboard may be written without the user's gesture, by a preset
+    // step: Qt and iOS. Never the Web, whose browsers write it only in one.
+    bool clipboardInSteps = false;
     bool offers(HostService s) const { return offered.count(s) != 0; }
 };
 

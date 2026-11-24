@@ -462,7 +462,8 @@ Their meaning is the subject of [§6](#6-speed-and-waiting).
 | Step | Where | Meaning |
 |---|---|---|
 | `printer-trace: on` / `off` | [59] | Set the PC-100C's TRACE switch (the paper trace, not a CPU trace). Needs `printer: PC-100C`. Without the step, TRACE is off after the build |
-| `cut-paper:` | [both] | Cut the paper of the printer that is plugged in, as the GUI's Cut Paper does. Each printer keeps its own paper; the others stay as they are. Without a printer: no effect. Never fails |
+| `cut-paper:` | [both] | Cut the paper of the printer that is plugged in, as the GUI's Cut Paper does: its picture and text go to the clipboard first, then it is cut. On the Web, and in a host without a clipboard (the harness), it is only cut. Each printer keeps its own paper; the others stay as they are. Without a printer: no effect. Never fails |
+| `copy-paper:` | [both] | Copy the paper of the printer that is plugged in to the clipboard, as the GUI's Copy Paper does; the paper stays. On the Web, and in a host without a clipboard, and on an empty paper: no effect. Without a printer: no effect. Never fails |
 
 ### 5.6 Debugger
 
@@ -633,7 +634,7 @@ then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 | `program` | keycodes | keycodes | keycodes | BASIC, code | BASIC, code | BASIC, code |
 | `data` | ✓ | ✓ | ✓, with H00–H03 | undefined | undefined | undefined |
 | `partition`, `cue-card` | ✓ | ✓ | ✓ | | | |
-| `keys`, `key`, speed steps, `wait`, `skip-wait`, `let-it-finish`, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper`, `not-expect` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `keys`, `key`, speed steps, `wait`, `skip-wait`, `let-it-finish`, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper`, `copy-paper`, `not-expect` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `type`, `sync-clock` | | | | ✓ | ✓ | ✓ |
 | `card`, `arm` | ✓ | | | | | |
 | `saveas` | `card` | | | `slot-1`, `cassette` | `slot-1`, `cassette` | `slot-1`, `slot-2`, `floppy`, `cassette` |

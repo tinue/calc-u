@@ -292,6 +292,7 @@ cs::HostServices statedServices() {
     cs::HostServices services;
     services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage, cs::HostService::FilePicker,
                         cs::HostService::KeepFile, cs::HostService::OpenUrl, cs::HostService::Haptics};
+    services.clipboardInSteps = true;
     return services;
 }
 

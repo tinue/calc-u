@@ -299,8 +299,8 @@ Each replies `done` or `refused: <reason>` when its operation has ended.
   other steps whose value is raw is the rest of the line as written.
   `screenshot` writes into the output folder.
 - Steps that are no command of their own name: `key`, `type`, `wait`,
-  `full-speed`, `regular-speed` and `cut-paper` have the commands above
-  and below; `pause`, `resume`, `step`, `pause-on-start` and `trace` have
+  `full-speed`, `regular-speed`, `cut-paper` and `copy-paper` have the
+  commands above and below (`copy-paper` has `paper copy`); `pause`, `resume`, `step`, `pause-on-start` and `trace` have
   the debugger's commands (§5.5); `debug-panel` has none.
 
 ### 5.4 Paper, media, open
@@ -320,8 +320,8 @@ Each replies `done` or `refused: <reason>` when its operation has ended.
 | `open <path>` | `<as> <file>[ <detail>]` | `{as, file, detail}` |
 
 - `<printer>` is the owner's name in any case; without it, the printer
-  that is plugged in. `cut-paper` cuts without a copy; `paper cut` copies,
-  then cuts. A product without printers: `refused: <product name> has no
+  that is plugged in. `cut-paper` cuts without a copy, as the step does in
+  the harness, which offers no clipboard; `paper cut` copies, then cuts. A product without printers: `refused: <product name> has no
   printer.`
 - `media` reads the topic again first. `media delete` is its own
   confirmation. `media export` writes the medium's file at `<path>` and

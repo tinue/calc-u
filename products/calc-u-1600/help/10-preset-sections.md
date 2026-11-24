@@ -39,7 +39,7 @@ Both may appear any number of times, and are carried out in file order.
 
 `key:`, `type:`, `wait:`, `skip-wait:`, `let-it-finish:`, `full-speed:`,
 `regular-speed:`, `expect:`, `not-expect:`, `screenshot:`, `sync-clock:`,
-`trace:`, `elapsed-time:`, `cut-paper:`, and the media steps `floppy:`,
+`trace:`, `elapsed-time:`, `cut-paper:`, `copy-paper:`, and the media steps `floppy:`,
 `cassette:`, `eject:`, `saveas:` ([Presets](06-presets.md#media-steps)). The
 debugger steps `pause:`, `pause-on-start:`, `step:` and `resume:` are not
 available on these models.

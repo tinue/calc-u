@@ -84,7 +84,10 @@ listeners there are. The new one is then sent, at once:
    with `reset` and everything since that reset. A stream without
    history (`notices`, `paper-copies`) sends nothing.
 
-A listener states the host services it offers when it starts to listen.
+A listener states the host services it offers when it starts to listen,
+and whether it takes the clipboard from a preset step (`clipboardInSteps`,
+a write without the user's gesture): Qt and iOS do, the Web never does,
+since its browsers write the clipboard only in a gesture.
 Every message goes to the sink on the session's thread; whether the sink
 acts at once or queues is the sink's. After the session is closed no
 message goes out.
@@ -99,7 +102,7 @@ nothing is asked.
 |---|---|---|
 | `audio-sink` | (not asked: the listener gets the sound) | — |
 | `clipboard-text` | — | — |
-| `clipboard-image` | `paper.copy`, `paper.cut {copy: true}`: `{bytes (PNG), text?, name, dotsPerInch}` | `{textOnly?}` |
+| `clipboard-image` | `paper.copy`, `paper.cut {copy: true}`, and the steps `copy-paper` and `cut-paper` where the listener takes it from a step: `{bytes (PNG), text?, name, dotsPerInch}` | `{textOnly?}` |
 | `file-picker` | `media.import` without paths: `{accept (suffixes, comma-separated), multiple: true}` | an array of paths |
 | `folder-picker` | — | — |
 | `keep-file` | `media.export`: `{name, bytes, mediaType}` per file; a trace kept in memory: `{name, bytes, mediaType, kind: "trace"}`; `screenshot` without a folder: `{name, bytes}` | — |

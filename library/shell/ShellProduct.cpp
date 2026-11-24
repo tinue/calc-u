@@ -16,6 +16,7 @@ AboutModel about(const ShellProduct& p, const SupportRows& host) {
     a.version = "Version " + p.version + (p.build.empty() ? std::string() : " (" + p.build + ")");
     a.lines = p.aboutLines;
     a.links = p.aboutLinks;
+    if (!p.package.empty()) a.support.emplace_back("Package", p.package);
     if (!p.buildTime.empty()) a.support.emplace_back("Built", p.buildTime);
     for (const auto& row : host)
         if (!row.second.empty()) a.support.push_back(row);

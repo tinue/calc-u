@@ -125,7 +125,7 @@ qt_add_resources(CalcU59Qt "artwork" PREFIX "/img" FILES ${ARTWORK})
 set(CALCU59_QT_ARTWORK ${ARTWORK})
 
 target_include_directories(CalcU59Qt PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app ${CMAKE_CURRENT_BINARY_DIR}/generated)
-# generated/BuildId.h: the build ID (tools/build-id.cmake), at each build.
+# generated/BuildId.h (the build ID, the package) and BuildTime.cpp, at each build.
 calcu_build_id_header(CalcU59QtBuildId ${REPO_ROOT} CalcU59Qt)
 # The machine interface: the core implements calcu::machine.
 target_link_libraries(CalcU59Qt PRIVATE Qt6::Widgets calcu_library)
@@ -177,7 +177,7 @@ if(CALCU_TESTS)
   qt_add_resources(CalcU59QtTests "artwork" PREFIX "/img" FILES ${CALCU59_QT_ARTWORK})
   set_target_properties(CalcU59QtTests PROPERTIES AUTOMOC ON)
   calcu_qt6_moc_compat(CalcU59QtTests)
-  add_dependencies(CalcU59QtTests CalcU59QtBuildId)
+  calcu_use_build_id(CalcU59QtBuildId CalcU59QtTests)
   target_include_directories(CalcU59QtTests PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app tests ${CMAKE_CURRENT_BINARY_DIR}/generated
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
   target_link_libraries(CalcU59QtTests PRIVATE Qt6::Widgets calcu_library calcu_qt6 calcu_warnings)

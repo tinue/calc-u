@@ -1,6 +1,6 @@
 // ShellAbout -- the About dialog of the React set: the product's name, its version and build, the texts and
-// links the product gives, the Support Information (build time and what the browser tells of where the page
-// runs, calcuShellHostRows), Copy (about-copy: calcuShellAboutText, the visible texts as plain text) and OK.
+// links the product gives, the Support Information (build time, the page's address and what the browser
+// tells of where it runs, calcuShellHostRows), Copy (about-copy: calcuShellAboutText, the visible texts as plain text) and OK.
 // Name: about-dialog.
 
 function ShellAbout({ shell }) {
@@ -42,13 +42,13 @@ function ShellAbout({ shell }) {
 // Chromium's client hints when they come (the rows are the last part of the
 // dialog, so nothing above them moves).
 function useShellHostRows() {
-  const [rows, setRows] = React.useState(() => calcuShellHostRows(window.navigator, null));
+  const [rows, setRows] = React.useState(() => calcuShellHostRows(window.navigator, null, window.location));
   React.useEffect(() => {
     const hints = window.navigator.userAgentData;
     if (!hints || typeof hints.getHighEntropyValues !== "function") return undefined;
     let live = true;
     hints.getHighEntropyValues(["platformVersion", "architecture", "bitness", "model", "fullVersionList"])
-      .then((h) => { if (live) setRows(calcuShellHostRows(window.navigator, h)); })
+      .then((h) => { if (live) setRows(calcuShellHostRows(window.navigator, h, window.location)); })
       .catch(() => {});
     return () => { live = false; };
   }, []);

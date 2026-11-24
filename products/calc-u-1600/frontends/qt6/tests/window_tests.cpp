@@ -424,6 +424,8 @@ TEST(about_shows_name_version_summary_and_links) {
     CHECK(all.contains(QStringLiteral("pocket-computer emulator")));
     CHECK(all.contains(QStringLiteral("https://github.com/tinue/calc-u\"")));
     CHECK(all.contains(QStringLiteral("https://github.com/tinue/calc-u/issues")));
+    CHECK(all.contains(QStringLiteral("Package: ")));   // self-built here, the package jobs set theirs
+    CHECK(all.contains(QStringLiteral("Built: 20")));    // generated/BuildTime.cpp
     d->close();
 }
 

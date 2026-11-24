@@ -71,8 +71,15 @@ StartupPart::StartupPart(StartupSetup s) : setup_(s) {}
 
 void StartupPart::machineChanged(SessionContext& c) {
     // On every new machine, whoever built it. A file that is not writable
-    // keeps it until the product quits.
-    if (const Machine* m = c.machine()) setup_.settings.set("startup", "last-model", m->model().value);
+    // keeps it until the product quits (the start said why).
+    const Machine* m = c.machine();
+    if (!m) return;
+    const auto w = setup_.settings.set("startup", "last-model", m->model().value);
+    // Once: a write that fails fails the same way on every machine.
+    if (!w.ok && setup_.settings.writable() && !lastModelWarned_) {
+        lastModelWarned_ = true;
+        c.appLog().warn("Settings: [startup] last-model not saved: " + w.why());
+    }
 }
 
 void StartupPart::operationEnded(SessionContext& c) {
@@ -101,9 +108,13 @@ Task<OperationResult> StartupPart::buildFor(OperationContext& c, ModelId model, 
     case PresetLoad::Outcome::CannotLoad:
         s.notice("The startup preset of the " + model.value + " could not be loaded: " + load.reason + ". The " +
                  model.value + " starts as its built-in default machine.");
+        s.appLog().warn("The startup preset " + preset + " of the " + model.value + " could not be loaded: " +
+                        load.reason + "; the built-in default machine was started.");
         co_return co_await builtInDefault(c, model, origin);
     case PresetLoad::Outcome::FailedWhileRunning:   // the machine stays as far as it got
         s.notice("The startup preset of the " + model.value + " stopped: " + load.reason + ".");
+        s.appLog().warn("The startup preset " + preset + " of the " + model.value + " stopped: " + load.reason +
+                        "; the machine stays as far as the preset got.");
         co_return OperationResult{};
     case PresetLoad::Outcome::Built: break;
     }
@@ -158,12 +169,20 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
     setup.command(sessions::kStartCommand, [this, &cat](const Value& args, SessionContext& c) -> CommandOutcome {
         if (started_) return Refused{kStartedAlready};
         if (c.busy()) return anotherRuns();
-        if (!setup_.control.hasRoms() && setup_.romsMissing) return Refused{roms::describe(*setup_.romsMissing)};
+        if (!setup_.control.hasRoms() && setup_.romsMissing) {
+            const std::string missing = roms::describe(*setup_.romsMissing);
+            c.appLog().error("Cannot start: " + missing);
+            return Refused{missing};
+        }
         ModelId model{settings::startupModel(setup_.settings)};
         const std::string named = sessions::textArg(args, "model");
         if (!named.empty()) {
             if (const auto* m = machine::modelNamed(cat, named)) model = m->model;
-            else c.notice("There is no model \"" + named + "\"; the startup model is used.");
+            else {
+                c.notice("There is no model \"" + named + "\"; the startup model is used.");
+                c.appLog().warn("The start names the model \"" + named + "\", which the product does not have; the startup model, the " +
+                                model.value + ", is used.");
+            }
         }
         const std::string preset = sessions::textArg(args, "preset");
         started_ = true;

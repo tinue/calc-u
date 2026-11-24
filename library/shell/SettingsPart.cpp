@@ -12,6 +12,10 @@ using sessions::Value;
 using settings::KeyDecl;
 using settings::ValueKind;
 
+// The app log's line for a change that did not reach the file.
+std::string notSaved(std::string_view what, const settings::SettingsFile::WriteResult& w) {
+    return "Settings: " + std::string(what) + " not saved: " + w.why();
+}
 
 const char* kindName(const KeyDecl& d) {
     if (d.section == "folders") return "folder";
@@ -50,12 +54,14 @@ void SettingsPart::attach(sessions::SessionSetup& s) {
     topic_ = &s.stateTopic(kSettingsTopic);
     topic_->set(sessions::valuePayload("settings", state()));
     s.command(commands::kSetSetting, [this](const Value& a, sessions::SessionContext& c) { return set(a, c); });
-    s.command(commands::kRememberFolder, [this](const Value& a, sessions::SessionContext&) -> sessions::CommandOutcome {
+    s.command(commands::kRememberFolder, [this](const Value& a, sessions::SessionContext& c) -> sessions::CommandOutcome {
         const Value* kind = a.find("kind");
         const Value* folder = a.find("folder");
         if (!kind || !kind->string() || !folder || !folder->string())
             return sessions::Refused{"remember-folder needs kind and folder."};
-        settings::rememberOpenFolder(*setup_.file, *kind->string(), *folder->string());
+        const settings::SettingsFile::WriteResult w =
+            settings::rememberOpenFolder(*setup_.file, *kind->string(), *folder->string());
+        if (!w.ok) c.appLog().warn(notSaved("the open folder for " + *kind->string(), w));
         topic_->set(sessions::valuePayload("settings", state()));
         return sessions::Done{};
     });
@@ -145,8 +151,10 @@ sessions::CommandOutcome SettingsPart::set(const Value& args, sessions::SessionC
             return sessions::Refused{"\"" + text + "\" is not a value for [" + d->section + "] " + d->key + "."};
         w = f.set(d->section, d->key, text);
     }
-    if (!w.ok)   // kept for this run, and the user is told
+    if (!w.ok) {   // kept for this run, and the user is told
         c.notice("The setting holds until you quit; it was " + w.problem + ".");
+        c.appLog().warn(notSaved("[" + d->section + "] " + d->key, w));
+    }
     if (setup_.changed) setup_.changed(d->section, d->key);
     topic_->set(sessions::valuePayload("settings", state()));
     return sessions::Done{};

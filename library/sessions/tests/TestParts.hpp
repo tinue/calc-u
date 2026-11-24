@@ -158,6 +158,7 @@ public:
         AppSessionSetup s;
         s.clock = clock.fn();
         s.hostTime = [] { return std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50)); };
+        s.appLog = &appLog;
         s.parts = {&part};
         for (SessionPart* p : o.extraParts) s.parts.push_back(p);
         s.hosting = o.hosting;
@@ -206,6 +207,7 @@ public:
     Ticks ticks() const { return m ? m->tickCount() : 0; }
 
     ScriptedClock clock;
+    applog::MemoryAppLog appLog{applog::AppLogLevel::Debug};   // the session's app log, every level
     TestPart part;
     TestFrontend fe;
     std::unique_ptr<AppSession> session;

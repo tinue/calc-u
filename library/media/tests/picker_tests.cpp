@@ -98,12 +98,12 @@ TEST(file_of_another_version_not_listed) {
 
 TEST(unreadable_logged_once_per_start) {
     MediaFixture f(onDot());
-    const auto lines = f.logLines();
+    const auto lines = f.appLogLines();
     CHECK(std::count_if(lines.begin(), lines.end(), [](const std::string& l) {
               return l.find("Old.testdisk.yaml cannot be read: Its version is not known.") != std::string::npos;
           }) == 1);
     CHECK(f.ok("media.refresh"));
-    CHECK(!hasLine(f.logLines(), "Old.testdisk.yaml"));
+    CHECK(!hasLine(f.appLogLines(), "Old.testdisk.yaml"));
 }
 
 TEST(choose_writes_old_medium_first) {

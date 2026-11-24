@@ -142,6 +142,7 @@ CommandOutcome PresetsPart::loadPreset(const Value& args, SessionContext& c) {
     auto read = readPreset(*source, readSetup());
     if (auto* e = std::get_if<ReadError>(&read)) {
         readRefusal_ = true;
+        c.appLog().warn("The preset " + source->name() + " was not loaded: " + e->message);
         return Refused{e->message};
     }
     auto plan = std::make_shared<const LoadPlan>(std::get<LoadPlan>(std::move(read)));
@@ -151,7 +152,7 @@ CommandOutcome PresetsPart::loadPreset(const Value& args, SessionContext& c) {
 
 void PresetsPart::attach(sessions::SessionSetup& s) {
     for (const auto& d : vocabulary_.duplicates())
-        s.context().log("The preset keyword " + d + " was added twice; the second is not used.");
+        s.context().appLog().warn("The preset keyword " + d + " was added twice; the second is not used.");
 
     // Read and checked whole before the operation starts, after the busy
     // check: a refused preset never shows busy.
@@ -230,7 +231,7 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
         std::vector<std::string> left;
         auto reply = std::make_shared<PresetListReply>();
         reply->entries = presetList(*setup_.bundle, *setup_.rules, *setup_.catalogue, &left);
-        for (auto& l : left) c.log(std::move(l));   // the entries left out
+        for (auto& l : left) c.appLog().warn(l);   // the entries left out
         return sessions::replyGiven(std::move(reply));
     });
 }

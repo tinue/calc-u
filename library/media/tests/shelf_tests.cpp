@@ -96,7 +96,7 @@ TEST(saved_file_with_bundled_name_not_listed_and_logged) {
     }));
     const KindState* k = f.state()->kindState("test-disk");
     CHECK(k && k->instances.empty() && k->templates.size() == 1);
-    CHECK(hasLine(f.logLines(), "copy.testdisk.yaml carries the name of a bundled test disk"));
+    CHECK(hasLine(f.appLogLines(), "copy.testdisk.yaml carries the name of a bundled test disk"));
 }
 
 TEST(module_slot_one_list_of_names) {
@@ -166,19 +166,19 @@ TEST(unreadable_medium_not_listed_one_log_line_per_start) {
     }));
     const KindState* k = f.state()->kindState("test-disk");
     CHECK(k && k->instances.size() == 1 && k->instances[0].name == "Good");
-    const auto lines = f.logLines();
+    const auto lines = f.appLogLines();
     CHECK(hasLine(lines, "The test disk file Broken.testdisk.yaml cannot be read: It is not a test-disk file."));
     CHECK(f.ok("media.refresh"));
-    CHECK(!hasLine(f.logLines(), "Broken.testdisk.yaml"));   // once per start
+    CHECK(!hasLine(f.appLogLines(), "Broken.testdisk.yaml"));   // once per start
 }
 
 namespace {
 // A host's file access that records what goes through it.
 struct RecordingAccess final : FileAccess {
     mutable std::vector<std::string> calls;
-    std::vector<std::string> list(const std::string& folder) const override {
+    std::vector<std::string> list(const std::string& folder, std::string* problem) const override {
         calls.push_back("list");
-        return FileAccess::list(folder);
+        return FileAccess::list(folder, problem);
     }
     Read read(const std::string& path) const override {
         calls.push_back("read " + baseName(path));

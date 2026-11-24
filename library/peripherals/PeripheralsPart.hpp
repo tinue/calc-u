@@ -35,6 +35,7 @@ public:
 
 private:
     void pump(sessions::SessionContext&);
+    void reportLinkProblems(sessions::SessionContext&);
     HostLinks links_;
 };
 

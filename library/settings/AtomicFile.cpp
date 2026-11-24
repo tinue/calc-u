@@ -16,7 +16,9 @@ std::atomic<bool> gFailBeforeRename{false};
 
 void testing::failBeforeRename(bool on) { gFailBeforeRename = on; }
 
-std::optional<std::string> readWholeFile(const std::string& path) { return files::readText(files::toPath(path)); }
+std::optional<std::string> readWholeFile(const std::string& path, std::string* problem) {
+    return files::readText(files::toPath(path), problem);
+}
 
 bool fileExists(const std::string& path) {
     std::error_code ec;
@@ -34,14 +36,16 @@ FileWrite writeFileAtomically(const std::string& path, const std::string& bytes)
     std::random_device rd;
     const fs::path beside = files::toPath(path + ".new-" + std::to_string(rd()));
     {
+        errno = 0;
         std::ofstream out(beside, std::ios::binary | std::ios::trunc);
-        if (!out) return {false, "cannot write beside " + path};
+        if (!out) return {false, "cannot write beside " + path + ": " + files::osReason(errno)};
         out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
         out.flush();
         if (!out) {
+            const std::string reason = files::osReason(errno);
             out.close();
             fs::remove(beside, ec);
-            return {false, "cannot write beside " + path};
+            return {false, "cannot write beside " + path + ": " + reason};
         }
     }
     if (gFailBeforeRename) {

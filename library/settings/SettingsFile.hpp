@@ -50,8 +50,20 @@ public:
     long integer(std::string_view section, std::string_view key) const;
     // The text as it is in the file, accepted or not.
     std::optional<std::string> raw(std::string_view section, std::string_view key) const;
+    // Every declared key whose value in the file is not accepted, as
+    // `[section] key = "value"`: text() gives its default instead.
+    std::vector<std::string> notAccepted() const;
 
-    struct WriteResult { bool ok = true; std::string problem; };
+    struct WriteResult {
+        bool ok = true;
+        std::string problem;
+        // The cause alone, for a line of its own ("Settings: [s] k not
+        // saved: <why>"): `problem` without its leading "not saved: ".
+        std::string why() const {
+            constexpr std::string_view kNotSaved = "not saved: ";
+            return problem.starts_with(kNotSaved) ? problem.substr(kNotSaved.size()) : problem;
+        }
+    };
     // Changes the value and writes the file at once; nothing is written
     // when the value is unchanged. When the file is not writable in this
     // run, the change lasts until the product quits and the result says

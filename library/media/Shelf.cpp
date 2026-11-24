@@ -9,11 +9,17 @@ namespace calcu::media {
 namespace {
 
 // The file names of a folder of the kind's suffix, sorted by their fold.
-std::vector<std::string> filesOf(const FileAccess& files, const std::string& folder, const KindDecl& k) {
+std::vector<std::string> filesOf(const FileAccess& files, const std::string& folder, const KindDecl& k,
+                                 std::vector<std::string>& lines) {
     std::vector<std::string> out;
     if (folder.empty()) return out;
-    for (std::string& name : files.list(folder))
+    std::string problem;
+    for (std::string& name : files.list(folder, &problem))
         if (hasSuffix(name, k)) out.push_back(std::move(name));
+    if (!problem.empty()) {   // once per folder, however many kinds it holds
+        const std::string line = "The folder " + folder + " cannot be listed: " + problem;
+        if (std::find(lines.begin(), lines.end(), line) == lines.end()) lines.push_back(line);
+    }
     std::sort(out.begin(), out.end(), [](const std::string& a, const std::string& b) {
         const std::string fa = foldName(a), fb = foldName(b);
         return fa != fb ? fa < fb : a < b;
@@ -59,10 +65,17 @@ std::string Shelf::folderOf(const KindDecl& k) const {
 }
 
 std::optional<ReadOutcome> Shelf::readFile(const KindDecl& k, const std::string& path, std::string* bytesOut) const {
-    const auto bytes = files_->read(path).bytes;
-    if (!bytes || !k.codec) return std::nullopt;
-    if (bytesOut) *bytesOut = *bytes;
-    return k.codec->read(*bytes, companionsBeside(path));
+    FileAccess::Read read = files_->read(path);
+    if (!k.codec) return std::nullopt;
+    if (!read.bytes) {
+        // A file that is there but cannot be read says why, when the access can tell.
+        if (!read.unreadable || read.problem.empty()) return std::nullopt;
+        ReadOutcome r;
+        r.problem = read.problem + ".";
+        return r;
+    }
+    if (bytesOut) *bytesOut = *read.bytes;
+    return k.codec->read(*read.bytes, companionsBeside(path));
 }
 
 std::vector<std::string> Shelf::reread() {
@@ -94,7 +107,7 @@ std::vector<std::string> Shelf::reread() {
             e.writeProtected = r->info.writeProtected;
             entries_.push_back(std::move(e));
         };
-        for (const std::string& f : filesOf(*files_, k.bundledFolder, k)) entry(k.bundledFolder, f, Origin::Bundled);
+        for (const std::string& f : filesOf(*files_, k.bundledFolder, k, lines)) entry(k.bundledFolder, f, Origin::Bundled);
         for (const ImplicitTemplate& t : k.implicitTemplates) {
             ShelfEntry e;
             e.kind = &k;
@@ -109,7 +122,7 @@ std::vector<std::string> Shelf::reread() {
             entries_.push_back(std::move(e));
         }
         const std::string folder = folderOf(k);
-        for (const std::string& f : filesOf(*files_, folder, k)) {
+        for (const std::string& f : filesOf(*files_, folder, k, lines)) {
             fileNames_.emplace_back(k.id, foldName(f));
             const std::size_t before = entries_.size();
             entry(folder, f, Origin::Saved);

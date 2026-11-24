@@ -10,9 +10,10 @@ namespace {
 
 std::unique_ptr<TraceFile> TraceFile::open(const std::string& path, std::string* error) {
     std::unique_ptr<TraceFile> f(new TraceFile());
+    errno = 0;
     f->out_.open(files::toPath(path), std::ios::binary | std::ios::trunc);
     if (!f->out_) {
-        if (error) *error = "The trace file " + path + " cannot be made.";
+        if (error) *error = "The trace file " + path + " cannot be made: " + files::osReason(errno) + ".";
         return nullptr;
     }
     return f;
@@ -25,13 +26,21 @@ std::unique_ptr<TraceFile> TraceFile::inMemory() {
 }
 
 void TraceFile::write(std::span<const std::uint8_t> b) {
-    if (memory_) kept_.insert(kept_.end(), b.begin(), b.end());
-    else out_.write(reinterpret_cast<const char*>(b.data()), static_cast<std::streamsize>(b.size()));
+    if (memory_) {
+        kept_.insert(kept_.end(), b.begin(), b.end());
+    } else {
+        errno = 0;
+        out_.write(reinterpret_cast<const char*>(b.data()), static_cast<std::streamsize>(b.size()));
+        if (!out_ && problem_.empty()) problem_ = files::osReason(errno);   // the first failure is the cause
+    }
     bytes_ += b.size();
 }
 
 void TraceFile::close() {
-    if (!memory_ && out_.is_open()) out_.close();
+    if (memory_ || !out_.is_open()) return;
+    errno = 0;
+    out_.close();
+    if (!out_ && problem_.empty()) problem_ = files::osReason(errno);
 }
 
 std::function<std::optional<settings::Paths::Ensured>()> traceFolderOf(const settings::Paths& paths) {
@@ -135,10 +144,14 @@ void TraceSession::end(sessions::SessionContext& c, Ending why) {
     write();
     file_->close();
     const std::string name = name_;
+    if (!file_->problem().empty())
+        c.appLog().warn("The trace " + name + " was not written completely: " + file_->problem());
     switch (why) {
     case Ending::Limit:
         c.notice("The trace " + name + " reached the size limit of " + std::to_string(limitBytes() / (1024 * 1024)) +
                  " MB and ended.");
+        c.appLog().info("The trace " + name + " reached the size limit of " +
+                        std::to_string(limitBytes() / (1024 * 1024)) + " MB and ended.");
         break;
     case Ending::NewMachine: c.log("The trace " + name + " ended: a new machine was built."); break;
     case Ending::Off:
@@ -151,7 +164,11 @@ void TraceSession::end(sessions::SessionContext& c, Ending why) {
                                            {"bytes", sessions::Value(std::move(bytes))},
                                            {"mediaType", "application/octet-stream"},
                                            {"kind", "trace"}}),   // what a page lists as a trace
-                  nullptr);
+                  // The answer comes later; the host's log outlives the session.
+                  [log = &c.appLog(), name](const sessions::ServiceAnswer& a) {
+                      if (const auto failed = sessions::serviceFailure(a))
+                          log->warn("The trace " + name + " was not kept: " + *failed);
+                  });
     }
     file_.reset();
     recorder_.reset();

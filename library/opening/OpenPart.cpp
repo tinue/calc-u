@@ -41,7 +41,10 @@ CommandOutcome finish(CommandOutcome o, OpenReply reply, SessionContext& c) {
     auto r = std::make_shared<const OpenReply>(std::move(reply));
     if (std::holds_alternative<Done>(o)) return Done{std::move(r)};
     if (auto* x = std::get_if<Refused>(&o)) {
-        if (!asks(x->reason)) c.notice(x->reason);
+        if (!asks(x->reason)) {
+            c.notice(x->reason);
+            c.appLog().warn("A file was not opened: " + x->reason);
+        }
         return o;
     }
     if (auto* s = std::get_if<StartOperation>(&o)) {
@@ -53,6 +56,7 @@ CommandOutcome finish(CommandOutcome o, OpenReply reply, SessionContext& c) {
 
 CommandOutcome refuse(SessionContext& c, std::string sentence) {
     c.notice(sentence);
+    c.appLog().warn("A file was not opened: " + sentence);
     return Refused{std::move(sentence)};
 }
 
@@ -97,8 +101,8 @@ void OpenPart::attach(sessions::SessionSetup& s) {
         if (!req) return Refused{why};
         if (c.busy() || !c.machine()) {   // kept, the second in place of the first
             if (kept_)
-                c.log("The file " + fileNameOf(kept_->files.front()) + " kept to be opened is replaced by " +
-                      fileNameOf(req->files.front()) + ".");
+                c.appLog().info("The file " + fileNameOf(kept_->files.front()) + " kept to be opened is replaced by " +
+                                fileNameOf(req->files.front()) + ".");
             const std::string name = fileNameOf(req->files.front());
             kept_ = std::move(*req);
             return Done{std::make_shared<const OpenReply>(OpenedAs::Kept, name)};
@@ -121,7 +125,11 @@ void OpenPart::afterCall(SessionContext& c, pacing::WallTime) {
     if (auto* r = std::get_if<Refused>(&o)) {   // replied already with Kept: the refusal is a notice
         if (asks(r->reason)) c.notice(fileNameOf(req.files.front()) + " was not opened: " + r->reason.substr(kAsks.size()));
     } else if (auto* st = std::get_if<StartOperation>(&o)) {
-        if (!c.startOperation(std::move(st->op))) c.notice(fileNameOf(req.files.front()) + " was not opened: " + sessions::kAnotherOperationRuns);
+        if (!c.startOperation(std::move(st->op))) {
+            const std::string sentence = fileNameOf(req.files.front()) + " was not opened: " + sessions::kAnotherOperationRuns;
+            c.notice(sentence);
+            c.appLog().warn(sentence);
+        }
     }
 }
 
@@ -202,9 +210,12 @@ CommandOutcome OpenPart::openSeveral(const OpenRequest& req, SessionContext& c) 
     if (ec) return refuse(c, "The files could not be put together in " + files::fromPath(folder) + ": " + ec.message());
     for (const OpenedFile& f : req.files) {
         if (!f.bytes) continue;
+        errno = 0;
         std::ofstream out(folder / files::toPath(plainName(f)), std::ios::binary | std::ios::trunc);
         out.write(reinterpret_cast<const char*>(f.bytes->data()), static_cast<std::streamsize>(f.bytes->size()));
-        if (!out) return refuse(c, plainName(f) + " could not be written to " + files::fromPath(folder) + ".");
+        if (!out)
+            return refuse(c, plainName(f) + " could not be written to " + files::fromPath(folder) + ": " +
+                                 files::osReason(errno) + ".");
     }
     // The first by name of those with a preset extension, else of those
     // whose text has a model line; each must pass test 1.

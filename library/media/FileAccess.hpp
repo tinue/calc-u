@@ -16,10 +16,13 @@ class FileAccess {
 public:
     virtual ~FileAccess() = default;
     // The names of the regular files in `folder` (no paths), in any order.
-    virtual std::vector<std::string> list(const std::string& folder) const;
+    // A folder that cannot be listed gives none, and `problem`, when given,
+    // takes why ("" for a folder that is not there).
+    virtual std::vector<std::string> list(const std::string& folder, std::string* problem = nullptr) const;
     struct Read {
         std::optional<std::string> bytes;   // nullopt: no such file, or it cannot be read
         bool unreadable = false;            // the file is there but cannot be read now
+        std::string problem;                // why it cannot be read, when the access can tell
     };
     virtual Read read(const std::string& path) const;
     struct Written {

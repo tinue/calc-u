@@ -39,11 +39,13 @@ void pump() {
 // The app: the test product's session hosted by a SessionHost, its timer on.
 struct QtApp {
     harness::test::TestProduct product;
+    applog::MemoryAppLog appLog{applog::AppLogLevel::Debug};   // the session's app log
     std::unique_ptr<sessions::AppSession> session;
     std::unique_ptr<qt6::SessionHost> host;
     std::vector<std::string> log;
     explicit QtApp(bool start = true) {
         sessions::AppSessionSetup s;
+        s.appLog = &appLog;
         s.clock = pacing::steadyWallTime;
         s.hostTime = [] { return std::chrono::system_clock::now(); };
         s.parts = product.sessionParts({});
@@ -178,10 +180,8 @@ TEST(qt_attach_host_bind_fails_logs_and_runs) {
         std::this_thread::sleep_for(5ms);
     }
     CHECK(second.ticks() > t0);   // the app runs on
-    bool logged = false;
-    for (const auto& l : second.log)
-        logged = logged || l.rfind("Attach is not available on port " + std::to_string(port) + ": ", 0) == 0;
-    CHECK(logged);
+    // How the app ran: the app log's, at warn.
+    CHECK(second.appLog.has(applog::AppLogLevel::Warn, "Attach is not available on port " + std::to_string(port) + ": "));
 }
 
 // The serve form's commands through the Qt6 host: `key` and `type` reply

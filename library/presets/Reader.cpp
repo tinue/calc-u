@@ -557,8 +557,9 @@ std::unique_ptr<Item> readStep(std::string_view verb, const YamlNode& value, con
         // A file a step's reference names
         // (`floppy { file: … }`), absolute or relative to the current folder.
         std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view p) const override {
-            if (auto bytes = files::readBytes(files::toPath(p))) return std::move(*bytes);
-            return "The file " + std::string(p) + " cannot be read.";
+            std::string why;
+            if (auto bytes = files::readBytes(files::toPath(p), &why)) return std::move(*bytes);
+            return "The file " + std::string(p) + " cannot be read: " + why + ".";
         }
         std::string resolvedName(std::string_view p) const override { return std::string(p); }
     } source;

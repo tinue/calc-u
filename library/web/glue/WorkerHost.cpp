@@ -1,5 +1,6 @@
 #include "web/glue/WorkerHost.hpp"
 #include "web/glue/MessageCodec.hpp"
+#include "files/Files.hpp"
 #include <emscripten.h>
 #include <exception>
 #include <filesystem>
@@ -235,6 +236,7 @@ void WorkerHost::answerFilePicker(s::CallId ask, val message) {
         const s::Value picked = fromJs(message["value"]);
         std::error_code ec;
         std::filesystem::create_directories(start_.uploadsDir, ec);
+        if (ec) log_->warn("The uploads folder " + start_.uploadsDir + " cannot be made: " + ec.message());
         if (const auto* files = picked.elements())
             for (const s::Value& f : *files) {
                 const s::Value* name = f.find("name");
@@ -242,10 +244,14 @@ void WorkerHost::answerFilePicker(s::CallId ask, val message) {
                 if (!name || !name->string() || !bytes || !bytes->bytes()) continue;
                 const std::string file = std::filesystem::path(*name->string()).filename().string();
                 const std::string path = start_.uploadsDir + "/" + file;
+                errno = 0;
                 std::ofstream out(path, std::ios::binary | std::ios::trunc);
                 out.write(reinterpret_cast<const char*>(bytes->bytes()->data()),
                           static_cast<std::streamsize>(bytes->bytes()->size()));
                 if (out) paths.push_back(s::Value(path));
+                else   // left out of the pick
+                    log_->warn("The picked file " + file + " cannot be written to " + path + ": " +
+                               calcu::files::osReason(errno));
             }
         a.result = s::Value(std::move(paths));
     }

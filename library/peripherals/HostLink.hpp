@@ -32,11 +32,16 @@ public:
     // The serial port file into another folder; true when
     // it was made there.
     virtual bool moveTo(const std::optional<std::string>& folder) = 0;
+    // Why the link does not work as it should (its serial port file could
+    // not be made, its I/O ended), in the system's words; "" while it does.
+    virtual std::string problem() const { return {}; }
 };
 
 // A pseudo-terminal with its serial port file `<folder>/<fileName>`; without
 // a folder, only the raw device. nullptr where there are no pseudo-terminals
-// (Windows, the Web; CALCU_HAS_PTY unset) or when none could be opened.
-std::unique_ptr<HostLink> openHostLink(const std::optional<std::string>& folder, const std::string& fileName);
+// (Windows, the Web; CALCU_HAS_PTY unset) or when none could be opened; in
+// the second case `problem`, when given, takes why.
+std::unique_ptr<HostLink> openHostLink(const std::optional<std::string>& folder, const std::string& fileName,
+                                       std::string* problem = nullptr);
 
 } // namespace calcu::peripherals

@@ -6,7 +6,7 @@ const { open, send, request } = require('./helpers');
 // suspend and continue, a start that fails, the host services.
 
 const PAGE_TO_WORKER = ['listen', 'command', 'request', 'answer'];
-const WORKER_TO_PAGE = ['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop'];
+const WORKER_TO_PAGE = ['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop', 'app-log'];
 
 // Every message both ways, recorded on the page.
 function recordMessages() {

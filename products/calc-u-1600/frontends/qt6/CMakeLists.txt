@@ -88,7 +88,7 @@ if(WIN32)
 endif()
 
 target_include_directories(CalcU1600Qt PRIVATE app ${CMAKE_CURRENT_BINARY_DIR}/generated)
-# generated/BuildId.h: the build ID (tools/build-id.cmake), at each build.
+# generated/BuildId.h (the build ID, the package) and BuildTime.cpp, at each build.
 calcu_build_id_header(CalcU1600QtBuildId ${CMAKE_CURRENT_SOURCE_DIR}/../.. CalcU1600Qt)
 target_link_libraries(CalcU1600Qt PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network)
 # Harness attach in development and test builds (CALCU_ATTACH: POSIX trees
@@ -172,7 +172,7 @@ if(CALCU_TESTS)
   endif()
   set_target_properties(CalcU1600QtTests PROPERTIES AUTOMOC ON AUTORCC ON)
   calcu_qt6_moc_compat(CalcU1600QtTests)
-  add_dependencies(CalcU1600QtTests CalcU1600QtBuildId)
+  calcu_use_build_id(CalcU1600QtBuildId CalcU1600QtTests)
   target_include_directories(CalcU1600QtTests PRIVATE app tests ${CMAKE_CURRENT_BINARY_DIR}/generated
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
   target_link_libraries(CalcU1600QtTests PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network calcu1600_shared calcu_qt6)

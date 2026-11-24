@@ -63,9 +63,11 @@ greyed out; where the platform shows tooltips, its tooltip says why.
 - **`<Product>` Help** opens this help on calc-u.org in your browser.
   **About `<Product>`** shows the product's name, its version, its
   build and links to its source and to support, and under **Support
-  Information** when the build was made and what it runs on: the
-  operating system and the computer (in the browser: the browser, and
-  what the browser tells of the system). **Copy** puts the texts on the
+  Information** the package the app came in (the DMG, the AppImage, the
+  Windows installer, or "self-built"), when it was built and what it runs
+  on: the operating system and the computer. In the browser it shows the
+  page's address instead of the package, the browser, and what the
+  browser tells of the system. **Copy** puts the texts on the
   clipboard as plain text, without the links: paste them into a bug report.
 
 On macOS, Settings…, About and Quit are in the application menu, as on

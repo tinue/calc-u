@@ -200,7 +200,8 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 
 calcu::shell::ShellProduct MainWindow::product() {
     calcu::shell::ShellProduct p = cu1600::shellProduct(APP_VERSION, APP_BUILD_ID, /*withHostFolders=*/true, /*withTrace=*/true);
-    p.buildTime = APP_BUILD_TIME;
+    p.buildTime = calcuAppBuildTime();
+    p.package = APP_PACKAGE;
     for (auto& item : p.items) {
         if (item.id == cu1600::kItemLoadBasic) item.act = [this] { chooseProgram(false); };
         else if (item.id == cu1600::kItemLoadCode) item.act = [this] { chooseProgram(true); };

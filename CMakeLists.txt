@@ -101,17 +101,28 @@ function(calcu_add_test name group)
 endfunction()
 
 # calcu_build_id_header(<name> <product directory> <target…>): the calling
-# directory's generated/BuildId.h with APP_BUILD_ID and APP_BUILD_TIME (tools/build-id.cmake),
-# made again at each build of the targets, which include generated/.
+# directory's generated/BuildId.h with APP_BUILD_ID and APP_PACKAGE
+# (CALCU_PACKAGE) and generated/BuildTime.cpp with calcuAppBuildTime()
+# (tools/build-id.cmake), made again at each build of the targets, which
+# include generated/ and compile BuildTime.cpp. calcu_use_build_id(<name>
+# <target…>) gives both to more targets of the same directory.
+set(CALCU_PACKAGE "" CACHE STRING "The package the Qt apps go into (AppImage, DMG, Windows installer); empty: self-built")
 function(calcu_build_id_header name product)
   set(header ${CMAKE_CURRENT_BINARY_DIR}/generated/BuildId.h)
+  set(time ${CMAKE_CURRENT_BINARY_DIR}/generated/BuildTime.cpp)
   add_custom_target(${name}
-    COMMAND ${CMAKE_COMMAND} -DPRODUCT=${product} -DHEADER=${header} -P ${CMAKE_SOURCE_DIR}/tools/build-id.cmake
-    BYPRODUCTS ${header}
-    COMMENT "Build ID of ${product}"
+    COMMAND ${CMAKE_COMMAND} -DPRODUCT=${product} -DHEADER=${header} "-DPACKAGE=${CALCU_PACKAGE}"
+            -P ${CMAKE_SOURCE_DIR}/tools/build-id.cmake
+    COMMAND ${CMAKE_COMMAND} -DTIME_SOURCE=${time} -P ${CMAKE_SOURCE_DIR}/tools/build-id.cmake
+    BYPRODUCTS ${header} ${time}
+    COMMENT "Build ID and time of ${product}"
     VERBATIM)
+  calcu_use_build_id(${name} ${ARGN})
+endfunction()
+function(calcu_use_build_id name)
   foreach(target ${ARGN})
     add_dependencies(${target} ${name})
+    target_sources(${target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated/BuildTime.cpp)
   endforeach()
 endfunction()
 

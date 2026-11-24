@@ -207,12 +207,13 @@ function calcuShellPointer(map, scale) {
 }
 
 // About (shell::about, shell::aboutText): `host` the page's rows
-// ([label, value]; an empty value is left out) after "Built".
+// ([label, value]; an empty value is left out) after "Package" and "Built".
 const CALCU_SHELL_SUPPORT_HEADING = "Support Information";
 function calcuShellAbout(product, host) {
   let title = product.aboutLabel || `About ${product.name}`;
   if (title.endsWith("…")) title = title.slice(0, -1);
-  const support = [...(product.buildTime ? [["Built", product.buildTime]] : []), ...(host || []).filter((r) => r[1])];
+  const support = [...(product.package ? [["Package", product.package]] : []),
+    ...(product.buildTime ? [["Built", product.buildTime]] : []), ...(host || []).filter((r) => r[1])];
   return {
     title, name: product.name,
     version: `Version ${product.version}${product.build ? ` (${product.build})` : ""}`,
@@ -226,13 +227,15 @@ function calcuShellAboutText(a) {
   return out;
 }
 
-// What the browser tells of where the page runs: Browser, OS, Hardware.
-// `nav`: the navigator; `hints`: the answer of userAgentData's
+// Where the page runs: Page (`loc`, the page's location: host and path,
+// where it was loaded from), then what the browser tells: Browser, OS,
+// Hardware. `nav`: the navigator; `hints`: the answer of userAgentData's
 // getHighEntropyValues (Chromium), or null. Without hints the user agent
 // string gives the browser and the OS's name only: Safari and Firefox
 // freeze the rest, so a version there would be made up. A browser shows no
 // CPU model; the architecture only with hints.
-function calcuShellHostRows(nav, hints) {
+function calcuShellHostRows(nav, hints, loc) {
+  const page = loc && loc.host ? `${loc.host}${loc.pathname || ""}` : "";
   const ua = (nav && nav.userAgent) || "";
   let browser = "";
   const brands = hints && (hints.fullVersionList || hints.brands);
@@ -266,7 +269,7 @@ function calcuShellHostRows(nav, hints) {
                                            : (hints.bitness === "64" ? `${hints.architecture}64` : hints.architecture);
     hardware = hints.model ? `${hints.model}, ${a}` : a;
   } else if (hints && hints.model) hardware = hints.model;
-  return [["Browser", browser], ["OS", os], ["Hardware", hardware]];
+  return [["Page", page], ["Browser", browser], ["OS", os], ["Hardware", hardware]];
 }
 
 if (typeof module !== "undefined" && module.exports) {

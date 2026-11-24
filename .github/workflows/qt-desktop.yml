@@ -111,7 +111,7 @@ jobs:
       - name: Configure (repository root)
         run: >-
           cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DCALCU_TESTS=OFF ${{ inputs.cmake-options }}
+          -DCALCU_TESTS=OFF -DCALCU_PACKAGE=AppImage ${{ inputs.cmake-options }}
       - name: Build
         run: cmake --build ${{ env.RELEASE_BUILD }} --target ${{ inputs.target }} calcu
       - name: Run calcu (the harness CLI with the product)
@@ -200,7 +200,7 @@ jobs:
       - name: Configure (repository root)
         run: >-
           cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-          -DCMAKE_BUILD_TYPE=Release -DCALCU_TESTS=OFF ${{ inputs.cmake-options }}
+          -DCMAKE_BUILD_TYPE=Release -DCALCU_TESTS=OFF -DCALCU_PACKAGE=DMG ${{ inputs.cmake-options }}
       - name: Build
         run: cmake --build ${{ env.RELEASE_BUILD }} --target ${{ inputs.target }} calcu
       - name: Run calcu (the harness CLI with the product)
@@ -295,7 +295,7 @@ jobs:
       - name: Configure (repository root)
         run: >-
           cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
-          -DCALCU_TESTS=OFF ${{ inputs.cmake-options }}
+          -DCALCU_TESTS=OFF "-DCALCU_PACKAGE=Windows installer" ${{ inputs.cmake-options }}
       - name: Build
         run: cmake --build ${{ env.RELEASE_BUILD }} --target ${{ inputs.target }} calcu
       - name: Run calcu (the harness CLI with the product)

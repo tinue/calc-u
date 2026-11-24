@@ -187,11 +187,12 @@ test('about copies its texts and the support information', async ({ page }) => {
   await expect(support).toContainText('Support Information');
   await expect(support).toContainText('Built: 2026-11-24T11:49:08Z');
   await expect(support).toContainText('Browser: ');
+  await expect(support).toContainText(/Page: (localhost|127\.0\.0\.1):\d+\//);
   await el(page, 'about-copy').click();
   await expect(el(page, 'about-dialog')).toBeVisible();   // Copy leaves it open
   const copied = (await page.evaluate(() => window.calcuCopied))[0];
   expect(copied.startsWith('Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\nNo code of a product.\n\n' +
-    'Support Information\nBuilt: 2026-11-24T11:49:08Z\nBrowser: ')).toBe(true);
+    'Support Information\nBuilt: 2026-11-24T11:49:08Z\nPage: ')).toBe(true);
   expect(copied).not.toContain('example.org');   // no links
 });
 

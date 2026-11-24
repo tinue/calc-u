@@ -54,4 +54,9 @@ TEST(about_support_rows_and_copied_text) {
                                        "No code of a product.\n\nSupport Information\nBuilt: 2026-11-24T11:49:08Z\n"
                                        "OS: Darwin arm64 27.2.0\nBrowser: Safari 27.2\n"));
     CHECK(aboutText(a).find("example.org") == std::string::npos);   // no links
+    p.package = "DMG";   // first, before Built
+    const AboutModel b = about(p, {{"OS", "Darwin arm64 27.2.0"}});
+    CHECK_EQ(b.support.size(), std::size_t{3});
+    CHECK_EQ(b.support[0].first + ": " + b.support[0].second, std::string("Package: DMG"));
+    CHECK_EQ(b.support[1].first, std::string("Built"));
 }

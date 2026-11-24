@@ -143,7 +143,8 @@ void MainWindow::start() { m_controller->start(); }
 
 calcu::shell::ShellProduct MainWindow::product() {
     calcu::shell::ShellProduct p = cu59::shellProduct(APP_VERSION, APP_BUILD_ID);
-    p.buildTime = APP_BUILD_TIME;
+    p.buildTime = calcuAppBuildTime();
+    p.package = APP_PACKAGE;
     p.aboutLines.push_back("Built with Qt (LGPL-3.0).");   // the Qt6 frontend's line (AboutDialog.cpp:28)
     for (auto& item : p.items) {
         if (item.id == cu59::kItemArmCard) item.act = [this] { armCard(); };

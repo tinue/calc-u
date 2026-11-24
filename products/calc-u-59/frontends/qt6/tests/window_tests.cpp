@@ -355,6 +355,8 @@ TEST(about_icon_name_version_summary_links) {
     CHECK(all.contains(QStringLiteral("https://github.com/tinue/calc-u\"")));
     CHECK(all.contains(QStringLiteral("issues")) && all.contains(QStringLiteral("PRIVACY.md")));
     CHECK(all.contains(QStringLiteral("Built with Qt (LGPL-3.0).")));
+    CHECK(all.contains(QStringLiteral("Package: ")));   // self-built here, the package jobs set theirs
+    CHECK(all.contains(QStringLiteral("Built: 20")));    // generated/BuildTime.cpp
     d->close();
     QApplication::setWindowIcon(before);
 }

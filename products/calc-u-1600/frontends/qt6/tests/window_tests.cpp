@@ -189,7 +189,7 @@ TEST(qt_menus_in_family_order) {
 
 // Machine ▸ Run Log ▸ sets the session's level and shows it checked;
 // Trace is a toggle.
-TEST(log_level_and_trace_in_machine_menu) {
+TEST(run_log_and_trace_in_machine_menu) {
     SKIP_UNLESS_WINDOW();
     Fixture f("PC-1500");
     QAction* info = f.action(cu1600::kItemLogInfo);

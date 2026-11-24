@@ -11,8 +11,8 @@
 - **About** shows Support Information (the package or "self-built", build time, operating system, computer; in the browser the page's address and the browser) and has a Copy button that puts its texts on the clipboard for a bug report.
 - **New hardware:** the CE-150's cassette works on the PC-1600 (MODE 1, PC-1500 tapes); two large Slot 2 modules, the 256K custom (256 KB, initialised) and the superRAM r4 by spellbound (1 MB, blank; its initialisation program SRAMINIT.BIN comes with the module, not with Calc-U-1600).
 - **Modules and media:** choosing a module power-cycles the machine, as on the real device; modules, disks and cassettes have Name & Save and the same pickers on the desktop and the Web; a dropped or opened file goes where it belongs (program to its loader, module, disk or cassette into its place).
-- **App log:** the app keeps a log of how it ran, every failure with its cause, for a problem report: Help ▸ Show App Log shows it, Settings has its level, `--app-log-level` sets it for one run. On Windows it replaces `Calc-U-1600.log` in the save folder, on Linux the syslog lines. Machine ▸ Log Level ▸ is called Machine ▸ Run Log ▸, as it sets what the session's log tells about the machine's run.
-- **Machine:** Pause and Resume; full speed runs a waiting machine at real time, so the prompt no longer spins; a held key stays down, so the ROM's own auto-repeat works. The paper panel is always shown and keeps its paper through detaching and model switches until Cut. Copy and Cut are icons at the right of the row below the paper.
+- **App log:** the app keeps a log of how it ran, every failure with its cause, for a problem report: Help ▸ Show App Log shows it, Settings has its level, `--app-log-level` sets it for one run. On Windows it replaces `Calc-U-1600.log` in the save folder, on Linux the syslog lines.
+- **Machine:** Pause and Resume; Machine ▸ Run Log ▸ sets what the RUN LOG tab tells about the machine's run; full speed runs a waiting machine at real time, so the prompt no longer spins; a held key stays down, so the ROM's own auto-repeat works. The paper panel is always shown and keeps its paper through detaching and model switches until Cut. Copy and Cut are icons at the right of the row below the paper.
 - **Printer window:** on the desktop and in the Web app on a computer, the button at the right of the paper's header moves the paper into a window of its own and back; the INSPECTOR takes the room, and the window comes back where you left it. The main window also comes back at its place, not only its size.
 - **Control bar and menus:** on the PC-1600 a printer picker and a CE-158 button; every bar ends with More (⋯), which holds every menu item; Reset All is Cold boot. On a phone the installed Web app shows the paper in portrait and the calculator in landscape.
 - **Windows and Linux:** the installer shows the licence and offers to start Calc-U-1600 when it is done; on Linux the AppImage and an install bring the presets' file type (MIME), so a desktop that integrates the app opens them with Calc-U-1600.
@@ -24,7 +24,6 @@
 - **After a Reset or a Cold boot** a plotter started again at the top of the paper, over the earlier plot.
 - **A PC-1500 machine-code load** that met a byte that is not RAM wrote the rest and then failed; it now writes nothing.
 - **A cassette or disk name with a `"`** was written, and the file could not be read again; it is now refused.
-- **Web:** the links in a dialog were hard to read in the dark appearance.
 - **Desktop:** a disk, cassette or module the machine refused was left without a word; the reason is now shown.
 
 ## [0.8.1] - 2026-11-14

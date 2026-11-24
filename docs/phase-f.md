@@ -289,8 +289,6 @@ Still to add to the CHANGELOG entry:
 - Developers: the harness command and the preset step `set-control` for the PC-100C without a PC-100C plugged in are refused with "No PC-100C is plugged in." (2.3.0: accepted).
 - (partly) Developers (`calcu --product c59`): `switch` is `set-control`; `key` without a key replies "refused: usage: key <key ID> ..."; a preset's `key:` without a key is refused with "key: needs one or more key IDs."; `sync-clock` (was `syncclock`) is refused on every TI model.
 
-- The app log: how the app ran, every failure with its cause, in `~/Library/Logs/Calc-U-59/Calc-U-59.log` (macOS), `%LOCALAPPDATA%\Calc-U-59\Calc-U-59.log`, `$XDG_STATE_HOME/Calc-U-59/`, the app's sandbox on iOS, the browser's console on the Web; Help ▸ Show App Log, `[app-log] level` (Settings "App log level"), `--app-log-level` (desktop), `?app-log-level=` (Web). 2.3.0 had none. The debug panel's LOG tab is RUN LOG.
-
 ### Calc-U-1600 0.9.0 (against 0.8.1)
 
 - Presets with `format-version: 1` are refused as files that cannot be read; the format is version 2. Module definitions are `.module.yaml` files with `format: memory-module`; `.card.yaml` is no file of the product. Floppy disks are version 2, and those of 0.8.x cannot be read until converted by hand (help: "Media files", "From 0.8").
@@ -359,7 +357,6 @@ Still to add to the CHANGELOG entry:
 - (partly) After the fixed folder is reset, the file dialog starts in the former fixed folder (0.8.1: it went back to the last pick).
 - (partly) Developers: the web page's request `c1600.lcd-text` is `c1600.display-text`; the harness's product command list also includes `load-code`, `file-kind`, `load-basic` and `type-basic`; the VS Code extension's `settings.json` must be edited too, and its name and publisher (`calcu1600-debug`) stay.
 - (partly) Developers: a preset's `key:` without a key is refused with "key: needs one or more key IDs.", and `key-down`/`key-up` without `key` with "The key command needs key: <key ID>."; the bundled startup preset `default-pc1600.pc1600` uses `sync-clock:`, and its log line reads `sync-clock`.
-- The app log, as Calc-U-59's: `~/Library/Logs/Calc-U-1600/Calc-U-1600.log`, `%LOCALAPPDATA%\Calc-U-1600\Calc-U-1600.log` (0.8.1: `~/Calc-U-1600/Calc-U-1600.log`), `$XDG_STATE_HOME/Calc-U-1600/Calc-U-1600.log` (0.8.1: syslog), the browser's console on the Web; Help ▸ Show App Log, `[app-log] level`, `--app-log-level`. Machine ▸ Log Level ▸ is Machine ▸ Run Log ▸.
 
 ## Closing check
 

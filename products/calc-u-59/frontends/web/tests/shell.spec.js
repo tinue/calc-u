@@ -249,7 +249,18 @@ test('a startup preset of my own', async ({ page }) => {
   await expect(el(page, 'notice')).toHaveCount(0);
   await el(page, 'setting-startup-model').selectOption({ label: 'TI-59' });
   await expect(el(page, 'setting-startup-model')).toHaveValue('TI-59');
-  await page.waitForTimeout(1500);   // the browser's storage is written a moment later
+  // Calc-U-59.ini reaches the browser's storage (IndexedDB "/persist-calc-u-59") a moment later.
+  await expect.poll(() => page.evaluate(() => new Promise((resolve) => {
+    const open = indexedDB.open('/persist-calc-u-59');
+    open.onsuccess = () => {
+      const get = open.result.transaction('FILE_DATA').objectStore('FILE_DATA')
+        .get('/persist-calc-u-59/settings/Calc-U-59/Calc-U-59.ini');
+      get.onsuccess = () => resolve(get.result && get.result.contents
+        ? new TextDecoder().decode(get.result.contents) : '');
+      get.onerror = () => resolve('');
+    };
+    open.onerror = () => resolve('');
+  })), { timeout: 10000 }).toMatch(/^model\s*=\s*TI-59$[\s\S]*mine\.ti59|mine\.ti59[\s\S]*^model\s*=\s*TI-59$/m);
   await gotoReady(page);
   await el(page, 'menu-file').click();
   await el(page, 'item-settings').click();

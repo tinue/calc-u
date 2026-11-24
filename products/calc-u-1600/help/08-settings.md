@@ -79,12 +79,6 @@ app:
 - `[window] x`, `[window] y`: the window's left and top edge.
 - `[window] width`, `[window] height`: the window's size; 900 by 700
   by default.
-- `[window] paper-own-window`: the paper in a window of its own, `true`
-  or `false`; `false` by default
-  ([The paper in its own window](../../../library/help/05-peripherals-and-paper.md#the-paper-in-its-own-window)).
-- `[window] paper-x`, `[window] paper-y`, `[window] paper-width`,
-  `[window] paper-height`: that window's place and size; 400 by 640 by
-  default.
 
 The windows come back at their last normal size and place, never
 maximised or full screen.

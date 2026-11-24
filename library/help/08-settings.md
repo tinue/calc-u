@@ -73,11 +73,13 @@ product itself.
 | `[storage] cassette-folder` | empty | The folder for cassettes. Empty: `Cassettes` in the save folder |
 | `[trace] folder` | empty | The folder for traces. Empty: the save folder |
 | `[trace] max-file-size-mb` | `50` | The largest trace file, in MB (MiB: 1 MB is 1 048 576 bytes); zero or less counts as 50; read when a trace starts ([Debugger](07-debugger.md#traces)) |
-| `[trace] location` | `app-support` | Where traces go in the frontends that offer the choice: `app-support`, `icloud`, or `folder` (then `[trace] folder`) |
+| `[trace] location` | `app-support` | Where traces go in the frontends that offer the choice: `app-support` or `icloud` |
 | `[app-log] level` | `default` | How much the app log keeps: `default` (`warn`; `info` in a development build), `error`, `warn`, `info` or `debug`; applied at once ([The app log](#the-app-log)) |
 | `[serial] link-folder` | empty | The folder for the files of serial links. Empty: the save folder |
 | `[folders] <kind>` | empty | One key per kind of file the product opens: the folder its file dialog starts in. Written by the product: the folder last used, or `fixed:<folder>` for a folder set in the Settings dialog, which later picks do not change |
 | `[window] <key>` | the product's | The size of the main window and the split between its panels, as plain numbers; written by the product |
+| `[window] paper-own-window` | `false` | The paper in a window of its own, `true` or `false`; written by the product ([The paper in its own window](05-peripherals-and-paper.md#the-paper-in-its-own-window)) |
+| `[window] paper-x`, `[window] paper-y`, `[window] paper-width`, `[window] paper-height` | empty, empty, `400`, `640` | That window's left and top edge and its size, as plain numbers; written by the product |
 
 Which models stand for `<model>`, which kinds for `<kind>` and which
 names for `<key>`, and the product's own keys, are in the product's

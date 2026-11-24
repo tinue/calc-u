@@ -30,6 +30,7 @@
 #include "settings/Paths.hpp"
 #include "settings/PlatformBase.hpp"
 #include "settings/SettingsFile.hpp"
+#include "shell/Inputs.hpp"
 #include "shell/SettingsPart.hpp"
 #include "startup/StartupPart.hpp"
 #include "debugger/ButtonRule.hpp"
@@ -1006,7 +1007,7 @@ static const char* const kCardReaderPlace = "card-reader";
 - (void)chooseStartupPreset:(NSString *)model path:(NSString *)path completion:(void (^)(BOOL))done {
     calcu::shell::SessionThread::ReplyHandler reply;
     if (done) reply = [done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); };
-    _thread->send(cs::Command{calcu::opening::kChooseStartupPresetCommand,
+    _thread->send(cs::Command{calcu::shell::commands::kChooseStartupPreset,
                               cs::Value::object({{"model", cpp(model)}, {"ref", cpp(path)}})},
                   std::move(reply));
 }

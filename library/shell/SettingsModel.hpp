@@ -35,10 +35,6 @@ struct DialogSpec {   // the frontend's, in order
 // every family key it declares). The product appends its own sections.
 DialogSpec familySections(const settings::ProductDecl&, const std::vector<std::string>& keysShown = {});
 
-// The App log section moved last, behind the sections the product appended:
-// every dialog ends with it.
-void appLogSectionLast(DialogSpec&);
-
 struct ShownRow {   // what a widget shows
     DialogRow row;
     std::string value;   // the setting's value
@@ -56,10 +52,12 @@ struct ShownSection {
 };
 
 inline constexpr const char* kSettingsTitle = "Settings";
-inline constexpr const char* kChooseStartupPreset = "Choose…";
+inline constexpr const char* kChooseLabel = "Choose…";
+inline constexpr const char* kAppLogSection = "App log";
 
-// The sections with the rows the `settings` topic has; a section without a
-// row is left out.
+// The sections with the rows the `settings` topic has, in the spec's order
+// but the App log section, which every dialog ends with (behind the
+// sections a product appends); a section without a row is left out.
 std::vector<ShownSection> dialog(const sessions::Value& settings, const sessions::Value& presetList, const DialogSpec&);
 
 } // namespace calcu::shell

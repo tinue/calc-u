@@ -141,22 +141,11 @@ TEST(folders_four_kinds) {
     for (const auto& [folder, key] : kinds) CHECK_EQ(std::string(cu1600::openFolderKind(folder)), std::string(key));
 }
 
-// [window] keeps the size the user gave; without it 900 x 700.
-TEST(window_size_default_900x700_and_kept) {
+// [window] without a place: 900 x 700, the panels below the faceplate.
+TEST(window_size_default_900x700) {
     TempDir tmp("calcu1600-settings-window");
-    const std::string path = (tmp.path() / "Calc-U-1600.ini").generic_string();
-    {
-        cs::SettingsFile file = cs::SettingsFile::open(cu1600::settingsDecl(), path);
-        cu1600::Settings s(file);
-        CHECK(s.windowPlace() == (cs::WindowPlace{std::nullopt, std::nullopt, 900, 700}));
-        s.setWindowPlace({-30, 40, 1024, 640});
-    }
-    cs::SettingsFile again = cs::SettingsFile::open(cu1600::settingsDecl(), path);
-    cu1600::Settings s(again);
-    CHECK(s.windowPlace() == (cs::WindowPlace{-30, 40, 1024, 640}));
-    const std::string text = readText(path);
-    CHECK(text.find("width = 1024") != std::string::npos && text.find("height = 640") != std::string::npos);
-    CHECK(text.find("x = -30") != std::string::npos && text.find("y = 40") != std::string::npos);
+    cs::SettingsFile file = cs::SettingsFile::open(cu1600::settingsDecl(), (tmp.path() / "Calc-U-1600.ini").generic_string());
+    CHECK(cs::windowPlace(file, "") == (cs::WindowPlace{std::nullopt, std::nullopt, 900, 700}));
 }
 
 // The first start has every default and writes the file at
@@ -189,7 +178,7 @@ TEST(first_start_defaults_and_writes_file) {
 
     cu1600::Settings s(file);
     CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
-    CHECK(s.windowPlace().width == 900 && s.file().integer("debug", "dap-port") == 32168 && s.file().integer("trace", "max-file-size-mb") == 50);
+    CHECK(cs::windowPlace(s.file(), "").width == 900 && s.file().integer("debug", "dap-port") == 32168 && s.file().integer("trace", "max-file-size-mb") == 50);
 
     // The save folder is ~/Calc-U-1600 on Qt6.
     cu1600::AppPaths paths(s, dirs, cu1600::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});

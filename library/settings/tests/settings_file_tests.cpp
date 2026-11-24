@@ -32,7 +32,7 @@ TEST(settings_declaration_names_kebab_case) {
     ProductDecl bad = testProduct();
     bad.keys.push_back(testKey("test", "camelCase", ValueKind::Text, ""));
     bad.keys.push_back(testKey("preset", "Model-C", ValueKind::Text, ""));  // not a model
-    bad.keys.push_back(testKey("Window", "x", ValueKind::Integer, "0"));
+    bad.keys.push_back(testKey("Window", "left", ValueKind::Integer, "0"));
     bad.keys.push_back(family::startupModel());                            // twice
     bad.keys.push_back(testKey("test", "choice", ValueKind::Choice, "three", {"one", "two"}));
     CHECK_EQ(checkDeclaration(bad).size(), std::size_t{5});
@@ -369,4 +369,23 @@ TEST(integer_without_default_accepts_empty) {
     CHECK(x && accepts(testProduct(), *x, "") && accepts(testProduct(), *x, "-20") && !accepts(testProduct(), *x, "left"));
     const KeyDecl* width = testProduct().find("window", "paper-width");
     CHECK(width && !accepts(testProduct(), *width, ""));
+}
+
+// A window's place goes into [window] as plain numbers, a left edge left of
+// the screen too, and comes back as it was; without one, the declared size.
+TEST(window_place_round_trip) {
+    TempDir tmp("calcu-settings-window-place");
+    const std::string path = tmp.str() + "/Test-Product.ini";
+    {
+        SettingsFile f = SettingsFile::open(testProduct(), path);
+        CHECK(windowPlace(f, "") == (WindowPlace{std::nullopt, std::nullopt, 900, 700}));
+        CHECK(setWindowPlace(f, "", {-30, 40, 1024, 640}).ok);
+    }
+    const SettingsFile again = SettingsFile::open(testProduct(), path);
+    CHECK(windowPlace(again, "") == (WindowPlace{-30, 40, 1024, 640}));
+    const std::string text = readText(path);
+    CHECK(text.find("\nwidth = 1024\n") != std::string::npos && text.find("\nheight = 640\n") != std::string::npos);
+    CHECK(text.find("\nx = -30\n") != std::string::npos && text.find("\ny = 40\n") != std::string::npos);
+    CHECK(windowPlace(again, kPaperWindowPrefix) ==
+          (WindowPlace{std::nullopt, std::nullopt, kPaperWindowWidth, kPaperWindowHeight}));
 }

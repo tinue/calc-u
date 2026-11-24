@@ -497,8 +497,9 @@ delete).
   `folder` (a `[folders]` key). `value` and `default` are text.
 - `set-setting` is carried out also while an operation runs. A value the
   key does not take is refused with the reason; a file that cannot be
-  written gives the notice `The setting holds until you quit; it was
-  <problem>.` and keeps the value for the run.
+  written gives the notice `The setting holds until you quit; it was not
+  saved: <why>.` and the app log line `Settings: [<section>] <key> not
+  saved: <why>` (warn), and keeps the value for the run.
 - `remember-folder`: the folder a file dialog of that kind was last used
   in.
 - `window`: every declared `[window]` key with its text as the file has

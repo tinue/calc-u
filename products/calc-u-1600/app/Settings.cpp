@@ -48,10 +48,7 @@ cs::ProductDecl makeDecl() {
         d.keys.push_back(cs::family::openFolder(openFolderKind(f)));
     for (cs::KeyDecl& k : cs::family::windowPlace("", Settings::kDefaultWindowWidth, Settings::kDefaultWindowHeight))
         d.keys.push_back(std::move(k));
-    d.keys.push_back(cs::family::windowFlag(cs::kPaperOwnWindowKey,
-                                            "The printer's paper in a window of its own: true or false (Qt6)."));
-    for (cs::KeyDecl& k : cs::family::windowPlace(cs::kPaperWindowPrefix, cs::kPaperWindowWidth, cs::kPaperWindowHeight))
-        d.keys.push_back(std::move(k));
+    for (cs::KeyDecl& k : cs::family::paperWindow()) d.keys.push_back(std::move(k));
     return d;
 }
 

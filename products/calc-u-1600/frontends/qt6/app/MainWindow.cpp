@@ -162,7 +162,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     QTimer::singleShot(0, this, [this] { m_controller->attachAudio(m_audio->sink()); });
 
     // The main window's place and normal size as it was closed.
-    const calcu::settings::WindowPlace place = AppSettings::settings().windowPlace();
+    const calcu::settings::WindowPlace place = calcu::settings::windowPlace(AppSettings::settings().file(), "");
     resize(static_cast<int>(place.width), static_cast<int>(place.height));
     if (place.x && place.y) move(static_cast<int>(*place.x), static_cast<int>(*place.y));
     connect(m_shell->panelArea(), &calcu::qt6::PanelArea::paperOwnWindowChanged, this, [this] { applyPanels(); });
@@ -192,7 +192,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     // A maximised window comes back at its last normal size.
     const QRect g = normalGeometry();
     const QPoint at = isMaximized() || isFullScreen() ? g.topLeft() : pos();
-    AppSettings::settings().setWindowPlace({at.x(), at.y(), g.width(), g.height()});
+    calcu::settings::setWindowPlace(AppSettings::settings().file(), "", {at.x(), at.y(), g.width(), g.height()});
     // What a medium still has to save is written when the session closes
     // (MachineController's destructor: AppSession::close()).
     QMainWindow::closeEvent(event);

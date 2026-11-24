@@ -56,13 +56,7 @@ public:
 
     struct WriteResult {
         bool ok = true;
-        std::string problem;
-        // The cause alone, for a line of its own ("Settings: [s] k not
-        // saved: <why>"): `problem` without its leading "not saved: ".
-        std::string why() const {
-            constexpr std::string_view kNotSaved = "not saved: ";
-            return problem.starts_with(kNotSaved) ? problem.substr(kNotSaved.size()) : problem;
-        }
+        std::string problem;   // why the value did not reach the file
     };
     // Changes the value and writes the file at once; nothing is written
     // when the value is unchanged. When the file is not writable in this
@@ -86,5 +80,9 @@ private:
 
     WriteResult writePending();
 };
+
+// The app log's line for a change that did not reach the file:
+// "Settings: <what> not saved: <why>".
+std::string notSavedLine(std::string_view what, const SettingsFile::WriteResult&);
 
 } // namespace calcu::settings

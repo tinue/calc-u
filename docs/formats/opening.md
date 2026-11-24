@@ -242,7 +242,8 @@ settings file and the presets (`OpenSetup::settings`); `model` must have a
 | the preset cannot be kept | "The preset `<name>` could not be kept in the file cache: `<reason>`." |
 | the check fails | "The preset `<name>` cannot be the startup preset of the `<model>`: `<reason>`" |
 
-Each is the refusal and a notice; the app log has the last at warn. A
+Each is the refusal, a notice and the app log line `Settings: [preset]
+<model> not chosen: <sentence>` (warn). A
 startup preset in the cache is read as an upload there at every start.
 
 ## 6. A file while the session is busy

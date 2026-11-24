@@ -12,11 +12,6 @@ using sessions::Value;
 using settings::KeyDecl;
 using settings::ValueKind;
 
-// The app log's line for a change that did not reach the file.
-std::string notSaved(std::string_view what, const settings::SettingsFile::WriteResult& w) {
-    return "Settings: " + std::string(what) + " not saved: " + w.why();
-}
-
 const char* kindName(const KeyDecl& d) {
     if (d.section == "folders") return "folder";
     switch (d.kind) {
@@ -48,6 +43,11 @@ std::optional<std::string> valueText(const Value& v) {
 
 } // namespace
 
+void tellNotSaved(sessions::SessionContext& c, std::string_view what, const settings::SettingsFile::WriteResult& w) {
+    c.notice("The setting holds until you quit; it was not saved: " + w.problem + ".");
+    c.appLog().warn(settings::notSavedLine(what, w));
+}
+
 SettingsPart::SettingsPart(SettingsPartSetup s) : setup_(std::move(s)) {}
 
 void SettingsPart::attach(sessions::SessionSetup& s) {
@@ -61,7 +61,7 @@ void SettingsPart::attach(sessions::SessionSetup& s) {
             return sessions::Refused{"remember-folder needs kind and folder."};
         const settings::SettingsFile::WriteResult w =
             settings::rememberOpenFolder(*setup_.file, *kind->string(), *folder->string());
-        if (!w.ok) c.appLog().warn(notSaved("the open folder for " + *kind->string(), w));
+        if (!w.ok) c.appLog().warn(settings::notSavedLine("the open folder for " + *kind->string(), w));
         topic_->set(sessions::valuePayload("settings", state()));
         return sessions::Done{};
     });
@@ -78,7 +78,7 @@ void SettingsPart::attach(sessions::SessionSetup& s) {
         }
         for (const auto& [key, v] : *o) {
             const settings::SettingsFile::WriteResult w = f.set("window", key, *valueText(v));
-            if (!w.ok) c.appLog().warn(notSaved("[window] " + key, w));
+            if (!w.ok) c.appLog().warn(settings::notSavedLine("[window] " + key, w));
         }
         topic_->set(sessions::valuePayload("settings", state()));
         return sessions::Done{};
@@ -173,10 +173,7 @@ sessions::CommandOutcome SettingsPart::set(const Value& args, sessions::SessionC
             return sessions::Refused{"\"" + text + "\" is not a value for [" + d->section + "] " + d->key + "."};
         w = f.set(d->section, d->key, text);
     }
-    if (!w.ok) {   // kept for this run, and the user is told
-        c.notice("The setting holds until you quit; it was " + w.problem + ".");
-        c.appLog().warn(notSaved("[" + d->section + "] " + d->key, w));
-    }
+    if (!w.ok) tellNotSaved(c, "[" + d->section + "] " + d->key, w);
     if (setup_.changed) setup_.changed(d->section, d->key);
     topic_->set(sessions::valuePayload("settings", state()));
     return sessions::Done{};

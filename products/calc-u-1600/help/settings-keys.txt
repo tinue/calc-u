@@ -1,5 +1,5 @@
 # The settings keys Calc-U-1600 declares (app/Settings.cpp, settingsDecl()),
-# for tools/help's check: each `[section] key` is described
+# for tools/help's settings check: each `[section] key` is described
 # in chapter 8, the family's in library/help/08-settings.md, the product's in
 # help/08-settings.md. Written by CalcU1600HelpTests with CALCU1600_HELP_KEYS=1.
 family [startup] model
@@ -26,8 +26,8 @@ product [window] x
 product [window] y
 product [window] width
 product [window] height
-product [window] paper-own-window
-product [window] paper-x
-product [window] paper-y
-product [window] paper-width
-product [window] paper-height
+family [window] paper-own-window
+family [window] paper-x
+family [window] paper-y
+family [window] paper-width
+family [window] paper-height

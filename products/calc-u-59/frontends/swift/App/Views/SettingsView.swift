@@ -40,7 +40,7 @@ struct SettingsView: View {
             case .success(let urls):
                 if let model, let url = urls.first { viewModel.chooseStartupPreset(model: model, url: url) }
             case .failure(let error):
-                TIAppLog.write("The file picker failed: \(error.localizedDescription)", level: .warn)
+                TIAppLog.filePickerFailed(error)
             }
         }
         .noticeAlert(viewModel)
@@ -101,7 +101,11 @@ struct SettingsView: View {
                     get: { row.value },
                     set: {
                         if $0 == Self.chooseTag { choosingFor = row.key }   // the row shows what is set
-                        else { viewModel.setSetting(row.section, row.key, $0) }
+                        else {
+                            // Only a startup preset row has Choose…; any other value ends its file's grant.
+                            if !row.chooseLabel.isEmpty && $0 != row.value { StartupPresetGrants.drop(for: row.key) }
+                            viewModel.setSetting(row.section, row.key, $0)
+                        }
                     }
                 )) {
                     ForEach(Array(row.choiceValues.enumerated()), id: \.offset) { i, value in

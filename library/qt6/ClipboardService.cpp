@@ -1,10 +1,12 @@
 #include "qt6/ClipboardService.hpp"
 #include "shell/HostAppLog.hpp"
 #include "qt6/MacClipboard.h"
+#include "paper/Picture.hpp"
 #include "sessions/Args.hpp"
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QImage>
+#include <QImageReader>
 #include <QMimeData>
 #include <cmath>
 
@@ -24,6 +26,12 @@ void ClipboardService::put(QMimeData* m) {
 
 QMimeData* ClipboardService::imageEntry(const Value& args, QString* problem) {
     const auto bytes = bytesArg(args, "bytes");
+    // Qt decodes a picture to 4 bytes a pixel and refuses one over its
+    // allocation limit (128 MB by default); the largest paper picture is
+    // larger than that.
+    constexpr int kPictureMegabytes = static_cast<int>((paper::kMaxPicturePixels * 4 + (1 << 20) - 1) >> 20);
+    if (QImageReader::allocationLimit() > 0 && QImageReader::allocationLimit() < kPictureMegabytes)
+        QImageReader::setAllocationLimit(kPictureMegabytes);
     QImage image;
     if (bytes) image.loadFromData(bytes->data(), static_cast<int>(bytes->size()), "PNG");
     if (image.isNull()) {

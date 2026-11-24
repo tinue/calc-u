@@ -8,19 +8,21 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
-const ctx = vm.createContext({});
+// The bundle's app log (appLog.js, before embed.js): its warnings recorded.
+let warnings = null;
+const ctx = vm.createContext({ calcuAppLog: (level, text) => { if (warnings && level === "warn") warnings.push(text); } });
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", "embed.js"), "utf8"), ctx);
 const { embedProps } = ctx;
 
 // The product's layouts: embedProps checks
-// `layout` against them; another value is ignored with a console warning
+// `layout` against them; another value is ignored with an app log warning
 // that names the component, and the product's default is used.
 const C59 = { name: "CalcU59", layouts: ["portrait", "wide", "auto"], layout: "portrait" };
 const C1600 = { name: "CalcU1600", layouts: ["auto"], layout: "auto" };
 function withWarnings(run) {
-  const warnings = [];
-  ctx.console = { warn: (text) => warnings.push(text) };
-  try { return { result: run(), warnings }; } finally { delete ctx.console; }
+  const kept = [];
+  warnings = kept;
+  try { return { result: run(), warnings: kept }; } finally { warnings = null; }
 }
 
 test("shared_props_in_their_order", () => {

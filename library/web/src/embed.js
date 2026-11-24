@@ -35,7 +35,7 @@ function embedProps(props, product) {
   if (layout !== undefined && layouts.includes(layout)) taken = layout;
   else if (layout !== undefined && !CALCU_LAYOUT_WARNED.has(`${name} ${layout}`)) {
     CALCU_LAYOUT_WARNED.add(`${name} ${layout}`);   // once, not at every render
-    console.warn(`${name}: layout ${JSON.stringify(layout)} is not one of its layouts ` +
+    calcuAppLog("warn", `${name}: layout ${JSON.stringify(layout)} is not one of its layouts ` +
       `(${layouts.map((l) => JSON.stringify(l)).join(", ")}); it is ignored.`);
   }
   return { width, keyboard: keyboard !== false, layout: taken, preset, height, model, workerUrl, rest };

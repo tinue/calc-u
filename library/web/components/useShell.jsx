@@ -139,7 +139,8 @@ function useCalcuShell(shell, product, traits, shellArgs) {
     else if (item.id === a.copyScreen) { if (product.copyScreen) product.copyScreen(); }
     else if (item.id === a.pasteText) {
       const read = typeof navigator !== "undefined" && navigator.clipboard ? navigator.clipboard.readText() : Promise.resolve("");
-      read.then((text) => sendChecked("paste", { text }), () => {});
+      read.then((text) => sendChecked("paste", { text }),
+        (e) => calcuAppLog("warn", `Paste: the clipboard could not be read: ${calcuErrorText(e)}`));
     } else {
       const act = (product.acts || {})[item.id];   // a product item acts
       if (act) act();

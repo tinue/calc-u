@@ -57,7 +57,7 @@ COMPONENT_SOURCES.push(path.join(WEB, "components", "hostKeys.js"));
 // the shell (the shell product, the faceplate maps, open and drop, Saved
 // Media, the slot picker).
 COMPONENT_SOURCES.push(...["useShellProduct.jsx", "ShellMedia.jsx"].map((n) => path.join(WEB, "components", n)));
-const WORKER_SOURCES =["sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
+const WORKER_SOURCES = ["appLog.js", "sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
 
 const read = (p) => fs.readFileSync(p, "utf8");
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");

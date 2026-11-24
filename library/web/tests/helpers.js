@@ -22,6 +22,13 @@ async function open(page, product = 'Test-A', query = '', state = 'running') {
   if (state === 'running') await expect(page.locator('.calcu-client').first()).not.toHaveAttribute('data-model', '');
 }
 
+// The app log's lines on the page's console from now on, as [{type, text}].
+function consoleLines(page) {
+  const lines = [];
+  page.on('console', (m) => { if (m.text().startsWith('[Calc-U] ')) lines.push({ type: m.type(), text: m.text() }); });
+  return lines;
+}
+
 const send = (page, name, args, i = 0) =>
   page.evaluate(([n, a, k]) => window.calcuTestShells[k].send(n, a), [name, args === undefined ? null : args, i]);
 const request = (page, name, args, i = 0) =>
@@ -32,4 +39,4 @@ async function files(page, i = 0) {
   return (reply && reply.files) || [];
 }
 
-module.exports = { DIST, SENTENCES, open, send, request, files, serveDist, stop };
+module.exports = { DIST, SENTENCES, consoleLines, open, send, request, files, serveDist, stop };

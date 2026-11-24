@@ -15,7 +15,8 @@
 //                                              CALCU_STREAM_KEEP items: the paper)
 //     unlockAudio(), destroy(),
 //   }
-//   state: {start: "starting" | "running" | "failed", failure,
+//   state: {start: "starting" | "running" | "failed", failure (the sentence:
+//           could not start, or stopped once running),
 //           topics: {name → last state}, streams: {name → appended since the last reset}}
 //
 // Everything that crosses postMessage is a session message in its JS form
@@ -42,10 +43,12 @@ function createShell({ product, workerUrl, start, services }) {
     state = next;
     listeners.forEach((l) => l());
   };
-  const failWith = (why) => {
+  // `detail` goes to the app log only. A failure after the start is a stop.
+  const failWith = (why, detail) => {
     if (state.start === "failed") return;
-    calcuAppLog("error", `${product} stopped: ${why}`);
-    set({ ...state, start: "failed", failure: CALCU_SENTENCES.startFailed(product, why) });
+    calcuAppLog("error", `${product} stopped: ${why}${detail ? `\n${detail}` : ""}`);
+    const sentence = state.start === "running" ? CALCU_SENTENCES.stopped : CALCU_SENTENCES.startFailed;
+    set({ ...state, start: "failed", failure: sentence(product, why) });
     waiters.forEach((w) => w({ done: false, reason: "The product could not start.", value: null }));
     waiters.clear();
   };
@@ -79,7 +82,7 @@ function createShell({ product, workerUrl, start, services }) {
       return;
     }
     if (m.topic === "web.start") {
-      if (m.value && m.value.state === "failed") failWith(m.value.failure);
+      if (m.value && m.value.state === "failed") failWith(m.value.failure, m.value.detail);
       else if (state.start === "starting") set({ ...state, start: "running", topics: { ...state.topics, [m.topic]: m.value } });
       return;
     }

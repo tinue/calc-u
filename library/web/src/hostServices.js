@@ -118,14 +118,23 @@ async function calcuCopyPicture(a, given, refused) {
     }
     return given();
   } catch (e) {
+    // The browser's own error is told here only: the refusal's reason stays
+    // short, for the user.
+    const why = `The paper's picture was not copied: ${calcuErrorText(e)}`;
+    let textError = null;
     if (hasText) {
       try {
         await navigator.clipboard.writeText(a.text);
+        calcuAppLog("warn", `${why}; its text was copied alone.`);
         return given({ textOnly: true });
-      } catch (_) { /* the download below */ }
+      } catch (t) {
+        textError = t;
+      }
     }
+    calcuAppLog("warn", `${why}; ${textError ? `its text was not copied either: ${calcuErrorText(textError)}; ` : ""}` +
+      "offered as a download.");
     calcuDownload(a.name || "paper.png", a.bytes || new Uint8Array(0), "image/png");
-    return refused("The browser did not take the picture; it is offered as a download.");
+    return refused(`The browser did not take the picture (${(e && e.name) || "Error"}); it is offered as a download.`);
   }
 }
 

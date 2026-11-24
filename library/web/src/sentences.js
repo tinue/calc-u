@@ -5,6 +5,8 @@
 const CALCU_SENTENCES = {
   // The page shows it instead of going on with "starting".
   startFailed: (product, why) => `${product} could not start${why ? `: ${why}` : "."}`,
+  // The same, for a failure once it ran.
+  stopped: (product, why) => `${product} stopped${why ? `: ${why}` : "."}`,
   starting: (product) => `Starting ${product}…`,
   // Another copy of the product holds the store.
   secondCopy: (product) => `${product} is open in another tab or window: what you save here is not kept.`,

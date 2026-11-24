@@ -29,7 +29,7 @@ test('the web menus', async ({ page }) => {
     'import-media', 'saved-media', 'settings']);
   expect(await items(page, 'edit')).toEqual(['copy-screen', 'paste-text']);
   expect(await items(page, 'machine')).toEqual(['model', 'peripherals', 'reset', 'cold-boot', 'resume']);
-  expect(await items(page, 'help')).toEqual(['help', 'about']);
+  expect(await items(page, 'help')).toEqual(['help', 'show-app-log', 'about']);
   // The model's variants on the PC-1500 and the PC-1600 (the variant menu's labels).
   await h.pickModel(page, 'PC-1600');
   await page.locator(c('menu-machine')).click();
@@ -246,6 +246,58 @@ test('copy screen', async ({ page }) => {
   const copied = await page.evaluate(() => window.__copied);
   expect(copied['image/png']).toBeGreaterThan(100);
   expect(copied['text/plain']).toBeGreaterThan(0);
+});
+
+// A clipboard that takes nothing: the screen is offered as a download, and
+// the app log has the browser's error.
+test('copy screen refused by the browser', async ({ page }) => {
+  const log = [];
+  page.on('console', (m) => { if (m.type() === 'warning' && m.text().startsWith('[Calc-U] ')) log.push(m.text()); });
+  await page.addInitScript(() => {
+    const clip = navigator.clipboard || {};
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: Object.assign(Object.create(clip), {
+      write: () => Promise.reject(new DOMException('no pictures', 'NotAllowedError')),
+    }) });
+  });
+  await h.gotoReady(page);
+  await h.waitForScreen(page, /NEW0\?/);
+  const download = page.waitForEvent('download');
+  await h.menu(page, 'edit', 'copy-screen');
+  expect((await download).suggestedFilename()).toBe('screen.png');
+  await expect.poll(() => log).toEqual([
+    '[Calc-U] Copy Screen: not copied: NotAllowedError: no pictures',
+    '[Calc-U] Copy Screen: offered as the download screen.png.',
+  ]);
+});
+
+// The session refuses the screen's picture: nothing is copied or
+// offered, the app log names the reason, and nothing is left unhandled.
+test('copy screen without a picture', async ({ page }) => {
+  const log = [];
+  const uncaught = [];
+  page.on('console', (m) => { if (m.type() === 'warning' && m.text().startsWith('[Calc-U] ')) log.push(m.text()); });
+  page.on('pageerror', (e) => uncaught.push(String(e)));
+  await page.addInitScript(() => {
+    window.__wrote = 0;
+    const clip = navigator.clipboard || {};
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: Object.assign(Object.create(clip), {
+      write: async (list) => {
+        window.__wrote += 1;
+        for (const item of list) for (const t of item.types) await item.getType(t);
+      },
+    }) });
+  });
+  await h.gotoReady(page);
+  await h.waitForScreen(page, /NEW0\?/);
+  await page.evaluate(() => {
+    const shell = document.querySelector('.calcu-client').calcuShell;
+    const request = shell.request;
+    shell.request = (name, args) => (name === 'c1600.screen-image'
+      ? Promise.resolve({ done: false, reason: 'No screen to copy.', value: null }) : request(name, args));
+  });
+  await h.menu(page, 'edit', 'copy-screen');
+  await expect.poll(() => log).toEqual(['[Calc-U] Copy Screen: No screen to copy.']);
+  expect(uncaught).toEqual([]);
 });
 
 // A mouse click in the gap below a key, within 24

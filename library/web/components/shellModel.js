@@ -206,19 +206,72 @@ function calcuShellPointer(map, scale) {
   };
 }
 
-function calcuShellAbout(product) {
+// About (shell::about, shell::aboutText): `host` the page's rows
+// ([label, value]; an empty value is left out) after "Built".
+const CALCU_SHELL_SUPPORT_HEADING = "Support Information";
+function calcuShellAbout(product, host) {
   let title = product.aboutLabel || `About ${product.name}`;
   if (title.endsWith("…")) title = title.slice(0, -1);
+  const support = [...(product.buildTime ? [["Built", product.buildTime]] : []), ...(host || []).filter((r) => r[1])];
   return {
     title, name: product.name,
     version: `Version ${product.version}${product.build ? ` (${product.build})` : ""}`,
-    lines: product.aboutLines || [], links: product.aboutLinks || [],
+    lines: product.aboutLines || [], links: product.aboutLinks || [], support,
   };
+}
+
+function calcuShellAboutText(a) {
+  let out = `${a.name}\n${a.version}\n` + a.lines.map((l) => `${l}\n`).join("");
+  if (a.support.length) out += `\n${CALCU_SHELL_SUPPORT_HEADING}\n` + a.support.map(([l, v]) => `${l}: ${v}\n`).join("");
+  return out;
+}
+
+// What the browser tells of where the page runs: Browser, OS, Hardware.
+// `nav`: the navigator; `hints`: the answer of userAgentData's
+// getHighEntropyValues (Chromium), or null. Without hints the user agent
+// string gives the browser and the OS's name only: Safari and Firefox
+// freeze the rest, so a version there would be made up. A browser shows no
+// CPU model; the architecture only with hints.
+function calcuShellHostRows(nav, hints) {
+  const ua = (nav && nav.userAgent) || "";
+  let browser = "";
+  const brands = hints && (hints.fullVersionList || hints.brands);
+  if (brands && brands.length) {
+    const real = brands.filter((b) => !/Not.?A.?Brand/i.test(b.brand));
+    const pick = real.find((b) => b.brand !== "Chromium") || real[0];
+    if (pick) browser = `${pick.brand.replace(/^Google /, "")} ${pick.version}`;
+  }
+  if (!browser) {
+    for (const [name, re] of [["Edge", /Edg[A-Za-z]*\/([\d.]+)/], ["Opera", /OPR\/([\d.]+)/], ["Firefox", /(?:Firefox|FxiOS)\/([\d.]+)/],
+                              ["Chrome", /(?:Chrome|CriOS)\/([\d.]+)/], ["Safari", /Version\/([\d.]+).*Safari\//]]) {
+      const m = re.exec(ua);
+      if (m) { browser = `${name} ${m[1]}`; break; }
+    }
+  }
+  let os = "";
+  const platform = (hints && hints.platform) || "";
+  if (platform) {
+    const v = hints.platformVersion || "";
+    if (platform === "Windows") os = v ? `Windows ${parseInt(v, 10) >= 13 ? "11" : "10"}` : "Windows";
+    else os = v ? `${platform} ${v}` : platform;
+  } else if (/iPhone|iPad|iPod/.test(ua)) os = "iOS";
+  else if (/Android/.test(ua)) os = "Android";
+  else if (/Mac OS X|Macintosh/.test(ua)) os = "macOS";
+  else if (/Windows/.test(ua)) os = "Windows";
+  else if (/CrOS/.test(ua)) os = "ChromeOS";
+  else if (/Linux/.test(ua)) os = "Linux";
+  let hardware = "";
+  if (hints && hints.architecture) {
+    const a = hints.architecture === "x86" ? (hints.bitness === "64" ? "x86_64" : "x86")
+                                           : (hints.bitness === "64" ? `${hints.architecture}64` : hints.architecture);
+    hardware = hints.model ? `${hints.model}, ${a}` : a;
+  } else if (hints && hints.model) hardware = hints.model;
+  return [["Browser", browser], ["OS", os], ["Hardware", hardware]];
 }
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     calcuShellBarFit, calcuShellPaperRowCompact, calcuShellView, calcuShellLoading, calcuShellNotices, calcuShellKeyAt,
-    calcuShellPointer, calcuShellAbout, calcuShellAvailability, CALCU_SHELL_LOADING_MS,
+    calcuShellPointer, calcuShellAbout, calcuShellAboutText, calcuShellHostRows, calcuShellAvailability, CALCU_SHELL_LOADING_MS,
   };
 }

@@ -101,7 +101,7 @@ function(calcu_add_test name group)
 endfunction()
 
 # calcu_build_id_header(<name> <product directory> <target…>): the calling
-# directory's generated/BuildId.h with APP_BUILD_ID (tools/build-id.cmake),
+# directory's generated/BuildId.h with APP_BUILD_ID and APP_BUILD_TIME (tools/build-id.cmake),
 # made again at each build of the targets, which include generated/.
 function(calcu_build_id_header name product)
   set(header ${CMAKE_CURRENT_BINARY_DIR}/generated/BuildId.h)

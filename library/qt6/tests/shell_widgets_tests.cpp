@@ -16,6 +16,7 @@
 #include "shell/ObjectNames.hpp"
 #include <QAction>
 #include <QApplication>
+#include <QClipboard>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QGroupBox>
@@ -540,8 +541,19 @@ TEST(about_dialog_on_widgets) {
     CHECK(texts.contains(QStringLiteral("Version 1.2.3 (abc123)")));
     CHECK(texts.contains(QStringLiteral("A product made for the tests.")));
     CHECK(texts.contains(QStringLiteral("<a href=\"https://example.org/source\">Source</a>")));
+    auto* support = about->findChild<QLabel*>(QStringLiteral("about-support"));
+    CHECK(support && support->text() == QStringLiteral("<b>Support Information</b>"));   // OS, Hardware of this host
     auto* buttons = about->findChild<QDialogButtonBox*>();
-    CHECK(buttons && buttons->buttons().size() == 1);
+    CHECK(buttons && buttons->buttons().size() == 2);   // Copy and OK
+    auto* copy = about->findChild<QPushButton*>(QStringLiteral("about-copy"));
+    CHECK(copy != nullptr);
+    QGuiApplication::clipboard()->clear();
+    copy->click();
+    const QString copied = QGuiApplication::clipboard()->text();
+    CHECK(copied.startsWith(QStringLiteral("Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\n")));
+    CHECK(copied.contains(QStringLiteral("\n\nSupport Information\nOS: ")));
+    CHECK(!copied.contains(QStringLiteral("example.org")));   // no links
+    CHECK(about->isVisible());   // Copy leaves it open
 }
 
 TEST(paper_panel_always_on_widgets) {

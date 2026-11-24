@@ -1,12 +1,12 @@
 // A product page's glue to its session, the same for both products' pages.
 //
-//   useShellProduct(shell, {request, args, fallback, version, build,
+//   useShellProduct(shell, {request, args, fallback, version, build, buildTime,
 //                   copyScreen, openFiles, acts}) → {product, ready, chrome}
 //     the product's data: `request` (`<prefix>.shell-product`) with
 //     `args`, once per distinct `args` while the session runs, its answer
 //     {product, chrome} kept; `fallback` (the shell's frame with nothing of
 //     the product's) until it came. The product is the answer's with the
-//     page's `version` and `build`, Copy Screen (`copyScreen`, or null:
+//     page's `version`, `build` and `buildTime`, Copy Screen (`copyScreen`, or null:
 //     none), Load Preset… (the files picked by the product's
 //     `presetUploads`: the preset with the files it names, through
 //     `openFiles(files, "dialog")`) and the items' acts (`acts`, by id); its
@@ -57,6 +57,7 @@ function useShellProduct(shell, options) {
       ...p,
       version: options.version,
       build: options.build,
+      buildTime: options.buildTime || "",
       copyScreen: hasCopyScreen ? () => latest.current.copyScreen() : null,
       loadPreset: async () => {
         const files = await calcuPickFiles(p.presetUploads || "", true);

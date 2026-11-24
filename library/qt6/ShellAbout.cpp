@@ -1,7 +1,10 @@
 #include "qt6/ShellAbout.hpp"
+#include "qt6/HostInfo.hpp"
 #include "shell/ObjectNames.hpp"
 #include <QApplication>
+#include <QClipboard>
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include <QIcon>
 #include <QLabel>
 #include <QVBoxLayout>
@@ -9,7 +12,7 @@
 namespace calcu::qt6 {
 
 ShellAbout::ShellAbout(const shell::ShellProduct& product, QWidget* parent) : QDialog(parent) {
-    const shell::AboutModel a = shell::about(product);
+    const shell::AboutModel a = shell::about(product, hostSupportRows());
     setObjectName(shell::names::kAboutDialog);
     setWindowTitle(QString::fromStdString(a.title));
     setWindowModality(Qt::WindowModal);
@@ -41,9 +44,28 @@ ShellAbout::ShellAbout(const shell::ShellProduct& product, QWidget* parent) : QD
         link->setTextInteractionFlags(Qt::TextBrowserInteraction);
         l->addWidget(link);
     }
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok, this);   // one button to close it
+    if (!a.support.empty()) {
+        // Selectable, so a part can be copied too; Copy takes all of it.
+        auto* heading = new QLabel(QStringLiteral("<b>%1</b>").arg(QString::fromUtf8(shell::kSupportHeading)), this);
+        heading->setObjectName(QStringLiteral("about-support"));
+        l->addSpacing(heading->fontMetrics().height() / 2);
+        l->addWidget(heading);
+        for (const auto& [label, value] : a.support) {
+            auto* row = new QLabel(QString::fromStdString(label + ": " + value), this);
+            row->setWordWrap(true);
+            row->setTextInteractionFlags(Qt::TextSelectableByMouse);
+            l->addWidget(row);
+        }
+    }
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok, this);   // OK closes it
     buttons->setObjectName(QStringLiteral("about-close"));
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    // Copy: the dialog's texts as plain text, for a bug report.
+    auto* copy = buttons->addButton(QStringLiteral("Copy"), QDialogButtonBox::ActionRole);
+    copy->setObjectName(QStringLiteral("about-copy"));
+    copy->setAutoDefault(false);
+    const QString text = QString::fromStdString(shell::aboutText(a));
+    connect(copy, &QPushButton::clicked, this, [text] { QGuiApplication::clipboard()->setText(text); });
     l->addWidget(buttons);
 }
 

@@ -54,6 +54,7 @@ struct ProductItem {
 
 struct ShellProduct {
     std::string name, version, build;               // "Calc-U-1600"
+    std::string buildTime;                          // the build's commit time, "2026-11-24T11:49:08Z"; empty: unknown
     std::string helpUrl;                            // "https://calc-u.org/1600/"
     std::string aboutLabel;                         // empty: "About <name>"
     std::vector<std::string> aboutLines;            // the texts in order
@@ -106,15 +107,26 @@ struct ShellProduct {
 std::string nameAndSavePrompt(const ShellProduct&, const std::string& place);
 
 // The About dialog: the product's name, "Version <v> (<build>)",
-// its texts and links in order, one button to close it.
+// its texts and links in order, then "Support Information" (when it has a
+// row: "Built" from the product's build time, then the host's rows such as
+// Browser, OS, Hardware), and the buttons Copy and OK.
+using SupportRows = std::vector<std::pair<std::string, std::string>>;   // label, value
 struct AboutModel {
     std::string title;     // "About <name>"
     std::string name;
     std::string version;   // "Version 1.2.3 (abc123)"
     std::vector<std::string> lines;
     std::vector<std::pair<std::string, std::string>> links;
+    SupportRows support;
 };
-AboutModel about(const ShellProduct&);
+inline constexpr const char* kSupportHeading = "Support Information";
+// `host`: what the frontend knows of where it runs; a row with an empty
+// value is left out.
+AboutModel about(const ShellProduct&, const SupportRows& host = {});
+// What Copy puts on the clipboard: the visible texts as plain text, one per
+// line, without the links (they name only places to go), and the support
+// rows as "Label: value" under their heading after a blank line.
+std::string aboutText(const AboutModel&);
 
 // The state topics the product's items follow (their checkedBy), each once:
 // a frontend keeps their last values in ShellInputs::productTopics.

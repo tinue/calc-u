@@ -241,7 +241,7 @@ function CalcU1600(props) {
   // names, as one folder).
   const { product, ready: productReady, chrome } = useShellProduct(shell, {
     request: "c1600.shell-product", fallback: C1600_NO_PRODUCT, version: CalcU1600.version, build: CalcU1600.build,
-    copyScreen, openFiles,
+    buildTime: CalcU1600.buildTime, copyScreen, openFiles,
     acts: { "load-basic-program": () => pickProgram("basic"), "load-machine-code": () => pickProgram("code") },
   });
 
@@ -437,4 +437,5 @@ function CalcU1600(props) {
 
 CalcU1600.version = "__CALC_VERSION__";
 CalcU1600.build = "__CALC_BUILD__";   // tools/build-id.cmake
+CalcU1600.buildTime = "__CALC_BUILD_TIME__";
 if (typeof window !== "undefined") window.CalcU1600 = CalcU1600;

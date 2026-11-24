@@ -179,6 +179,37 @@ test("about_shows_product_texts", () => {
   assert.equal(m.calcuShellAbout(p).version, "Version 1.2.3");
 });
 
+// The same text as shell::aboutText (help_about_tests.cpp).
+test("about_support_rows_and_copied_text", () => {
+  const p = product();
+  assert.deepEqual(m.calcuShellAbout(p).support, []);
+  assert.equal(m.calcuShellAboutText(m.calcuShellAbout(p)),
+    "Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\nNo code of a product.\n");
+  p.buildTime = "2026-11-24T11:49:08Z";
+  const a = m.calcuShellAbout(p, [["OS", "Darwin arm64 27.2.0"], ["Hardware", ""], ["Browser", "Safari 27.2"]]);
+  assert.equal(a.support.length, 3);
+  assert.equal(m.calcuShellAboutText(a),
+    "Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\nNo code of a product.\n\n" +
+    "Support Information\nBuilt: 2026-11-24T11:49:08Z\nOS: Darwin arm64 27.2.0\nBrowser: Safari 27.2\n");
+});
+
+test("host_rows_from_the_browser", () => {
+  const safari = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15";
+  assert.deepEqual(m.calcuShellHostRows({ userAgent: safari }, null), [["Browser", "Safari 27.2"], ["OS", "macOS"], ["Hardware", ""]]);
+  const firefox = "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0";
+  assert.deepEqual(m.calcuShellHostRows({ userAgent: firefox }, null), [["Browser", "Firefox 140.0"], ["OS", "Linux"], ["Hardware", ""]]);
+  const hints = (platform, platformVersion, architecture) => ({
+    platform, platformVersion, architecture, bitness: "64", model: "",
+    fullVersionList: [{ brand: "Not)A;Brand", version: "99.0.0.0" }, { brand: "Chromium", version: "150.0.7871.250" },
+                      { brand: "Google Chrome", version: "150.0.7871.250" }],
+  });
+  assert.deepEqual(m.calcuShellHostRows({ userAgent: "" }, hints("Windows", "19.0.0", "x86")),
+    [["Browser", "Chrome 150.0.7871.250"], ["OS", "Windows 11"], ["Hardware", "x86_64"]]);
+  assert.deepEqual(m.calcuShellHostRows({ userAgent: "" }, hints("macOS", "27.2.0", "arm")),
+    [["Browser", "Chrome 150.0.7871.250"], ["OS", "macOS 27.2.0"], ["Hardware", "arm64"]]);
+  assert.equal(m.calcuShellHostRows({ userAgent: "" }, hints("Windows", "10.0.0", "x86"))[1][1], "Windows 10");
+});
+
 // The bar below a faceplate (barFit, bar_model_tests.cpp).
 test("bar_fit_labels_and_width", () => {
   assert.deepEqual(m.calcuShellBarFit(400, 250, 380), { labels: true, width: 400 });

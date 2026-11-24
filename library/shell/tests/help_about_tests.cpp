@@ -40,3 +40,18 @@ TEST(about_shows_product_texts) {
     p.build.clear();
     CHECK_EQ(about(p).version, std::string("Version 1.2.3"));
 }
+
+TEST(about_support_rows_and_copied_text) {
+    auto p = st::product();
+    CHECK(about(p).support.empty());   // no build time, no host rows: no section
+    CHECK_EQ(aboutText(about(p)),
+             std::string("Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\nNo code of a product.\n"));
+    p.buildTime = "2026-11-24T11:49:08Z";
+    const AboutModel a = about(p, {{"OS", "Darwin arm64 27.2.0"}, {"Hardware", ""}, {"Browser", "Safari 27.2"}});
+    CHECK_EQ(a.support.size(), std::size_t{3});   // the empty Hardware is left out
+    CHECK_EQ(a.support[0].first, std::string("Built"));
+    CHECK_EQ(aboutText(a), std::string("Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\n"
+                                       "No code of a product.\n\nSupport Information\nBuilt: 2026-11-24T11:49:08Z\n"
+                                       "OS: Darwin arm64 27.2.0\nBrowser: Safari 27.2\n"));
+    CHECK(aboutText(a).find("example.org") == std::string::npos);   // no links
+}

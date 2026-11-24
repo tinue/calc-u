@@ -3,7 +3,8 @@
 #include <QDialog>
 
 // The About dialog of the Qt6 shell: the product's name, its version and
-// build, the texts and links the product gives, one button to close it.
+// build, the texts and links the product gives, the Support Information
+// (build time, OS, hardware), Copy (`about-copy`: shell::aboutText) and OK.
 // Window-modal through open(). Object name `about-dialog`.
 
 namespace calcu::qt6 {

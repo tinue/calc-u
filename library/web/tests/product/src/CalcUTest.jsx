@@ -33,7 +33,7 @@ const CALCU_PRODUCT = "__CALCU_PRODUCT__";
 // The page's data of TestShellPart.hpp's product() (the menus and the
 // bar are the worker's, from the C++ product) and the act of its item.
 const CALCU_TEST_SHELL_PRODUCT = {
-  name: "Test-Product", version: "1.2.3", build: "abc123", helpUrl: "https://calc-u.org/test/",
+  name: "Test-Product", version: "1.2.3", build: "abc123", buildTime: "2026-11-24T11:49:08Z", helpUrl: "https://calc-u.org/test/",
   aboutLabel: "", aboutLines: ["A product made for the tests.", "No code of a product."],
   aboutLinks: [["Source", "https://example.org/source"], ["Privacy", "https://example.org/privacy"]],
   presetUploads: ".test", copyScreen: null,

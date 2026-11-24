@@ -175,6 +175,26 @@ test('roms missing', async ({ page }) => {
   await expect(el(page, 'about-version')).toHaveText('Version 1.2.3 (abc123)');
 });
 
+test('about copies its texts and the support information', async ({ page }) => {
+  await start(page);
+  await page.evaluate(() => {
+    window.calcuCopied = [];
+    Object.defineProperty(navigator, 'clipboard', { configurable: true,
+      value: { writeText: (t) => { window.calcuCopied.push(t); return Promise.resolve(); } } });
+  });
+  await chooseItem(page, 'help', 'about');
+  const support = el(page, 'about-support');
+  await expect(support).toContainText('Support Information');
+  await expect(support).toContainText('Built: 2026-11-24T11:49:08Z');
+  await expect(support).toContainText('Browser: ');
+  await el(page, 'about-copy').click();
+  await expect(el(page, 'about-dialog')).toBeVisible();   // Copy leaves it open
+  const copied = (await page.evaluate(() => window.calcuCopied))[0];
+  expect(copied.startsWith('Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\nNo code of a product.\n\n' +
+    'Support Information\nBuilt: 2026-11-24T11:49:08Z\nBrowser: ')).toBe(true);
+  expect(copied).not.toContain('example.org');   // no links
+});
+
 test('help opens', async ({ page }) => {
   await start(page);
   await page.evaluate(() => { window.calcuOpened = []; window.open = (url) => { window.calcuOpened.push(url); return null; }; });

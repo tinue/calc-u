@@ -111,6 +111,10 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     applog::AppLog& appLog() override { return setup.appLog ? *setup.appLog : applog::nullAppLog(); }
     bool busy() const override { return running != nullptr; }
     bool hostOffers(HostService s) const override { return offerer(s) != nullptr; }
+    bool hostCopiesInSteps() const override {
+        const Listener* l = offerer(HostService::ClipboardImage);
+        return l && l->services.clipboardInSteps;
+    }
     std::optional<CallId> askHost(HostService, Value, std::function<void(const ServiceAnswer&)>) override;
     std::chrono::system_clock::time_point hostTime() const override {
         return setup.hostTime ? setup.hostTime() : std::chrono::system_clock::now();

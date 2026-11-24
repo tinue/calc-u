@@ -442,7 +442,7 @@ TEST(preset_naming_printer_starts_empty) {
     CHECK(r.pc100cPaper()->empty());
 }
 
-// The step cut-paper: cuts the paper of the printer plugged in, without a copy.
+// The step cut-paper: cuts the paper of the printer plugged in (no clipboard in the rig, so no copy).
 TEST(preset_cut_paper) {
     PartRig r;
     CHECK(r.load(preset("keys:\n  - regular-speed:\n  - key: 1 2nd Prt\n  - cut-paper:\n  - key: 2 2nd Prt\n"

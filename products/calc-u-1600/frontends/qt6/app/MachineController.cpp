@@ -34,6 +34,7 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
                         sessions::HostService::ClipboardImage, sessions::HostService::FilePicker,
                         sessions::HostService::FolderPicker,   sessions::HostService::KeepFile,
                         sessions::HostService::OpenUrl};
+    services.clipboardInSteps = true;
     m_session = std::make_unique<calcu::qt6::ProductHost<cu1600::SharpAppPart>>(
         cu1600::makeSharpSession(AppSettings::settings(), AppPaths::paths(), std::move(options)), std::move(services));
     host().addMessageHandler([this](const sessions::Message& m) { onMessage(m); });

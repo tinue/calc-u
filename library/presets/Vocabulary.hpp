@@ -13,7 +13,7 @@
 // the running program knows. The presets register their own
 // (addLibraryKeywords, LibraryKeywords.cpp); a product adds its own through
 // ProductRules::addKeywords; other areas add theirs (the media steps, paper's
-// `cut-paper`, the debugger steps). Every keyword is read by the same YAML,
+// `cut-paper` and `copy-paper`, the debugger steps). Every keyword is read by the same YAML,
 // checked with the rest before anything is built, carried out in file order,
 // and gives its errors with the line. No block is handed over as raw lines.
 

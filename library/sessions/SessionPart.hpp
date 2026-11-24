@@ -53,6 +53,9 @@ public:
     virtual applog::AppLog& appLog() = 0;
     virtual bool busy() const = 0;                    // an operation runs
     virtual bool hostOffers(HostService) const = 0;
+    // The listener that offers the clipboard picture also takes it from a
+    // preset step (HostServices::clipboardInSteps).
+    virtual bool hostCopiesInSteps() const = 0;
     // Asks the first listener that offers the service; `then` runs
     // when the answer arrives. std::nullopt: nobody offers it, nothing asked.
     virtual std::optional<CallId> askHost(HostService, Value args, std::function<void(const ServiceAnswer&)> then) = 0;

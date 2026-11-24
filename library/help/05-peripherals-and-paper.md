@@ -159,5 +159,7 @@ In a browser that does not take a picture on the clipboard, the text
 alone is copied where there is text; otherwise the picture is offered as
 a download.
 
-A preset can cut the paper with the step `- cut-paper:`
-([Presets](06-presets.md)).
+A preset can copy the paper with the step `- copy-paper:` and cut it
+with `- cut-paper:`, which copies first, as Cut does ([Presets](06-presets.md)).
+In the browser a preset never copies: `- copy-paper:` does nothing and
+`- cut-paper:` only cuts.

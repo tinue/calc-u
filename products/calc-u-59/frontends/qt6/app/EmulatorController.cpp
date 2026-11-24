@@ -73,6 +73,7 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
     host.appLogLevel = calcu::qt6::appLogLevelOfRun();
     cs::HostServices services;
     services.offered = {cs::HostService::ClipboardImage, cs::HostService::ClipboardText, cs::HostService::OpenUrl};
+    services.clipboardInSteps = true;
     m_session = std::make_unique<calcu::qt6::ProductHost<cu59::TIAppPart>>(
         cu59::makeAppSession(std::move(setup), std::move(host)), std::move(services), std::move(clock));
     this->host().addMessageHandler([this](const cs::Message& m) { onMessage(m); });

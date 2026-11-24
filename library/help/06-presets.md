@@ -108,7 +108,8 @@ a value is written `- verb:`. The most used ones:
 | `screenshot: <file name>` | saves a picture of the display |
 | `trace: <file name>` / `trace: off` | starts or ends a trace ([Debugger](07-debugger.md#traces)) |
 | `elapsed-time: start` / `report` | measures emulated time and writes it to the log as `m:ss.mmm` |
-| `cut-paper:` | cuts the paper of the printer that is plugged in |
+| `cut-paper:` | copies the paper of the printer that is plugged in to the clipboard, then cuts it, as Cut on the paper panel; in the browser it only cuts |
+| `copy-paper:` | copies the paper of the printer that is plugged in to the clipboard, as Copy on the paper panel; in the browser it does nothing |
 
 Steps for media (inserting a medium, Name & Save) and the product's own
 steps are listed in the [reference](10-reference.md#steps) and the

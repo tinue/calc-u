@@ -163,7 +163,7 @@ magnetic-cards:
 
 The family's steps (`key:`, `wait:`, `skip-wait:`, `let-it-finish:`,
 `full-speed:`, `regular-speed:`, `expect:`, `not-expect:`, `screenshot:`,
-`trace:`, `elapsed-time:`, `cut-paper:`, `saveas:`) and these:
+`trace:`, `elapsed-time:`, `cut-paper:`, `copy-paper:`, `saveas:`) and these:
 
 | Step | Value |
 |---|---|

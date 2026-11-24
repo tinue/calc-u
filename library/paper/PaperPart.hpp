@@ -52,9 +52,13 @@ public:
     void afterCall(sessions::SessionContext&, pacing::WallTime) override;
     void machineChanged(sessions::SessionContext&) override;
 
-    // The step `cut-paper`: the paper of the printer that is plugged
-    // in, without a copy; nothing without a printer.
+    // The steps `cut-paper` and `copy-paper`: the paper of the printer
+    // that is plugged in, as the GUI's Cut and Copy, where the host takes
+    // the clipboard from a step (hostCopiesInSteps); elsewhere, such as the
+    // Web, the cut only cuts and the copy does nothing. Nothing without a
+    // printer; neither ever fails.
     void cutPlugged(sessions::SessionContext&);
+    void copyPlugged(sessions::SessionContext&);
 
     // A paper by its owner's name in any case, the one of the printer that
     // is plugged in without a name. `refusal` says why there is none.
@@ -91,9 +95,9 @@ private:
     std::set<std::string> logged_;   // each unbound capability is logged once
 };
 
-// The step `- cut-paper:` (no value, no emulated time, also while
-// paused; not a harness command of the same name, PaperCommands.cpp has its
-// own). The product, which owns both parts, adds it.
+// The steps `- cut-paper:` and `- copy-paper:` (no value, no emulated time,
+// also while paused; the harness has its own commands, PaperCommands.cpp).
+// The product, which owns both parts, adds them.
 void addPaperStep(presets::Vocabulary&, PaperPart&);
 
 // Conformance: the printer's capability is there, its description

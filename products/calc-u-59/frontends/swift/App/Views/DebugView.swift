@@ -12,11 +12,11 @@ struct DebugView: View {
             HStack(spacing: 0) {
                 // The product entry c59.calculator-tab:
                 // not while an ASM overlay runs.
-                tabButton("CALCULATOR", .live)
+                tabButton("CALCULATOR", .live, id: "calculator")
                     .disabled(!vm.calculatorTabAvailable)
                     .opacity(vm.calculatorTabAvailable ? 1.0 : 0.35)
-                tabButton("CPU", .cpu)
-                tabButton("RUN LOG", .log)
+                tabButton("CPU", .cpu, id: "cpu")
+                tabButton("RUN LOG", .log, id: "log")
                 Spacer()
             }
             .frame(height: Chrome.panelHeaderHeight)
@@ -61,14 +61,15 @@ struct DebugView: View {
         .buttonStyle(ChromeButtonStyle())
     }
 
-    private func tabButton(_ label: String, _ tab_: DebugTab) -> some View {
+    // `id` is fixed: the UI tests find a tab by it whatever its label reads.
+    private func tabButton(_ label: String, _ tab_: DebugTab, id: String) -> some View {
         Button(label) { vm.debugTab = tab_ }
             .font(.system(size: 10, weight: .bold))
             .foregroundStyle(vm.debugTab == tab_ ? Chrome.text : Chrome.text.opacity(0.4))
             .padding(.horizontal, 12)
             .frame(maxHeight: .infinity)
             .background(vm.debugTab == tab_ ? Chrome.tabSelected : Color.clear)
-            .accessibilityIdentifier("btn-tab-\(label.lowercased())")
+            .accessibilityIdentifier("btn-tab-\(id)")
     }
 }
 

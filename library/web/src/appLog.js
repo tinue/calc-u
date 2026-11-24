@@ -8,6 +8,11 @@
 //   calcuAppLog(level, text)   level: "error" | "warn" | "info" | "debug"
 //   calcuAppLogText()          the kept lines, one per line, for the download
 //   calcuAppLogLevelOfPage()   the `?app-log-level=` of the page's URL, or ""
+//   calcuErrorText(e)          "<name>: <message>" of a thrown value
+//
+// In the worker (library-worker.js) a line is filtered by the worker's URL,
+// which carries the page's `?app-log-level=`, and posted to the page as
+// {kind: "app-log", level, text}: it lands in the page's kept lines too.
 
 const CALCU_APP_LOG_KEEP = 2000;
 const CALCU_APP_LOG_LEVELS = ["error", "warn", "info", "debug"];
@@ -25,6 +30,17 @@ function calcuAppLogStamp(d) {
     `${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
 }
 
+function calcuErrorText(e) {
+  if (e && typeof e === "object" && (e.name || e.message)) {
+    const errno = typeof e.errno === "number" ? ` (errno ${e.errno})` : "";   // Emscripten's FS errors
+    return `${e.name || "Error"}: ${e.message || ""}${errno}`;
+  }
+  return String(e);
+}
+
+const CALCU_APP_LOG_IN_WORKER = typeof WorkerGlobalScope !== "undefined" && typeof self !== "undefined" &&
+  self instanceof WorkerGlobalScope;
+
 // `fromWorker`: the line was filtered in the worker already.
 function calcuAppLog(level, text, fromWorker) {
   const at = CALCU_APP_LOG_LEVELS.indexOf(level);
@@ -32,6 +48,10 @@ function calcuAppLog(level, text, fromWorker) {
   if (!fromWorker) {
     const page = CALCU_APP_LOG_LEVELS.indexOf(calcuAppLogLevelOfPage() || "warn");
     if (CALCU_APP_LOG_LEVELS.indexOf(lvl) > page) return;
+  }
+  if (CALCU_APP_LOG_IN_WORKER) {
+    postMessage({ kind: "app-log", level: lvl, text: String(text) });
+    return;
   }
   const body = String(text).replace(/\r/g, "").replace(/\n/g, "\n  ");
   calcuAppLogLines.push(`${calcuAppLogStamp(new Date())} ${lvl.toUpperCase().padEnd(5)} ${body}`);

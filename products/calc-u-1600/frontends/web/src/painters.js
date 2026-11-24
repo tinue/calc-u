@@ -130,13 +130,18 @@ function canvasPng(canvas) {
 // Puts `items` ({mime: Promise of a Blob or string}) on the clipboard.
 // Called straight from the click (Safari allows a write only inside the
 // gesture), with the data still on its way from the worker -- ClipboardItem
-// takes promises. Resolves false if the browser refuses.
-async function writeClipboard(items) {
+// takes promises. Resolves false if the browser refuses, or an item's
+// promise rejects (its data did not come), with an app log line that names
+// `what` and the browser's error.
+async function writeClipboard(what, items) {
   const asBlob = (mime) => Promise.resolve(items[mime]).then((v) => (typeof v === "string" ? new Blob([v], { type: mime }) : v));
   try {
     if (navigator.clipboard && window.ClipboardItem) {
       const entries = {};
-      for (const mime of Object.keys(items)) entries[mime] = asBlob(mime);
+      for (const mime of Object.keys(items)) {
+        entries[mime] = asBlob(mime);
+        entries[mime].catch(() => {});   // told once, by the write below
+      }
       await navigator.clipboard.write([new ClipboardItem(entries)]);
       return true;
     }
@@ -144,16 +149,22 @@ async function writeClipboard(items) {
       await navigator.clipboard.writeText(await items["text/plain"]);
       return true;
     }
-  } catch (e) { /* refused, or a type this browser doesn't take */ }
+  } catch (e) {
+    calcuAppLog("warn", `${what}: not copied: ${calcuErrorText(e)}`);
+  }
   return false;
 }
 
 // Copy Screen: `items` on the clipboard, else (the
-// browser refuses) its "image/png" downloaded as `fileName`.
-async function copyImageOrDownload(fileName, items) {
-  if (await writeClipboard(items)) return;
-  const png = await items["image/png"];
-  if (png) downloadBytes(fileName, png, "image/png");
+// browser refuses) its "image/png" downloaded as `fileName`; nothing when
+// the picture itself did not come.
+async function copyImageOrDownload(what, fileName, items) {
+  if (await writeClipboard(what, items)) return;
+  const png = await Promise.resolve(items["image/png"]).catch(() => null);
+  if (png) {
+    calcuAppLog("warn", `${what}: offered as the download ${fileName}.`);
+    downloadBytes(fileName, png, "image/png");
+  }
 }
 
 // A file or blob for the user to keep (the library's download).

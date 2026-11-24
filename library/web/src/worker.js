@@ -27,8 +27,9 @@
   let suspended = false;
   const pending = [];
 
-  const postStart = (state, failure) =>
-    postMessage({ kind: "state", topic: "web.start", value: { state, failure: failure || "" } });
+  // `detail`: what only the app log gets (the stack, what was handled).
+  const postStart = (state, failure, detail) =>
+    postMessage({ kind: "state", topic: "web.start", value: { state, failure: failure || "", detail: detail || "" } });
 
   function errorText(e) {
     if (Module && typeof WebAssembly !== "undefined" && WebAssembly.Exception && e instanceof WebAssembly.Exception &&
@@ -41,18 +42,24 @@
     return String((e && e.message) || e);
   }
 
+  // The app log's part of a failure: where it happened and the stack.
+  function errorDetail(where, e) {
+    const stack = e && typeof e.stack === "string" ? e.stack : "";
+    return stack ? `${where}\n${stack}` : where;
+  }
+
   function stopLoop() {
     if (loop === null) return;
     clearInterval(loop);
     loop = null;
   }
 
-  function fail(why) {
+  function fail(why, detail) {
     if (failed) return;
     failed = true;
     stopLoop();
     host = null;
-    postStart("failed", why);
+    postStart("failed", why, detail);
   }
 
   let lastTick = null;
@@ -65,7 +72,7 @@
       try {
         host.call();
       } catch (e) {
-        fail(errorText(e));
+        fail(errorText(e), errorDetail("in the host's call", e));
       }
       return;
     }
@@ -75,7 +82,7 @@
     try {
       host.call();
     } catch (e) {
-      fail(errorText(e));
+      fail(errorText(e), errorDetail("in the host's call", e));
     }
     const end = performance.now();
     pace.ticks += 1;
@@ -102,7 +109,8 @@
     try {
       host.receive(m);
     } catch (e) {
-      fail(errorText(e));
+      const what = [m.kind, m.name || m.topic, m.call ? `call ${m.call}` : ""].filter(Boolean).join(" ");
+      fail(errorText(e), errorDetail(`handling the message ${what}`, e));
       return;
     }
     if (m.kind === "command" && m.name === "suspend") {
@@ -193,5 +201,5 @@
   };
 
   if (!CONFIG) fail("The worker was started without a product.");
-  else init().catch((e) => fail(errorText(e)));
+  else init().catch((e) => fail(errorText(e), errorDetail("while starting", e)));
 })();

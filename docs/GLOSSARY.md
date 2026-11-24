@@ -398,8 +398,8 @@ _Avoid_: default preset
 
 **File cache**:
 The Web's folder in the browser's kept storage (`<mount>/cache`) that holds
-every file the page uploaded, by its name, and the startup presets chosen
-there, so that a preset whose files were uploaded before can be chosen alone.
+every file the page uploads or picks but a preset it loads once, by its
+name, and the startup presets chosen there, so that a preset whose files were uploaded before can be chosen alone.
 
 **Example**:
 A preset in a product's `examples/` folder that shows what it can do;

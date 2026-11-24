@@ -10,10 +10,11 @@
 #include <system_error>
 
 // The Web's file cache: a folder in the browser's kept storage that holds
-// every file the page uploaded, flat by its name (a newer file of the same
-// name replaces the older), so that a preset chosen later without its files
-// still finds them. The native hosts have none: they read the files where
-// they lie.
+// every file the page uploads or picks but a preset it loads once, and the
+// startup presets chosen with "Choose…", flat by name (a newer file of the
+// same name replaces the older), so that a preset chosen later without its
+// files still finds them. The native hosts have none: they read the files
+// where they lie.
 
 namespace calcu::files {
 

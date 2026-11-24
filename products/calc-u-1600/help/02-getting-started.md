@@ -112,7 +112,9 @@ Unicode: the PC-1600's international and box-drawing characters and the
 PC-1500's π, √ and ¥ appear as themselves. Graphics (`LINE`, `GPRINT`,
 characters you defined) become blanks, and a screen with no text gives no
 text. A graphic cell whose dots match a character, a block like `█` for
-one, is copied as that character.
+one, is copied as that character. In a browser that does not take a
+picture on the clipboard, the text alone is copied; otherwise the picture
+is offered as a download.
 
 On the desktop, while text is selected in the INSPECTOR, the same item reads **Copy Log
 Selection** and copies that text instead.

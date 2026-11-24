@@ -123,8 +123,7 @@ function useFaceplateMaps(shell, request, model) {
 async function calcuOpenFiles(send, files, way) {
   const list = Array.from(files || []);
   if (!list.length) return null;
-  const named = await Promise.all(list.map((f) => f.arrayBuffer().then((b) => ({ name: f.name, bytes: new Uint8Array(b) }))));
-  return send("open", { files: named, way, upload: true });
+  return send("open", { files: await calcuNamedFiles(list), way, upload: true });
 }
 
 function calcuFileDrop(open) {

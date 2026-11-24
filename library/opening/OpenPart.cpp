@@ -135,7 +135,7 @@ void OpenPart::afterCall(SessionContext& c, pacing::WallTime) {
 }
 
 CommandOutcome OpenPart::open(const OpenRequest& req, SessionContext& c) {
-    // Every uploaded file but the preset (a preset loaded once is not kept).
+    // Every uploaded file but the preset: a preset loaded once is not kept.
     if (req.upload) keep(req.files, presetAmong(req.files), c);
     if (req.files.size() > 1) return openSeveral(req, c);
     // An uploaded preset alone goes into an upload folder as well, so that

@@ -126,7 +126,7 @@ const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, ba
 // (width, keyboard, layout, preset, height, model, workerUrl, paperWindow).
 // One layout:
 // `layout` takes "auto" only (the default); embedProps ignores another value
-// with a console warning. `model` is the model's name (PC-1600); `preset` a
+// with an app log warning. `model` is the model's name (PC-1600); `preset` a
 // path of the bundle, with or without `examples:`.
 function CalcU1600(props) {
   const embedded = embedProps(props, { name: "CalcU1600", layouts: ["auto"], layout: "auto" });
@@ -226,13 +226,19 @@ function CalcU1600(props) {
   }, [shell, programs, dialogs.open]);
 
   const copyScreen = () => {
-    // A refused picture rejects both entries: nothing is copied, and the app
-    // log names the session's reason.
-    const image = shell.request("c1600.screen-image", null).then((r) => {
-      if (!r.done || !r.value) throw new Error(r.reason || "the screen's picture did not come");
-      return r.value;
-    });
-    copyImageOrDownload("Copy Screen", "screen.png", { "image/png": image.then(grayPng), "text/plain": image.then((i) => i.text) });
+    // Armed in the click, as the paper's Copy; a refused picture disarms it:
+    // nothing is copied, and the app log names the session's reason.
+    armClipboard({ text: true });
+    const notMade = (why) => {
+      calcuDisarmClipboard();
+      calcuAppLog("warn", `Copy Screen: ${why}`);
+    };
+    shell.request("c1600.screen-image", null).then(async (r) => {
+      if (!r.done || !r.value) return notMade(r.reason || "the screen's picture did not come");
+      const bytes = new Uint8Array(await (await grayPng(r.value)).arrayBuffer());
+      const ignored = () => {};   // the app log has told the outcome
+      return calcuCopyPicture({ bytes, text: r.value.text, name: "screen.png" }, ignored, ignored, "The screen's");
+    }).catch((e) => notMade(calcuErrorText(e)));
   };
 
   // The product's shell data with the page's acts. Load Preset…: the

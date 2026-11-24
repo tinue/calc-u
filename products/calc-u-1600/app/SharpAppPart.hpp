@@ -71,7 +71,7 @@ struct SharpAppPartOptions {
     // The Web: where several files of Load Preset… become one folder;
     // unset: none.
     std::optional<std::string> uploadFolder;
-    // The Web: the file cache, where every uploaded file is kept; unset: none.
+    // The Web: the file cache (files/FileCache); unset: none.
     std::optional<std::string> cacheFolder;
 };
 

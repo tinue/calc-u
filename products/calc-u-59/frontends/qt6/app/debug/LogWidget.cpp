@@ -85,7 +85,7 @@ void LogWidget::refresh() {
     // TRACE can always be pressed; a trace folder that cannot be
     // written refuses the start.
     m_trace->setStyleSheet(m_controller.traceRunning() ? QStringLiteral("QPushButton { color: %1; }").arg(ChromeStyle::rgb(cu59::chrome::kOrange)) : QString());
-    const char* levels[3] = {"LOG ○", "LOG ●", "LOG ●"};
+    const char* levels[3] = {"RUN LOG ○", "RUN LOG ●", "RUN LOG ●"};
     int level = static_cast<int>(m_controller.debugLevel());
     m_level->setText(QLatin1String(levels[level]));
     m_level->setStyleSheet(level == 0 ? QString()

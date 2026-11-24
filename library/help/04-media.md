@@ -109,7 +109,7 @@ it succeeds again; the next change tries again.
 
 A file of a medium's kind that cannot be read (it is broken, or it is in
 another version of its format than the release reads) is not listed in a
-picker; the log says once why. A preset that names it is refused with
+picker; the app log says once why. A preset that names it is refused with
 that reason, and so is opening or importing it. Files written by an
 earlier release are converted by hand, as
 [the product's part of this chapter](chapter:4) describes.

@@ -7,10 +7,12 @@
 #include "TIMagneticCardKind.hpp"
 #include "control/ControlState.hpp"
 #include "debugger/RunState.hpp"
+#include "qt6/AppLogSink.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "shell/Inputs.hpp"
 #include "typing/TypingTopics.hpp"
 #include <QFile>
+#include <QDebug>
 #include <QFileInfo>
 #include <memory>
 #include <utility>
@@ -24,7 +26,10 @@ QString qs(const std::string& s) { return QString::fromStdString(s); }
 
 std::optional<std::string> readResource(const QString& path) {
     QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) return std::nullopt;
+    if (!f.open(QIODevice::ReadOnly)) {
+        qDebug("The resource %s cannot be read: %s", qPrintable(path), qPrintable(f.errorString()));
+        return std::nullopt;
+    }
     return f.readAll().toStdString();
 }
 
@@ -64,13 +69,15 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
     calcu::shell::HostSessionSetup host;
     host.settings = &settings;
     host.clock = clock;
+    host.appLog = &calcu::qt6::appLog();
+    host.appLogLevel = calcu::qt6::appLogLevelOfRun();
     cs::HostServices services;
     services.offered = {cs::HostService::ClipboardImage, cs::HostService::ClipboardText, cs::HostService::OpenUrl};
     m_session = std::make_unique<calcu::qt6::ProductHost<cu59::TIAppPart>>(
         cu59::makeAppSession(std::move(setup), std::move(host)), std::move(services), std::move(clock));
     this->host().addMessageHandler([this](const cs::Message& m) { onMessage(m); });
     connect(&this->host(), &calcu::qt6::SessionHost::topicChanged, this, &EmulatorController::topicChanged);
-    // The LOG tab's text at 1 Hz (the paging of cu59::RingLog).
+    // The RUN LOG tab's text at 1 Hz (the paging of cu59::RingLog).
     m_logTimer.setInterval(1000);
     connect(&m_logTimer, &QTimer::timeout, this, [this] {
         if (!std::exchange(m_logDirty, false)) return;
@@ -83,13 +90,13 @@ EmulatorController::EmulatorController(QObject* parent, calcu::pacing::WallClock
 EmulatorController::~EmulatorController() {
     // The parts' last duties (the TI-58C's constant memory file; what a
     // card still has to write). No message goes out after it.
-    // Ended first, while the LOG tab's view is still there.
+    // Ended first, while the RUN LOG tab's view is still there.
     m_session.reset();
 }
 
 void EmulatorController::start() { m_session->start(); }
 
-// The LOG tab keeps its own view of the log; the notices are the shell's
+// The RUN LOG tab keeps its own view of the log; the notices are the shell's
 // dialog, the paper the panel area's.
 void EmulatorController::onMessage(const cs::Message& m) {
     const auto* s = std::get_if<cs::StreamMessage>(&m);

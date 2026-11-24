@@ -210,8 +210,9 @@ private:
     // was nothing to do.
     bool saveRecording(std::string* error) {
         if (m_mode != Mode::Record || m_path.empty() || m_recording.size() == m_savedSamples) return true;
-        if (!writeWavMono16(m_path, m_recording, m_rate)) {
-            if (error) *error = "cannot write " + m_path;
+        std::string why;
+        if (!writeWavMono16(m_path, m_recording, m_rate, &why)) {
+            if (error) *error = "cannot write " + m_path + ": " + why;
             return false;
         }
         m_savedSamples = m_recording.size();

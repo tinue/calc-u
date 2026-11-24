@@ -138,6 +138,7 @@ public:
         }
         startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
         sessions::AppSessionSetup s;
+        s.appLog = &appLog;
         s.clock = clock.fn();
         s.hostTime = [] { return std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50)); };
         s.parts = {&peripherals, startup.get(), &part};
@@ -177,6 +178,13 @@ public:
             if (const auto* l = sessions::payloadAs<sessions::LogLine>(p)) out.push_back(l->text);
         return out;
     }
+    // The app log's lines since the last call, every level.
+    std::vector<std::string> appLogLines() {
+        std::vector<std::string> out;
+        for (const auto& l : appLog.lines()) out.push_back(l.text);
+        appLog.clear();
+        return out;
+    }
     std::vector<std::string> notices() { return fe.noticeSentences(); }
 
     calcu::testing::TempFolder folder_;
@@ -188,6 +196,7 @@ public:
     sessions::test::TestPart part;
     std::unique_ptr<StartupPart> startup;
     sessions::test::ScriptedClock clock;
+    applog::MemoryAppLog appLog{applog::AppLogLevel::Debug};   // the session's app log, every level
     sessions::test::TestFrontend fe;
     std::unique_ptr<sessions::AppSession> session;
     sessions::ListenerId id = 0;

@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { open, send } = require('./helpers');
+const { consoleLines, open, send } = require('./helpers');
 
 // The paper panel of the React component set,
 // CalcuPaperPanel, in the test product with the test printers TD-20 (dots
@@ -265,6 +265,7 @@ test('copied to clipboard for 1.8 seconds', async ({ page, context, browserName 
 });
 
 test('picture refused text alone copied', async ({ page, context, browserName }) => {
+  const log = consoleLines(page);
   await start(page, context, browserName);
   await page.evaluate(() => {
     window.__texts = [];
@@ -278,9 +279,13 @@ test('picture refused text alone copied', async ({ page, context, browserName })
   await el(page, 'paper-copy').click();
   await expect(el(page, 'paper-toast')).toHaveText('Copied to clipboard');
   expect(await page.evaluate(() => window.__texts)).toEqual(['KEY 1   \nKEY 2   ']);
+  // The browser's error goes to the app log.
+  expect(log).toContainEqual({ type: 'warning',
+    text: "[Calc-U] The paper's picture was not copied: NotAllowedError: no pictures; its text was copied alone." });
 });
 
 test('picture refused offered as download', async ({ page, context, browserName }) => {
+  const log = consoleLines(page);
   await start(page, context, browserName);
   await page.evaluate(() => {
     navigator.clipboard.write = () => Promise.reject(new DOMException('no pictures', 'NotAllowedError'));
@@ -293,4 +298,8 @@ test('picture refused offered as download', async ({ page, context, browserName 
   const d = await download;
   expect(d.suggestedFilename()).toBe('TP-4.png');
   await expect(el(page, 'paper-toast')).toHaveText('Copy failed');
+  // The browser's error goes to the app log, once.
+  const refused = log.filter((l) => l.text.includes("The paper's picture was not copied"));
+  expect(refused).toEqual([{ type: 'warning',
+    text: "[Calc-U] The paper's picture was not copied: NotAllowedError: no pictures; offered as a download." }]);
 });

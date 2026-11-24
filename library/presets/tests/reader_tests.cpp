@@ -177,7 +177,9 @@ TEST(header_key_once_sections_repeat) {
 TEST(unreadable_or_not_utf8_names_the_file) {
     Reading rd;
     const auto gone = rd.readFile("/nonexistent-folder/gone.test-seg");
-    CHECK_EQ(messageOf(gone), std::string("The file /nonexistent-folder/gone.test-seg cannot be read."));
+    // The system's reason goes with it.
+    CHECK_EQ(messageOf(gone),
+             std::string("The file /nonexistent-folder/gone.test-seg cannot be read: No such file or directory."));
     const auto bad = rd.read(header() + "preset-name: \xC3\x28\n", "latin.test-seg");
     CHECK_EQ(messageOf(bad), std::string("The file latin.test-seg is not UTF-8 text."));
     // A byte-order mark at the start is dropped (editors on Windows write one).
@@ -187,6 +189,9 @@ TEST(unreadable_or_not_utf8_names_the_file) {
     const CallId c = r.send("load-preset", Value::object({{"ref", r.folder / "none.test-seg"}}));
     CHECK(!r.done(c) && hasLine({r.reason(c)}, "none.test-seg cannot be read"));
     CHECK(hasLine(r.notices(), "none.test-seg cannot be read"));
+    // The app log names the preset and the cause.
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Warn, "none.test-seg was not loaded: The file "));
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Warn, "none.test-seg cannot be read: No such file or directory."));
 }
 
 TEST(empty_step_list_refused) {

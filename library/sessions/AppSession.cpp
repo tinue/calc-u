@@ -35,15 +35,21 @@ struct Running final : SliceSource {
     Job<OperationResult> job;
     ListenerId listener = 0;
     CallId call = 0;
+    std::string starter;                      // who started it, for the app log
     std::optional<OperationResult> failure;   // an exception outside the coroutine
+    // What the operation threw (a bug, not a failure it reports): the app
+    // log's error line; empty when it threw nothing.
+    std::string thrown;
 
     void step(std::uint64_t budget) {
         try {
             job.step(budget);
         } catch (const std::exception& e) {
             failure = OperationResult{false, e.what()};
+            thrown = e.what();
         } catch (...) {
             failure = OperationResult{false, "The operation failed."};
+            thrown = "an exception that is not a std::exception";
         }
     }
     bool over() const { return failure.has_value() || job.done(); }
@@ -53,8 +59,10 @@ struct Running final : SliceSource {
         try {
             return job.result();
         } catch (const std::exception& e) {
+            thrown = e.what();
             return OperationResult{false, e.what()};
         } catch (...) {
+            thrown = "an exception that is not a std::exception";
             return OperationResult{false, "The operation failed."};
         }
     }
@@ -100,6 +108,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     void notice(std::string sentence) override { notices->append(std::make_shared<Notice>(std::move(sentence))); }
     void log(std::string line) override { logTopic->append(std::make_shared<LogLine>(std::move(line))); }
     LogLevel logLevel() const override { return level; }
+    applog::AppLog& appLog() override { return setup.appLog ? *setup.appLog : applog::nullAppLog(); }
     bool busy() const override { return running != nullptr; }
     bool hostOffers(HostService s) const override { return offerer(s) != nullptr; }
     std::optional<CallId> askHost(HostService, Value, std::function<void(const ServiceAnswer&)>) override;
@@ -121,7 +130,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     bool virtualTime() const override { return setup.hosting == Hosting::VirtualTime; }
     bool startOperation(Operation op) override {
         if (running) return false;
-        start(0, 0, std::move(op));   // call 0: no reply (endOperation)
+        start(0, 0, std::move(op), "a part");   // call 0: no reply (endOperation)
         return true;
     }
     void tellRestarted(Restart r) override {
@@ -155,7 +164,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
         replies.push_back(Out{l, ReplyMessage{id, done, std::move(reason), std::move(result)}});
     }
     void runCommand(ListenerId, CallId, const Command&);
-    void start(ListenerId, CallId, Operation);
+    void start(ListenerId, CallId, Operation, std::string starter);
     void endOperation();
     void stopOperation();
     void stepOperation(pacing::PaceResult&);
@@ -332,11 +341,13 @@ void AppSession::Impl::runCommand(ListenerId l, CallId id, const Command& c) {
     } catch (const std::exception& e) {
         current = outer;
         deferred.erase(id);
+        appLog().error("The command " + c.name.value + " threw: " + e.what());
         reply(l, id, false, e.what());
         return;
     } catch (...) {
         current = outer;
         deferred.erase(id);
+        appLog().error("The command " + c.name.value + " threw an exception that is not a std::exception.");
         reply(l, id, false, "The command failed.");
         return;
     }
@@ -350,11 +361,12 @@ void AppSession::Impl::runCommand(ListenerId l, CallId id, const Command& c) {
         // running operation only when it starts one itself; Done (nothing to
         // do) and Refused leave it running.
         if (it->second.endsRunningOperation && running) stopOperation();
-        start(l, id, std::move(std::get<StartOperation>(outcome).op));
+        start(l, id, std::move(std::get<StartOperation>(outcome).op), "the command " + c.name.value);
     }
 }
 
-void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {
+// `starter`: who started it, for the app log ("the command model").
+void AppSession::Impl::start(ListenerId l, CallId id, Operation op, std::string starter) {
     if (running) {   // whoever's command it is
         reply(l, id, false, kAnotherOperationRuns);
         return;
@@ -365,9 +377,11 @@ void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {
     r->ctx = std::make_unique<OperationContext>(*this);
     r->listener = l;
     r->call = id;
+    r->starter = std::move(starter);
     try {
         r->job = Job<OperationResult>(r->op(*r->ctx));
     } catch (const std::exception& e) {
+        appLog().error("The operation of " + r->starter + " threw before it ran: " + e.what());
         if (id) reply(l, id, false, e.what());
         else notice(e.what());
         return;
@@ -388,6 +402,8 @@ void AppSession::Impl::endOperation() {
     std::unique_ptr<Running> r = std::move(running);
     OperationResult res = r->result();
     if (!res.ok && res.message.empty()) res.message = "The operation failed.";
+    if (!r->thrown.empty()) appLog().error("The operation of " + r->starter + " threw: " + r->thrown);
+    else if (!res.ok) appLog().warn("The operation of " + r->starter + " failed: " + res.message);
     if (r->call) reply(r->listener, r->call, res.ok, res.ok ? std::string() : res.message, res.ok ? res.result : nullptr);
     if (!res.ok) notice(res.message);
     ms.startAfresh();
@@ -596,6 +612,7 @@ CallId AppSession::ask(ListenerId l, Request q) {
         try {
             m = it->second(q.args, s);
         } catch (const std::exception& e) {
+            s.appLog().error("The request " + q.name.value + " threw: " + e.what());
             m = replyRefused(e.what());
         }
     }
@@ -615,6 +632,7 @@ void AppSession::answer(CallId a, ServiceAnswer ans) {
         try {
             then(ans);
         } catch (const std::exception& e) {
+            s.appLog().error(std::string("The answer of the host to a call threw: ") + e.what());
             s.notice(e.what());
         }
     }

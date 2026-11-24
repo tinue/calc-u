@@ -111,6 +111,8 @@ BasicLoaded loadBasic(LoaderMemory& mem, const std::vector<std::uint8_t>& image)
     out.ok = r.ok;
     out.start = r.baseAddr;
     out.end = r.endAddr;
+    out.warnings = r.warnings;
+    out.details = r.details;
     if (!r.ok) out.refusal = sentence(r.error);
     return out;
 }

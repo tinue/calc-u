@@ -208,7 +208,8 @@ TEST(more_holds_examples_reset_cold_boot_resume_help) {
     CHECK((ids(more->choices) == std::vector<std::string>{"heading-file", shell::actions::kLoadPreset, "examples", "arm-card",
                                                          "arm-fresh-card", shell::actions::kSettings, "heading-machine",
                                                          "model", "peripherals", "reset", "cold-boot", "resume",
-                                                         "heading-help", shell::actions::kHelp}));
+                                                         "heading-help", shell::actions::kHelp,
+                                                         shell::actions::kShowAppLog}));
     const auto more2 = shell::moreItems(shell::menus(in, product(), swiftTraits()));
     CHECK(ids(more2) == ids(more->choices));
 }
@@ -283,7 +284,7 @@ TEST(settings_spec) {
     CHECK_EQ(describe(cu59::ShellFrontend::SwiftIOS),
              std::string("General: Startup model Version 3.0.0 (test);Startup presets: TI-59 TI-58 TI-58C;"
                          "Display: Segment Style;Keyboard: Keyboard Feedback;Layout: Debug Page in Portrait;"
-                         "Tracing: Save Location Maximum file size (MB);"));
+                         "Tracing: Save Location Maximum file size (MB);App log: App log level;"));
     // The rows' choices: "Last used" first; the startup presets.
     const auto ios = shell::dialog(in.settings, in.presetList, cu59::settingsSpec(cu59::ShellFrontend::SwiftIOS, "v"));
     CHECK(!ios.empty() && !ios[0].rows.empty() && !ios[0].rows[0].choices.empty());

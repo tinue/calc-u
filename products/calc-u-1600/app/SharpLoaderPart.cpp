@@ -188,6 +188,7 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
         if (auto* why = std::get_if<std::string>(&img)) return Refused{sharp::loaders::refusal(name, *why)};
         if (!ctx.machine()) return Refused{calcu::sessions::kNoMachine};
         const sharp::loaders::BasicLoaded r = sharp::loaders::loadBasic(*ctx.machine(), std::get<0>(img));
+        sharp::loaders::logNotes(ctx.appLog(), r);
         if (!r.ok) return Refused{sharp::loaders::refusal(name, r.refusal)};
         return Done{};
     });

@@ -11,11 +11,6 @@ namespace fs = std::filesystem;
 
 namespace {
 
-void makeDirs(const std::string& dir) {
-    std::error_code ec;
-    fs::create_directories(calcu::files::toPath(dir), ec);
-}
-
 // `path` with the leading `dir` replaced by `shown`, or empty when `path`
 // isn't `dir` itself or inside it.
 std::string replacePrefix(const std::string& path, const std::string& dir, const std::string& shown) {
@@ -26,6 +21,15 @@ std::string replacePrefix(const std::string& path, const std::string& dir, const
 
 } // namespace
 
+
+void AppPaths::makeDirs(const std::string& dir) const {
+    std::error_code ec;
+    fs::create_directories(calcu::files::toPath(dir), ec);
+    // Still the folder: nothing goes elsewhere, and what is saved there fails
+    // with its own notice. The cause once per folder.
+    if (ec && m_appLog && m_unmade.insert(dir).second)
+        m_appLog->warn("The folder " + dir + " cannot be created: " + ec.message());
+}
 
 std::string joinPath(const std::string& dir, const std::string& name) {
     return calcu::files::fromPath(calcu::files::toPath(dir) / calcu::files::toPath(name));

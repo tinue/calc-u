@@ -79,15 +79,23 @@ int addModuleDefinitions(Catalogue& catalogue, const calcu::roms::RomSet& roms) 
     return added;
 }
 
-std::optional<std::vector<std::uint8_t>> readHostDriveRom(const std::vector<std::string>& folders) {
+std::optional<std::vector<std::uint8_t>> readHostDriveRom(const std::vector<std::string>& folders,
+                                                          std::string* problem) {
     const std::string& file = hostDriveEntry().fileName;
+    std::string why;
     for (const std::string& folder : folders) {
         if (folder.empty()) continue;
         std::vector<std::uint8_t> bytes;
         std::error_code ec;
         const std::filesystem::path p = std::filesystem::path(folder) / file;
-        if (std::filesystem::is_regular_file(p, ec) && readWholeFile(p, &bytes)) return bytes;
+        if (!std::filesystem::is_regular_file(p, ec)) {
+            if (why.empty()) why = p.string() + " is not there" + (ec ? ": " + ec.message() : std::string()) + ".";
+            continue;
+        }
+        if (readWholeFile(p, &bytes)) return bytes;
+        why = p.string() + " cannot be read.";
     }
+    if (problem) *problem = why.empty() ? "no folder to read " + file + " from." : why;
     return std::nullopt;
 }
 

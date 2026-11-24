@@ -383,3 +383,20 @@ TEST(own_host_dirs_touch_nothing_else) {
     }
     CHECK_EQ(entries, std::size_t{5});  // config, config/Test-Product, the ini, Test-Product, card.yaml
 }
+
+TEST(app_log_place_per_platform) {
+    CHECK_EQ(appLogFilePathFor(HostOs::MacOS, envOf({}), "/Users/u", "Calc-U-59"),
+             std::string("/Users/u/Library/Logs/Calc-U-59/Calc-U-59.log"));
+    CHECK_EQ(appLogFilePathFor(HostOs::IOS, envOf({}), "/var/mobile/x", "Calc-U-59", "/var/mobile/x/Library/Logs"),
+             std::string("/var/mobile/x/Library/Logs/Calc-U-59/Calc-U-59.log"));
+    CHECK_EQ(appLogFilePathFor(HostOs::Windows, envOf({{"LOCALAPPDATA", "C:\\Users\\u\\AppData\\Local"}}), "C:\\Users\\u",
+                               "Calc-U-1600"),
+             std::string("C:\\Users\\u\\AppData\\Local\\Calc-U-1600\\Calc-U-1600.log"));
+    CHECK_EQ(appLogFilePathFor(HostOs::Windows, envOf({}), "C:\\Users\\u", "Calc-U-1600"),
+             std::string("C:\\Users\\u\\AppData\\Local\\Calc-U-1600\\Calc-U-1600.log"));
+    CHECK_EQ(appLogFilePathFor(HostOs::Linux, envOf({{"XDG_STATE_HOME", "/home/u/st"}}), "/home/u", "Calc-U-59"),
+             std::string("/home/u/st/Calc-U-59/Calc-U-59.log"));
+    CHECK_EQ(appLogFilePathFor(HostOs::Linux, envOf({{"XDG_STATE_HOME", ""}}), "/home/u", "Calc-U-59"),
+             std::string("/home/u/.local/state/Calc-U-59/Calc-U-59.log"));
+    CHECK_EQ(appLogFilePathFor(HostOs::Web, envOf({}), "", "Calc-U-59"), std::string());
+}

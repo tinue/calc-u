@@ -60,6 +60,7 @@ TIAppPart::TIAppPart(TIAppSetup setup)
       m_files([paths = m_setup.paths] { return paths->saveFolder(); }, m_setup.files),
       m_keeper(
           m_files, [this](std::string sentence) { if (m_ctx) m_ctx->notice(std::move(sentence)); },
+          [this](std::string line) { if (m_ctx) m_ctx->appLog().warn(line); },
           [this] { return m_ctx ? calcu::media::isoTime(m_ctx->hostTime()) : std::string(); }),
       m_machines([this] { return m_keeper.contentForBuild(); }),
       m_rules(TIKeywordSetup{[this](sessions::SessionContext& c, const CueCardContent& card) {

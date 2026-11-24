@@ -42,7 +42,7 @@ const { execFileSync } = require("child_process");
 
 const WEB = path.join(__dirname, "..");   // library/web
 const VENDOR = path.join(WEB, "vendor");
-const LIBRARY_SOURCES = ["base.js", "canvas.js", "sentences.js", "audio.js", "hostServices.js", "shell.js", "embed.js"]
+const LIBRARY_SOURCES = ["base.js", "canvas.js", "sentences.js", "audio.js", "hostServices.js", "appLog.js", "shell.js", "embed.js"]
   .map((n) => path.join(WEB, "src", n));
 const COMPONENT_SOURCES = ["paper.js", "PaperPanel.jsx", "RunControlButtons.jsx", "MediaPicker.jsx", "NameAndSaveDialog.jsx", "SavedMediaDialog.jsx"].map((n) => path.join(WEB, "components", n));
 const COMPONENT_CSS = ["paper.css", "media.css"].map((n) => path.join(WEB, "components", n));
@@ -57,7 +57,7 @@ COMPONENT_SOURCES.push(path.join(WEB, "components", "hostKeys.js"));
 // the shell (the shell product, the faceplate maps, open and drop, Saved
 // Media, the slot picker).
 COMPONENT_SOURCES.push(...["useShellProduct.jsx", "ShellMedia.jsx"].map((n) => path.join(WEB, "components", n)));
-const WORKER_SOURCES =["sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
+const WORKER_SOURCES = ["appLog.js", "sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
 
 const read = (p) => fs.readFileSync(p, "utf8");
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");

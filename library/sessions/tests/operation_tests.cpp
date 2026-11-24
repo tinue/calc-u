@@ -275,6 +275,9 @@ TEST(end_busy_reply_notice_start_afresh) {
     CHECK(!r.fe.reply(bad)->done);
     CHECK_EQ(r.fe.reply(bad)->reason, std::string("The file is not a preset."));
     CHECK(r.fe.noticeSentences() == std::vector<std::string>{"The file is not a preset."});   // told once
+    // A failure it reports: the app log at warn, with who started it.
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Warn,
+                       "The operation of the command tp.op failed: The file is not a preset."));
     CHECK_EQ(r.session->machineSession().freshStarts(), fresh + 2);
 }
 
@@ -289,6 +292,8 @@ TEST(failure_halfway_then_commands_accepted) {
     CHECK(!r.fe.reply(bad)->done);
     CHECK_EQ(r.fe.reply(bad)->reason, std::string("The tape broke."));
     CHECK(r.fe.noticeSentences() == std::vector<std::string>{"The tape broke."});
+    // A throw is a bug: the app log at error, with what it threw.
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Error, "The operation of the command tp.op threw: The tape broke."));
     // The session accepts commands and operations again.
     CHECK(r.fe.reply(r.send("tp.set", Value::object({{"value", 1}})))->done);
     r.part.operation = runningFor(1'000);

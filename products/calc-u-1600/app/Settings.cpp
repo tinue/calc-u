@@ -24,6 +24,7 @@ cs::ProductDecl makeDecl() {
     d.keys.push_back(cs::family::cassetteFolder());
     d.keys.push_back(cs::family::traceFolder());
     d.keys.push_back(cs::family::traceMaxFileSizeMb());
+    d.keys.push_back(cs::family::appLogLevel());
 
     cs::KeyDecl dapEnabled;
     dapEnabled.section = "debug";

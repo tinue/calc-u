@@ -1,5 +1,5 @@
 const { test, expect, chromium } = require('@playwright/test');
-const { SENTENCES, open, send, request, files } = require('./helpers');
+const { SENTENCES, consoleLines, open, send, request, files } = require('./helpers');
 
 // The persistent file system in IndexedDB, one
 // store per product, one writer, and the storage modes. Every test has a
@@ -138,9 +138,13 @@ test('unreadable store is not written over', async ({ page, context }) => {
   await page.close();
 
   const broken = await context.newPage();
+  const log = consoleLines(broken);
   await open(broken, 'Test-A', 'worker=tests/unreadable-worker.js');
   await expect(broken.locator('.calcu-client')).toHaveAttribute('data-storage', 'unreadable');
   await expect(broken.locator('.calcu-test-banner')).toHaveText(SENTENCES.unreadable('Test-A'));
+  // The worker's line, with the cause, on the page's console.
+  expect(log.some((l) => l.type === 'warning' && l.text.startsWith('[Calc-U] storage: /persist-test-a could not be read: ') &&
+    l.text.endsWith('; nothing is kept.'))).toBe(true);
   await send(broken, 'tp.write', { name: 'new.txt', text: 'new' });
   await send(broken, 'tp.set-model', { model: 'test-dot' });
   expect(await files(broken)).toContain('new.txt');
@@ -154,10 +158,27 @@ test('unreadable store is not written over', async ({ page, context }) => {
 });
 
 test('no store works in memory and says so', async ({ page }) => {
+  const log = consoleLines(page);
   await open(page, 'Test-A', 'worker=tests/unavailable-worker.js');
   await expect(page.locator('.calcu-client')).toHaveAttribute('data-storage', 'unavailable');
   await expect(page.locator('.calcu-test-banner')).toHaveText(SENTENCES.unavailable('Test-A'));
   await expect(page.locator('.calcu-test-notices')).toContainText(SENTENCES.unavailable('Test-A'));
+  expect(log).toContainEqual({ type: 'warning',
+    text: '[Calc-U] storage: IndexedDB /persist-test-a cannot be opened: InvalidStateError: stubbed open' });
   expect((await send(page, 'tp.write', { name: 'mem.txt', text: 'm' })).done).toBe(true);
   expect(await files(page)).toEqual(['mem.txt']);
+});
+
+// The page's `?app-log-level=` reaches the worker: its debug line comes
+// with it, and not without.
+test('the app log level reaches the worker', async ({ page, context }) => {
+  const log = consoleLines(page);
+  await open(page, 'Test-A', 'app-log-level=debug');
+  await expect.poll(() => log.map((l) => l.text)).toContain('[Calc-U] storage: /persist-test-a opened as kept');
+  expect(log.find((l) => l.text.includes('opened as kept')).type).toBe('debug');
+
+  const plain = await context.newPage();
+  const quiet = consoleLines(plain);
+  await open(plain);
+  expect(quiet.filter((l) => l.text.includes('opened as'))).toEqual([]);
 });

@@ -123,6 +123,7 @@ agree byte for byte between runs. Attach replaces no path.
 | `--save-folder <dir>` | Use this save folder (made if missing). Without it an empty folder made for the run, removed at its end |
 | `--output-folder <dir>` | Traces and screenshots go here (made if missing). Without it, to the save folder |
 | `--clock <YYYY-MM-DDThh:mm:ss>` | The local date and time handed to a real-time clock at a build and at `sync-clock`; in between the clock runs in emulated time, so a program that sets it keeps its time. The year is 1970 or later |
+| `--app-log-level <level>` | The app log's level: `error`, `warn` (the default), `info` or `debug`. Each app log line at that level or above goes to standard error as `app-log <level>: <text>`; the replies stay on standard output. The app log is not the session's `log` (`state log`) |
 | `--clock host` | The host's date and time, handed as the apps do: at a build, after each operation, at a `resume` and at `sync-clock`; a run is then not repeatable |
 | `--help`, `-h` | The usage, every command's usage line, the products' `serve` options and the products of the build |
 | `--dap <port>` | After `serve`, Calc-U-1600 only: §8 |
@@ -152,6 +153,7 @@ Messages of exit status 2:
 | Unknown option | `Unknown option <option>.` and the usage |
 | Option without its value | `<option> needs a value.` |
 | Bad `--clock` | `--clock takes YYYY-MM-DDThh:mm:ss or host: <value>` |
+| Bad `--app-log-level` | `--app-log-level takes error, warn, info or debug: <value>` |
 | A product option of another product | `<product name> has no option <option>.` |
 | A `serve` option without `serve` | `<option> is an option of serve.` |
 | A folder | `There is no folder for temporary files: …`, `Cannot make the run folder …`, `Cannot use the save folder <dir>.`, `Cannot use the output folder <dir>.` |
@@ -429,7 +431,7 @@ protocol of `serve`, as a second listener without host services.
 | Builds | Only where `CALCU_ATTACH` is defined: POSIX development and test trees (the Qt6 apps), Debug builds of the Swift app on the iOS simulator. Never in a release build, a device build, or on Windows |
 | Address | TCP, bound to `127.0.0.1` only. No authentication beyond that |
 | Port | The app's launch argument `--attach-port N` or `--attach-port=N` (1 to 65535; another value is ignored), else 59059. `--attach-port 0` lets the system pick one (the Qt6 apps) |
-| Bind fails | The app runs on; a line of the session's log: `Attach is not available on port <port>: <problem>.` |
+| Bind fails | The app runs on; a line of the app log at warn: `Attach is not available on port <port>: <problem>.` |
 | Clients | One at a time. A second gets the line `refused: one harness is already attached` and is closed; the first stays |
 | `quit` | Ends the attach, not the app. A connection that closes without `quit` is taken as `quit` |
 | Ending | The listener goes, with its pending replies; the keys held down through it come up |

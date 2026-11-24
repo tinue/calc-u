@@ -244,7 +244,7 @@ function CalcU59(props) {
   const { width, keyboard, layout, preset, height, model: modelProp, workerUrl, rest } =
     embedProps(props, { name: "CalcU59", layouts: ["portrait", "wide", "auto"], layout: "portrait" });
   const { settings = true } = rest;
-  // The traces the session hands over (the LOG tab), kept by the page's host services.
+  // The traces the session hands over (the RUN LOG tab), kept by the page's host services.
   const traces = React.useRef(null);
   if (!traces.current) traces.current = createC59Traces();
   const shell = useShell(PRODUCT, { model: modelProp || "", preset: bundlePathOf(preset), workerUrl }, traces.current.services);

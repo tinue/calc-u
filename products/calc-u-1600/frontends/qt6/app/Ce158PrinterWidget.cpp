@@ -134,6 +134,7 @@ void Ce158PrinterWidget::saveToFile() {
     if (path.isEmpty()) return;
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly) || file.write(m_printed) != m_printed.size()) {
+        qWarning("Saving the CE-158 printer output to %s failed: %s", qPrintable(path), qPrintable(file.errorString()));
         QMessageBox::warning(this, tr("Save Printer Output"), tr("Could not write %1.").arg(path));
     }
 }

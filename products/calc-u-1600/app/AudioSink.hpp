@@ -35,8 +35,10 @@ public:
 // across a thread boundary, so this stays on the frontend's side).
 class SoundFeed {
 public:
-    using Warn = std::function<void(const std::string&)>;
-    SoundFeed(AudioSink& sink, Warn warn);
+    // `gap`: each audible gap or cut, said for the app log's debug level (a
+    // busy host makes many).
+    using Gap = std::function<void(const std::string&)>;
+    SoundFeed(AudioSink& sink, Gap gap);
     ~SoundFeed();
 
     // A SoundStart, SoundSamples or SoundStop; other messages are ignored.
@@ -54,7 +56,7 @@ private:
     void stopSink();
 
     AudioSink& m_sink;
-    Warn m_warn;
+    Gap m_gap;
     bool m_open = false;
     bool m_justStarted = false;
     int m_rate = 0;

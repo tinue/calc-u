@@ -22,7 +22,7 @@ has none. It listens on 127.0.0.1 only and takes one client at a time.
 
 | Case | Result |
 |---|---|
-| `--dap` with a port outside 1024 to 65535, or not a number | "The DAP port must be from 1024 to 65535."; the server stays off for the run. Qt6: on standard error as `--dap <port>: <reason>` and as a notice, the app runs on. Harness: on standard error, exit status 2 |
+| `--dap` with a port outside 1024 to 65535, or not a number | "The DAP port must be from 1024 to 65535."; the server stays off for the run. Qt6: in the app log as a warn line `--dap <port>: <reason>` (also on standard error) and as a notice, the app runs on. Harness: on standard error, exit status 2 |
 | The port cannot be opened | Status "Port `<port>` not available: `<why>`"; the harness ends with that text and exit status 2 |
 | `--dap` in a harness build without attach (`CALCU_ATTACH`: built only in the macOS and Linux trees with the tests) | "The DAP server is not in this build.", exit status 2 |
 | `--dap` without `serve` | "--dap is an option of serve.", exit status 2 |

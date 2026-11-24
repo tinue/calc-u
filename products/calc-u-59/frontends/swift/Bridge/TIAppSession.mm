@@ -3,6 +3,9 @@
 #import "BridgeConvert.h"
 #import "TIFileFormats+Cpp.h"
 #import <UIKit/UIKit.h>
+#include <os/log.h>
+#include <mutex>
+#include "applog/AppLogFile.hpp"
 #include <calcu59/core/PC100C.hpp>
 #include <calcu59/core/PC100CPaper.hpp>
 #include <calcu59/core/TICatalogue.hpp>
@@ -191,6 +194,8 @@ NSArray<TIInspectorEntry*>* inspectorEntries(const std::vector<cu59::InspectorEn
 
 namespace cs = calcu::sessions;
 
+calcu::applog::AppLog& theAppLog();
+
 /// The card and constant-memory files as the app had them: read
 /// and written through NSFileCoordinator (the media part's file access too);
 /// a card that iCloud has not
@@ -202,16 +207,27 @@ public:
     Read read(const std::string& path) const override {
         NSURL* url = [NSURL fileURLWithPath:ns(path)];
         __block NSData* data = nil;
+        __block NSError* readErr = nil;
         NSError* err = nil;
-        [[[NSFileCoordinator alloc] init] coordinateReadingItemAtURL:url options:0 error:&err
-                                                          byAccessor:^(NSURL* src) { data = [NSData dataWithContentsOfURL:src]; }];
+        [[[NSFileCoordinator alloc] init] coordinateReadingItemAtURL:url options:0 error:&err byAccessor:^(NSURL* src) {
+            NSError* e = nil;
+            data = [NSData dataWithContentsOfURL:src options:0 error:&e];
+            readErr = e;
+        }];
         if (data) return {std::string(static_cast<const char*>(data.bytes), data.length), false};
         NSString* placeholder = [[url URLByDeletingLastPathComponent]
             URLByAppendingPathComponent:[NSString stringWithFormat:@".%@.icloud", url.lastPathComponent]].path;
         const bool exists = [[NSFileManager defaultManager] fileExistsAtPath:url.path];
         if (!exists && [[NSFileManager defaultManager] fileExistsAtPath:placeholder]) {
-            [[NSFileManager defaultManager] startDownloadingUbiquitousItemAtURL:url error:nil];
+            NSError* downloadErr = nil;
+            if (![[NSFileManager defaultManager] startDownloadingUbiquitousItemAtURL:url error:&downloadErr])
+                theAppLog().warn("The iCloud download of " + path + " cannot start: " + cpp(downloadErr.localizedDescription));
             return {std::nullopt, true};
+        }
+        // A file that is there but does not read: the caller's notice has no cause.
+        if (exists) {
+            NSError* why = err ? err : readErr;
+            theAppLog().warn(path + " cannot be read: " + (why ? cpp(why.localizedDescription) : std::string("no reason given.")));
         }
         return {std::nullopt, exists};
     }
@@ -219,15 +235,25 @@ public:
         NSData* fileData = [NSData dataWithBytes:text.data() length:text.size()];
         NSURL* url = [NSURL fileURLWithPath:ns(path)];
         __block BOOL ok = NO;
+        __block NSError* writeErr = nil;
         NSError* err = nil;
         [[[NSFileCoordinator alloc] init] coordinateWritingItemAtURL:url options:NSFileCoordinatorWritingForReplacing
                                                                error:&err byAccessor:^(NSURL* dst) {
-            ok = [fileData writeToURL:dst atomically:YES];
+            NSError* e = nil;
+            ok = [fileData writeToURL:dst options:NSDataWritingAtomic error:&e];
             // A dropped card outside our folders: the sandbox may grant the
             // file but not its folder, where an atomic write puts its temp file.
-            if (!ok) ok = [fileData writeToURL:dst atomically:NO];
+            if (!ok) {
+                e = nil;
+                ok = [fileData writeToURL:dst options:0 error:&e];
+            }
+            writeErr = e;
         }];
-        if (!ok || err) return {false, "the file cannot be written."};
+        // The callers' notices and app log lines carry this problem.
+        if (!ok || err) {
+            NSError* why = err ? err : writeErr;
+            return {false, why ? "the file cannot be written: " + cpp(why.localizedDescription) : std::string("the file cannot be written.")};
+        }
         __weak id<TIAppSessionDelegate> d = delegate_;
         if (!url.path.lastPathComponent || ![url.lastPathComponent isEqualToString:@"ti58c.memory.yaml"])
             dispatch_async(dispatch_get_main_queue(), ^{ [d cardWritten]; });
@@ -253,7 +279,7 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kCpuDebug) return TIChangeCpu;
     if (t == T::kHeatmap) return TIChangeHeatmap;
     if (t == T::kAsmOverlay) return TIChangeAsm;
-    if (t == cs::kLogLevelTopic) return TIChangeLog;   // the level the LOG button shows
+    if (t == cs::kLogLevelTopic) return TIChangeLog;   // the level the RUN LOG button shows
     // The PC-100C's controls and TRACE's position too.
     if (t == calcu::control::kControlStateTopic)
         return static_cast<TIChange>(TIChangeControl | TIChangeShell | TIChangeCard | TIChangePrinter);
@@ -327,6 +353,49 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
     return a && a->boolean() && *a->boolean();
 }
 
+
+// The app log: the library's file, every line also in the system log
+// (warn and error are kept there; info and debug only while someone looks).
+// Written from the main thread and the session thread: a lock guards it.
+class BridgeAppLog final : public calcu::applog::AppLog {
+public:
+    BridgeAppLog(std::string path, const std::string& header, calcu::applog::AppLogLevel level)
+        : AppLog(level), file_(std::move(path), header, calcu::applog::AppLogLevel::Debug, &mirror) {}
+    const calcu::applog::AppLogFile& file() const { return file_; }
+
+protected:
+    void put(calcu::applog::AppLogLevel l, std::string_view text) override {
+        const std::lock_guard<std::mutex> hold(lock_);
+        file_.write(l, text);
+    }
+
+private:
+    static void mirror(calcu::applog::AppLogLevel l, const std::string& line) {
+        static os_log_t log = os_log_create("Calc-U-59", "app-log");
+        using L = calcu::applog::AppLogLevel;
+        const os_log_type_t type = l == L::Error ? OS_LOG_TYPE_ERROR
+                                   : l == L::Warn ? OS_LOG_TYPE_DEFAULT
+                                   : l == L::Info ? OS_LOG_TYPE_INFO
+                                                  : OS_LOG_TYPE_DEBUG;
+        os_log_with_type(log, type, "%{public}s", line.c_str());
+    }
+    std::mutex lock_;
+    calcu::applog::AppLogFile file_;
+};
+
+std::unique_ptr<BridgeAppLog>& installedAppLog() {
+    static std::unique_ptr<BridgeAppLog> log;
+    return log;
+}
+std::optional<calcu::applog::AppLogLevel>& runAppLogLevel() {
+    static std::optional<calcu::applog::AppLogLevel> level;
+    return level;
+}
+calcu::applog::AppLog& theAppLog() {
+    auto& log = installedAppLog();
+    return log ? static_cast<calcu::applog::AppLog&>(*log) : calcu::applog::nullAppLog();
+}
+std::optional<calcu::applog::AppLogLevel> appLogLevelOfRun() { return runAppLogLevel(); }
 } // namespace
 
 @implementation TIRomSet {
@@ -427,6 +496,45 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
 - (NSUInteger)hash { return _controlID.hash ^ (_on ? 1u : 0u); }
 @end
 
+@implementation TIAppLog
+
++ (void)installInFolder:(NSString *)folder arguments:(NSArray<NSString *> *)arguments {
+    if (installedAppLog()) return;
+    std::string badLevel;
+#if DEBUG
+    for (NSUInteger i = 0; i + 1 < arguments.count; ++i)
+        if ([arguments[i] isEqualToString:@"--app-log-level"]) {
+            runAppLogLevel() = calcu::applog::appLogLevelNamed(cpp(arguments[i + 1]));
+            if (!runAppLogLevel()) badLevel = cpp(arguments[i + 1]);
+        }
+#else
+    (void)arguments;
+#endif
+    NSDictionary* info = NSBundle.mainBundle.infoDictionary;
+    NSString* version = info[@"CFBundleShortVersionString"] ?: @"?";
+    NSString* build = info[@"CFBundleVersion"] ?: @"?";
+    UIDevice* device = UIDevice.currentDevice;
+    const std::string header = "Calc-U-59 " + cpp(version) + " (" + cpp(build) + ") " + cpp(device.systemName) + " " +
+                               cpp(device.systemVersion) + ", " + cpp(device.model);
+    const std::string path = calcu::settings::appLogFilePathFor(calcu::settings::HostOs::IOS, {}, cpp(NSHomeDirectory()),
+                                                                "Calc-U-59", cpp(folder));
+    installedAppLog() = std::make_unique<BridgeAppLog>(path, header,
+                                                       runAppLogLevel().value_or(calcu::applog::defaultAppLogLevel()));
+    if (!badLevel.empty()) theAppLog().warn("--app-log-level takes error, warn, info or debug, not " + badLevel + ".");
+    if (!installedAppLog()->file().problem().empty())
+        os_log_error(OS_LOG_DEFAULT, "%{public}s", installedAppLog()->file().problem().c_str());
+}
+
++ (void)write:(NSString *)text level:(TIAppLogLevel)level {
+    theAppLog().write(static_cast<calcu::applog::AppLogLevel>(level), cpp(text));
+}
+
++ (NSString *)filePath {
+    return installedAppLog() ? ns(installedAppLog()->file().path()) : @"";
+}
+
+@end
+
 @implementation TIAppSession {
     __weak id<TIAppSessionDelegate> _delegate;
     std::unique_ptr<calcu::shell::SessionThread> _thread;
@@ -438,7 +546,7 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
     std::vector<std::string> _paperLines;
     std::vector<TIPaperDot> _paperDots;
     double _paperReach;
-    // The LOG tab's view of the library's `log`: the last 2000 lines.
+    // The RUN LOG tab's view of the library's `log`: the last 2000 lines.
     cu59::RingLog _log;
     std::string _logText;
     // c59.debug-view's count of requests already shown.
@@ -473,7 +581,6 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
         auto settings = std::make_shared<calcu::shell::HostSettings>(decl, dirs, path, firstValues);
         st::SettingsFile* file = &settings->file();
         const st::Paths* paths = &settings->paths();
-        _settingsProblem = file->problem().empty() ? nil : ns(file->problem());
 
         cu59::TIAppSetup setup;
         setup.roms.set = roms->_set;
@@ -506,6 +613,8 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
                 host.clock = cu59::steadyWallTime;
                 host.hostTime = [] { return std::chrono::system_clock::now(); };
                 host.start = true;
+                host.appLog = &theAppLog();
+                host.appLogLevel = appLogLevelOfRun();
                 auto app = cu59::makeAppSession(setup, std::move(host));
                 *libraryParts = &app.part->libraryParts();
                 return std::move(app.session);
@@ -602,11 +711,10 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
                 if (any) [d noticesChanged];
                 continue;
             }
-            if (s->topic == cs::kLogTopic) {   // the LOG tab's lines (a message may hold several)
+            if (s->topic == cs::kLogTopic) {   // the RUN LOG tab's lines (a message may hold several)
                 bool any = false;
                 for (const auto& p : s->appended)
                     if (const auto* l = cs::payloadAs<cs::LogLine>(p)) {
-                        [d diagnostic:ns(l->text)];
                         std::size_t from = 0;
                         for (std::size_t at; (at = l->text.find('\n', from)) != std::string::npos; from = at + 1)
                             _log.write(l->text.substr(from, at - from));
@@ -688,12 +796,11 @@ bool entryAvailable(const calcu::control::ControlState* c, const char* name, std
     static std::unique_ptr<calcu::harness::HarnessProduct> product = cu59::makeHarnessProduct();
     const std::string problem = _thread->openAttach(*product, port, [parts = _libraryParts]() -> calcu::parts::LibraryParts& { return **parts; });
     if (problem.empty()) {
-        [_delegate diagnostic:[NSString stringWithFormat:@"Harness attach on 127.0.0.1:%u.", port]];
+        theAppLog().info("Harness attach on 127.0.0.1:" + std::to_string(port) + ".");
         return YES;
     }
-    // The app runs on; a line of the session's log says why.
-    const std::string line = "Attach is not available on port " + std::to_string(port) + ": " + problem + ".";
-    _thread->post([line](cs::AppSession& s) { s.context().log(line); });
+    // The app runs on; the app log says why.
+    theAppLog().warn("Attach is not available on port " + std::to_string(port) + ": " + problem + ".");
     return NO;
 }
 #endif

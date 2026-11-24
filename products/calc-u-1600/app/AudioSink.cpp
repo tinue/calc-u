@@ -5,7 +5,7 @@
 
 namespace cu1600 {
 
-SoundFeed::SoundFeed(AudioSink& sink, Warn warn) : m_sink(sink), m_warn(std::move(warn)) {}
+SoundFeed::SoundFeed(AudioSink& sink, Gap gap) : m_sink(sink), m_gap(std::move(gap)) {}
 
 SoundFeed::~SoundFeed() { stopSink(); }
 
@@ -40,7 +40,7 @@ void SoundFeed::feed(const std::int16_t* samples, std::size_t n) {
     // The sink went idle = it played out everything it had (a sink started
     // just now is idle only because it has no data yet).
     if (!m_justStarted && m_sink.ranDry() && n > 0)
-        m_warn("AudioOutput: sink ran dry (emulation behind audio clock) -- audible gap");
+        m_gap("AudioOutput: sink ran dry (emulation behind audio clock) -- audible gap");
     m_justStarted = false;
     m_pending.insert(m_pending.end(), samples, samples + n);
     const std::size_t count = std::min(m_sink.room(), m_pending.size());
@@ -49,7 +49,7 @@ void SoundFeed::feed(const std::int16_t* samples, std::size_t n) {
         m_pending.erase(m_pending.begin(), m_pending.begin() + static_cast<std::ptrdiff_t>(count));
     }
     if (m_pending.size() > maxPending) {
-        m_warn("AudioOutput: backlog " + std::to_string(m_pending.size() * 1000 / static_cast<std::size_t>(m_rate)) +
+        m_gap("AudioOutput: backlog " + std::to_string(m_pending.size() * 1000 / static_cast<std::size_t>(m_rate)) +
                " ms beyond the sink buffer -- audible cut");
         m_pending.erase(m_pending.begin(), m_pending.end() - static_cast<std::ptrdiff_t>(trimPending));
     }

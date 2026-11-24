@@ -157,9 +157,9 @@ TEST(qt_menus_in_family_order) {
                      "Host Drive…", "Unmount", "-", "Settings…", "Quit"}));
     CHECK(checkList("Edit", labels(f.find<QMenu>(names::menu("edit"))), {"Copy Screen", "Paste Text"}));
     CHECK(checkList("Machine", labels(f.find<QMenu>(names::menu("machine"))),
-                    {"Model ▸", "ROM Revision ▸", "Peripherals ▸", "-", "Reset", "Cold boot", "Resume", "Trace", "Log Level ▸"}));
-    CHECK(checkList("Log Level", labels(f.find<QMenu>(names::item(cu1600::kItemLogLevel))), {"Off", "Info (how presets run)", "Debug"}));
-    CHECK(checkList("Help", labels(f.find<QMenu>(names::menu("help"))), {"Calc-U-1600 Help", "About Calc-U-1600…"}));
+                    {"Model ▸", "ROM Revision ▸", "Peripherals ▸", "-", "Reset", "Cold boot", "Resume", "Trace", "Run Log ▸"}));
+    CHECK(checkList("Run Log", labels(f.find<QMenu>(names::item(cu1600::kItemLogLevel))), {"Off", "Info (how presets run)", "Debug"}));
+    CHECK(checkList("Help", labels(f.find<QMenu>(names::menu("help"))), {"Calc-U-1600 Help", "Show App Log", "About Calc-U-1600…"}));
     CHECK(checkList("ROM Revision", labels(f.find<QMenu>(names::item("variants-model"))), {"A01", "A03", "A04"}));
     CHECK(checkList("Peripherals", labels(f.find<QMenu>(names::item("peripherals"))), {"CE-150", "-", "CE-158"}));
     // Host Drive… is the PC-1600's (its product entry); Resume while paused.
@@ -172,22 +172,22 @@ TEST(qt_menus_in_family_order) {
     // The PC-1600: ROM Version ▸, and CE-1600P ROM ▸ while it is plugged in.
     f.command("model", Value::object({{"name", "PC-1600"}}));
     f.run(100);
-    CHECK(checkList("PC-1600 submenus", machineSubmenus(f), {"Model ▸", "ROM Version ▸", "Peripherals ▸", "Log Level ▸"}));
+    CHECK(checkList("PC-1600 submenus", machineSubmenus(f), {"Model ▸", "ROM Version ▸", "Peripherals ▸", "Run Log ▸"}));
     CHECK(f.action(cu1600::kItemHostDrive)->isEnabled());
     CHECK(!f.action(cu1600::kItemUnmountHostDrive)->isEnabled());
     f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
     f.run(100);
     CHECK(checkList("PC-1600 + CE-1600P", machineSubmenus(f),
-                    {"Model ▸", "ROM Version ▸", "CE-1600P ROM ▸", "Peripherals ▸", "Log Level ▸"}));
+                    {"Model ▸", "ROM Version ▸", "CE-1600P ROM ▸", "Peripherals ▸", "Run Log ▸"}));
     CHECK(checkList("PC-1600 Peripherals", labels(f.find<QMenu>(names::item("peripherals"))),
                     {"CE-150", "CE-1600P", "-", "CE-158"}));
     // The PC-1500A: one ROM, no submenu.
     f.command("model", Value::object({{"name", "PC-1500A"}}));
     f.run(100);
-    CHECK(checkList("PC-1500A submenus", machineSubmenus(f), {"Model ▸", "Peripherals ▸", "Log Level ▸"}));
+    CHECK(checkList("PC-1500A submenus", machineSubmenus(f), {"Model ▸", "Peripherals ▸", "Run Log ▸"}));
 }
 
-// Machine ▸ Log Level ▸ sets the session's level and shows it checked;
+// Machine ▸ Run Log ▸ sets the session's level and shows it checked;
 // Trace is a toggle.
 TEST(log_level_and_trace_in_machine_menu) {
     SKIP_UNLESS_WINDOW();
@@ -324,6 +324,7 @@ TEST(settings_sections_and_rows) {
     want.push_back("Serial ports: Link folder");
 #endif
     want.push_back("Debugger: Debug server (DAP) Port");
+    want.push_back("App log: App log level");
     CHECK(checkList("sections", sections, want));
     // The two status lines of Serial ports and the debug server's status.
     f.run(100);

@@ -1,4 +1,5 @@
 #pragma once
+#include "applog/AppLog.hpp"
 #include "machine/Machine.hpp"
 #include "pacing/WallClock.hpp"
 #include "sessions/HostServices.hpp"
@@ -39,6 +40,7 @@ public:
     virtual MachineSession& machineSession() = 0;
     virtual machine::Machine* machine() = 0;
     virtual void notice(std::string sentence) = 0;
+    // The calculator's log (the `log` topic): what the calculator ran.
     virtual void log(std::string line) = 0;   // at every level
     // The level the `log-level` command set; a line at a level above it is
     // left out.
@@ -46,6 +48,9 @@ public:
     void logAt(LogLevel at, std::string line) {
         if (at <= logLevel()) log(std::move(line));
     }
+    // The app log: how the app ran (a failure with its cause, what was
+    // saved or opened). Never the calculator's `log`.
+    virtual applog::AppLog& appLog() = 0;
     virtual bool busy() const = 0;                    // an operation runs
     virtual bool hostOffers(HostService) const = 0;
     // Asks the first listener that offers the service; `then` runs

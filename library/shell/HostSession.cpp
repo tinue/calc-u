@@ -18,7 +18,13 @@ std::unique_ptr<SettingsPart> settingsPartOf(HostSessionSetup& setup) {
     SettingsPartSetup s;
     s.file = &setup.settings->file();
     s.paths = &setup.settings->paths();
-    s.changed = std::move(setup.settingsChanged);
+    // `[app-log] level` is followed at once, unless the run has its own level.
+    s.changed = [changed = std::move(setup.settingsChanged), log = setup.appLog, fixed = setup.appLogLevel.has_value(),
+                 file = s.file](std::string_view section, std::string_view key) {
+        if (log && !fixed && section == "app-log" && key == "level")
+            log->setLevel(applog::appLogLevelOfSetting(file->text("app-log", "level")));
+        if (changed) changed(section, key);
+    };
     s.alsoShown = std::move(setup.settingsAlsoShown);
     return std::make_unique<SettingsPart>(std::move(s));
 }
@@ -34,20 +40,28 @@ struct Owned {
 
 std::unique_ptr<sessions::AppSession> hostSessionOf(HostSessionSetup setup, std::vector<sessions::SessionPart*> parts,
                                                     std::unique_ptr<SettingsPart> settingsPart) {
-    const std::string problem =
-        setup.logSettingsProblem && setup.settings ? setup.settings->problem() : std::string();
+    if (setup.appLog) {
+        if (setup.appLogLevel) setup.appLog->setLevel(*setup.appLogLevel);
+        else if (setup.settings)
+            setup.appLog->setLevel(applog::appLogLevelOfSetting(setup.settings->file().text("app-log", "level")));
+        if (setup.settings && !setup.settings->problem().empty())
+            setup.appLog->warn("Settings: " + setup.settings->problem());
+        if (setup.settings)
+            for (const std::string& value : setup.settings->file().notAccepted())
+                setup.appLog->warn("Settings: " + value + " is not accepted; the default is used.");
+    }
     sessions::AppSessionSetup s;
     s.clock = setup.clock ? std::move(setup.clock) : pacing::WallClock(&pacing::steadyWallTime);
     s.hostTime = std::move(setup.hostTime);
     s.parts = std::move(parts);
     s.hosting = setup.hosting;
     s.jitterSeed = setup.jitterSeed;
+    s.appLog = setup.appLog;
     auto owned = std::make_shared<Owned>();
     owned->host = std::move(setup.owned);
     owned->settingsPart = std::move(settingsPart);
     s.owned = std::move(owned);
     auto session = std::make_unique<sessions::AppSession>(std::move(s));
-    if (!problem.empty()) session->context().log("Settings: " + problem);
     if (setup.start) {
         sessions::Listener l;
         l.listen(*session);

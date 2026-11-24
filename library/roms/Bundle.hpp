@@ -18,6 +18,10 @@ public:
     virtual ~Bundle() = default;
     // The bytes of the file of exactly that name; std::nullopt when there is none.
     virtual std::optional<std::vector<std::uint8_t>> read(std::string_view fileName) const = 0;
+    // Why read() gave none for a file of that name that is there (no
+    // access, a folder, a read error), in the system's words; empty when
+    // there is no such file, and for a bundle that cannot tell.
+    virtual std::string problem(std::string_view) const { return {}; }
     // Where the files are looked for, for the message (a folder, "the app bundle").
     virtual std::string where() const = 0;
 };
@@ -29,6 +33,7 @@ class DirectoryBundle final : public Bundle {
 public:
     explicit DirectoryBundle(std::filesystem::path folder);
     std::optional<std::vector<std::uint8_t>> read(std::string_view fileName) const override;
+    std::string problem(std::string_view fileName) const override;
     std::string where() const override;
 
 private:

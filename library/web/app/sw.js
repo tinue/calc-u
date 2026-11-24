@@ -29,6 +29,10 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(ASSETS))
+      .catch((e) => {
+        console.warn(`[Calc-U] The app is not kept for offline use: its files could not be cached: ${e.name}: ${e.message}`);
+        throw e;   // the install fails, the release before stays
+      })
       .then(() => (firstInstall ? self.skipWaiting() : undefined))
   );
 });

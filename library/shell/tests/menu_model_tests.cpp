@@ -44,7 +44,7 @@ TEST(menus_and_items_in_order) {
     CHECK_EQ(join(ids(findMenu(ms, "edit")->items)), std::string("copy-screen paste-text"));
     CHECK_EQ(join(ids(findMenu(ms, "machine")->items)),
              std::string("model variants-model peripherals - reset cold-boot resume disk-thing"));
-    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help about"));
+    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help show-app-log about"));
     CHECK_EQ(findItem(ms, "load-preset")->label, std::string("Load Preset…"));
     CHECK_EQ(findItem(ms, "settings")->label, std::string("Settings…"));
     CHECK_EQ(findItem(ms, "cold-boot")->label, std::string("Cold boot"));
@@ -75,7 +75,7 @@ TEST(item_without_function_and_empty_menu_left_out) {
     CHECK_EQ(join(ids(findMenu(ms, "file")->items)), std::string("load-preset - settings quit"));
     // A product without a help address: no Help item, About stays.
     p.helpUrl.clear();
-    CHECK_EQ(join(ids(findMenu(menus(in, p, kQt), "help")->items)), std::string("about"));
+    CHECK_EQ(join(ids(findMenu(menus(in, p, kQt), "help")->items)), std::string("show-app-log about"));
 }
 
 TEST(model_menu_marks_running_and_sends_model) {
@@ -198,7 +198,7 @@ TEST(product_item_in_its_group) {
     CHECK_EQ(join(ids(findMenu(ms, "file")->items)),
              std::string("load-preset examples open-thing - load-program - mount-drive - end-thing settings quit"));
     CHECK_EQ(join(ids(findMenu(ms, "edit")->items)), std::string("copy-log"));
-    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help tips about"));
+    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help show-app-log tips about"));
     // Shown and disabled like the shell's own, from its product entry.
     const MenuItem* disk = findItem(ms, "disk-thing");
     CHECK(!disk->enabled);
@@ -226,7 +226,7 @@ TEST(no_machine_menu_without_control_state) {
     const auto ms = menus(in, st::product(), kQt);
     CHECK_EQ(join(menuIds(ms)), std::string("file help"));
     CHECK_EQ(join(ids(findMenu(ms, "file")->items)), std::string("settings quit"));
-    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help about"));
+    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help show-app-log about"));
 }
 
 TEST(model_switch_changes_menu_entries) {
@@ -287,7 +287,7 @@ TEST(more_items_are_every_menu_under_its_heading) {
     CHECK_EQ(join(ids(more)),
              std::string("heading-file load-preset examples - load-program - import-media saved-media mount-drive - settings "
                          "heading-machine model variants-model peripherals - reset cold-boot resume disk-thing "
-                         "heading-help help about"));
+                         "heading-help help show-app-log about"));
     CHECK(more[0].kind == MenuItem::Kind::Heading);
     CHECK_EQ(more[0].label, std::string("FILE"));
     for (const auto& i : more)
@@ -431,7 +431,7 @@ TEST(no_settings_item_without_settings) {   // and Traits::about
     t.about = false;
     ms = menus(st::inputs(), st::product(), t);
     CHECK(findItem(ms, "about") == nullptr);
-    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help"));
+    CHECK_EQ(join(ids(findMenu(ms, "help")->items)), std::string("help show-app-log"));
 }
 
 // The product's toggles and submenus follow topics of the session and send

@@ -75,6 +75,7 @@ public:
         startupPart = std::make_unique<startup::StartupPart>(
             startup::StartupSetup{machineControl, settings, presetsPart.get()});
         sessions::AppSessionSetup s;
+        s.appLog = &appLog;
         s.clock = clock.fn();
         s.hostTime = [this] { return hostNow; };
         s.clockFollowsHost = o.clockFollowsHost;
@@ -159,6 +160,13 @@ public:
             if (const auto* l = sessions::payloadAs<sessions::LogLine>(p)) out.push_back(l->text);
         return out;
     }
+    // The app log's lines since the last call, every level.
+    std::vector<std::string> appLogLines() {
+        std::vector<std::string> out;
+        for (const auto& l : appLog.lines()) out.push_back(l.text);
+        appLog.clear();
+        return out;
+    }
     std::vector<std::string> notices() { return fe.noticeSentences(); }
     // Runs single instructions (virtual time) until the target stands at `address`.
     bool runTo(std::uint64_t address, std::size_t target = 0, int max = 10'000) {
@@ -178,6 +186,7 @@ public:
     DebugOptions opts;
     calcu::testing::TempFolder folder, traces;
     sessions::test::ScriptedClock clock;
+    applog::MemoryAppLog appLog{applog::AppLogLevel::Debug};   // the session's app log, every level
     sessions::test::TestFrontend fe;
     std::chrono::system_clock::time_point hostNow{std::chrono::hours(24 * 365 * 50)};
     DebugMachines machines;

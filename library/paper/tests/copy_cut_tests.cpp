@@ -5,6 +5,8 @@
 #include "paper/Picture.hpp"
 #include "paper/PaperTopics.hpp"
 #include "sessions/AppSession.hpp"
+#include <algorithm>
+#include <memory>
 
 using namespace calcu::paper;
 using namespace calcu::paper::test;
@@ -12,8 +14,20 @@ namespace s = calcu::sessions;
 
 namespace {
 
+// The run's app log, every level, as the harness writes it.
+calcu::harness::RunOptions appLogInto(std::shared_ptr<std::vector<std::string>> lines) {
+    calcu::harness::RunOptions o;
+    o.appLogLevel = calcu::applog::AppLogLevel::Debug;
+    o.appLogOut = [lines](const std::string& l) { lines->push_back(l); };
+    return o;
+}
+
 struct ClipRun {
-    PaperRun run;
+    std::shared_ptr<std::vector<std::string>> appLog = std::make_shared<std::vector<std::string>>();
+    PaperRun run{appLogInto(appLog)};
+    bool logged(const std::string& line) const {
+        return std::find(appLog->begin(), appLog->end(), line) != appLog->end();
+    }
     s::test::TestFrontend fe;
     s::ListenerId id = 0;
     explicit ClipRun(bool offer = true) {
@@ -154,4 +168,13 @@ TEST(copy_outcome_on_paper_copies) {
     CHECK(o[1]->outcome == CopyOutcome::Kind::TextOnly);
     CHECK(o[2]->outcome == CopyOutcome::Kind::Failed && o[2]->reason == "The browser took nothing.");
     CHECK_EQ(toText(o[1]->toValue()), std::string("{\"owner\":\"TD-20\",\"outcome\":\"text-only\",\"reason\":\"\",\"text\":\"Copied to clipboard\"}"));
+    // The panel says "Copy failed"; the app log keeps why, and the text alone.
+    CHECK(c.logged("app-log warn: Copy of the TD-20's paper failed: The browser took nothing.\n"));
+    CHECK(c.logged("app-log info: Copy of the TD-20's paper: the clipboard took the text without the picture.\n"));
+    // A host that gives no reason: the line says so.
+    c.send(kPaperCopyCommand, s::Value());
+    const auto more = c.asks();
+    if (more.size() != 4) return;
+    c.session().answer(more[3].ask, s::ServiceAnswer{false, {}, ""});
+    CHECK(c.logged("app-log warn: Copy of the TD-20's paper failed: the host gives no reason\n"));
 }

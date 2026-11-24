@@ -21,9 +21,13 @@ function calcuCanOpenIndexedDb(name) {
       if (typeof indexedDB === "undefined" || !indexedDB) { resolve(false); return; }
       const request = indexedDB.open(name);
       request.onsuccess = () => { request.result.close(); resolve(true); };
-      request.onerror = () => resolve(false);
+      request.onerror = () => {
+        calcuAppLog("warn", `storage: IndexedDB ${name} cannot be opened: ${calcuErrorText(request.error)}`);
+        resolve(false);
+      };
       request.onblocked = () => resolve(true);
-    } catch (_) {
+    } catch (e) {
+      calcuAppLog("warn", `storage: IndexedDB ${name} cannot be opened: ${calcuErrorText(e)}`);
       resolve(false);
     }
   });
@@ -37,7 +41,10 @@ function calcuAcquireStorageLock(name) {
     navigator.locks.request(name, { ifAvailable: true }, (lock) => {
       resolve(!!lock);
       return lock ? new Promise(() => {}) : undefined;  // held while the worker lives
-    }).catch(() => resolve(true));
+    }).catch((e) => {
+      calcuAppLog("warn", `storage: the lock ${name} could not be asked for: ${calcuErrorText(e)}; this copy writes.`);
+      resolve(true);
+    });
   });
 }
 
@@ -58,6 +65,7 @@ async function calcuOpenStorage(Module, config, onRefused) {
     const done = (err) => {
       if (err && open) {
         open = false;
+        calcuAppLog("warn", `storage: writing ${config.mount} failed: ${calcuErrorText(err)}; nothing more is kept.`);
         if (onRefused) onRefused(memory("unavailable", CALCU_SENTENCES.unavailable));
       }
       if (mount.calcuPersist === "again") start();
@@ -84,7 +92,10 @@ async function calcuOpenStorage(Module, config, onRefused) {
       resolve(e);
     }
   });
-  if (err) return memory("unreadable", CALCU_SENTENCES.unreadable);
+  if (err) {
+    calcuAppLog("warn", `storage: ${config.mount} could not be read: ${calcuErrorText(err)}; nothing is kept.`);
+    return memory("unreadable", CALCU_SENTENCES.unreadable);
+  }
   if (!writer) return memory("second-copy", CALCU_SENTENCES.secondCopy);
   open = true;
   return { mode: "kept", sentence: "" };

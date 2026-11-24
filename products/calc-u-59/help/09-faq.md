@@ -61,7 +61,7 @@ CPU the processor's instructions, LOG the log and the TRACE button
 
 ## How do I get a trace file, and what can I do with it?
 
-In the debug panel's LOG tab, turn TRACE on, do what you want to
+In the debug panel's RUN LOG tab, turn TRACE on, do what you want to
 record, turn it off. The file (`CALCU59_TRACE.bin`, `CALCU58_TRACE.bin` or
 `CALCU58C_TRACE.bin`) is in the trace folder, or offered to download in
 the browser. `tools/read_trace.py` of the source repository turns it into

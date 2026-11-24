@@ -89,7 +89,7 @@ the ROM's page changes show in the addresses.
 
 ![The CPU tab on an iPad](images/ipad-2752x2064-asm.png)
 
-## LOG tab
+## RUN LOG tab
 
 - **SCOM**, **Memory**, **Prog** and **Vars** write the calculator's own
   registers, its memory, the program or the data registers into the log;

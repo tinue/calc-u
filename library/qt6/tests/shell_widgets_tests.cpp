@@ -470,14 +470,16 @@ TEST(notice_over_loading_on_widgets) {
     CHECK(w.session->busy());
 }
 
-TEST(log_to_platform_no_view) {
+// The calculator's log is not the app log: none of its lines reaches Qt's
+// messages, which go to the app log.
+TEST(log_not_to_platform_no_view) {
     TestWindow w;
     infoLines.clear();
     previousHandler = qInstallMessageHandler(captureInfo);
     w.command("tsp.log", Value::object({{"text", "A line of the log."}}));
     w.step();
     qInstallMessageHandler(previousHandler);
-    CHECK(infoLines.contains(QStringLiteral("A line of the log.")));
+    CHECK(!infoLines.contains(QStringLiteral("A line of the log.")));
     CHECK(w.window.findChild<QWidget*>(QStringLiteral("log")) == nullptr);   // no view of its own
 }
 

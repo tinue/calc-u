@@ -18,8 +18,8 @@ std::optional<std::string> TIFileAccess::readConstantMemory(bool* unreadable) {
     return std::move(r.bytes);
 }
 
-bool TIFileAccess::writeConstantMemory(const std::string& text) {
-    return m_files->write(savePath(kConstantMemoryFile), text).ok;
+calcu::media::FileAccess::Written TIFileAccess::writeConstantMemory(const std::string& text) {
+    return m_files->write(savePath(kConstantMemoryFile), text);
 }
 
 } // namespace cu59

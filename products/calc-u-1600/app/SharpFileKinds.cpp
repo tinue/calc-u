@@ -87,6 +87,7 @@ CommandOutcome ProgramFileKind::open(const OpenedFile& f, Way way, SessionContex
     if (!image) return Refused{sharp::loaders::refusal(name, why)};
     if (m_which == ProgramKind::Basic) {
         const sharp::loaders::BasicLoaded r = sharp::loaders::loadBasic(*ctx.machine(), *image);
+        sharp::loaders::logNotes(ctx.appLog(), r);
         if (!r.ok) return Refused{sharp::loaders::refusal(name, r.refusal)};
         return Done{};
     }

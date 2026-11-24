@@ -81,6 +81,7 @@ private:
 
     StartupSetup setup_;
     bool started_ = false;
+    bool lastModelWarned_ = false;   // a failed write of [startup] last-model, once per run
 };
 
 } // namespace calcu::startup

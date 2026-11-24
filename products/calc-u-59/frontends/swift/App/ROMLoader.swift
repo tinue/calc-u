@@ -1,12 +1,9 @@
 import Foundation
-import os
 
 /// The app bundle's ROM files (the module files hold the cue cards). They are looked up
 /// once through the library's lookup (Bridge/TIRomSet); parsing and
 /// checks live in the C++ layers. This only names the folder.
 struct ROMLoader {
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Calc-U-59", category: "ROMLoader")
-
     /// The full set from the bundle's resource folder, or the text that says
     /// which files are missing or bad.
     static func lookUp() -> Result<TIRomSet, RomsMissing> {

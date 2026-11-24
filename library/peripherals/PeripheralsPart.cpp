@@ -45,6 +45,12 @@ void PeripheralsPart::attach(sessions::SessionSetup& s) {
 void PeripheralsPart::pump(sessions::SessionContext& c) {
     if (machine::Machine* m = c.machine()) links_.pump(*m);
     else links_.machineGone();
+    reportLinkProblems(c);
+}
+
+// The links run without a session; their problems reach the app log here.
+void PeripheralsPart::reportLinkProblems(sessions::SessionContext& c) {
+    for (const std::string& p : links_.takeProblems()) c.appLog().warn(p);
 }
 
 void PeripheralsPart::beforeCall(sessions::SessionContext& c, pacing::WallTime) { pump(c); }
@@ -58,6 +64,7 @@ void PeripheralsPart::machineChanged(sessions::SessionContext& c) {
         return;
     }
     links_.machineChanged(*m);
+    reportLinkProblems(c);
     setClocksFromHost(c);
 }
 

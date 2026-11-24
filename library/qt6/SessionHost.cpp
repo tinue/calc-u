@@ -124,7 +124,11 @@ void SessionHost::defaultService(const sessions::ServiceAsk& a) {
     } else if (a.service == sessions::HostService::OpenUrl) {
         const sessions::Value* url = a.args.find("url");
         answer.given = url && url->string() && QDesktopServices::openUrl(QUrl(QString::fromStdString(*url->string())));
-        if (!answer.given) answer.reason = "The address could not be opened.";
+        if (!answer.given) {
+            answer.reason = "The address could not be opened.";
+            session_.context().appLog().warn("The address " + (url && url->string() ? *url->string() : std::string("(none)")) +
+                                             " could not be opened: the system did not open it.");
+        }
     } else {
         answer.reason = "This frontend does not offer it.";
     }
@@ -139,7 +143,8 @@ std::string SessionHost::openAttach(harness::HarnessProduct& product, std::uint1
     a->endpoint = std::make_unique<harness::AttachEndpoint>(*a, port);
     const auto opened = a->endpoint->open();
     if (!opened.ok) {   // the app runs on without attach
-        session_.context().log("Attach is not available on port " + std::to_string(port) + ": " + opened.problem + ".");
+        session_.context().appLog().warn("Attach is not available on port " + std::to_string(port) + ": " +
+                                         opened.problem + ".");
         return opened.problem;
     }
     // Qt6 sends no suspend: calls are never suspended.

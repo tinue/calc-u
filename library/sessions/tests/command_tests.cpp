@@ -2,6 +2,7 @@
 #include "TestHarness.hpp"
 #include "TestParts.hpp"
 #include <algorithm>
+#include <stdexcept>
 
 using namespace calcu::sessions;
 using namespace calcu::sessions::test;
@@ -215,4 +216,32 @@ TEST(deferred_reply_comes_later_and_not_busy) {
     p.ctx->reply(done, ReplyMessage{0, false, "x", nullptr});
     r.call();
     CHECK_EQ(r.fe.replies(done), 1);
+}
+
+// A handler, a request or a host's answer that throws: refused or told, and
+// the app log has an error line with what it threw.
+namespace {
+struct ThrowingPart final : SessionPart {
+    void attach(SessionSetup& s) override {
+        s.command(CommandName{"tp.throw"}, [](const Value&, SessionContext&) -> CommandOutcome {
+            throw std::runtime_error("The handler broke.");
+        });
+        s.request(RequestName{"tp.throw-request"}, [](const Value&, SessionContext&) -> ReplyMessage {
+            throw std::runtime_error("The request broke.");
+        });
+    }
+};
+} // namespace
+
+TEST(throwing_handler_refused_and_app_log_error) {
+    ThrowingPart p;
+    RigOptions o;
+    o.extraParts = {&p};
+    Rig r(o);
+    const CallId c = r.send("tp.throw");
+    CHECK(r.fe.reply(c) && !r.fe.reply(c)->done && r.fe.reply(c)->reason == "The handler broke.");
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Error, "The command tp.throw threw: The handler broke."));
+    const CallId q = r.ask("tp.throw-request");
+    CHECK(r.fe.reply(q) && !r.fe.reply(q)->done);
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Error, "The request tp.throw-request threw: The request broke."));
 }

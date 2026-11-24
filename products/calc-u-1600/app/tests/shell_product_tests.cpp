@@ -40,7 +40,7 @@ TEST(shell_product_complete) {
     CHECK_EQ(calcu::shell::nameAndSavePrompt(p, "cassette"), std::string("Cassette name:"));
     std::vector<std::string> items;
     for (const auto& i : p.items) items.push_back(i.label);
-    CHECK(items == (std::vector<std::string>{"Load BASIC Program…", "Load Machine Code…", "Host Drive…", "Unmount", "Trace", "Log Level"}));
+    CHECK(items == (std::vector<std::string>{"Load BASIC Program…", "Load Machine Code…", "Host Drive…", "Unmount", "Trace", "Run Log"}));
     CHECK(cu1600::shellProduct("1.0", "", false, false).items.size() == 2);   // no host folders and no trace on the Web
 }
 

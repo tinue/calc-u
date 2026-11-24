@@ -30,10 +30,14 @@ struct DialogSpec {   // the frontend's, in order
     std::vector<DialogSection> sections;
 };
 
-// General, Startup presets, Storage, Folders, Tracing for the family
+// General, Startup presets, Storage, Folders, Tracing, App log for the family
 // keys the declaration has and this frontend shows ("section.key"; empty:
 // every family key it declares). The product appends its own sections.
 DialogSpec familySections(const settings::ProductDecl&, const std::vector<std::string>& keysShown = {});
+
+// The App log section moved last, behind the sections the product appended:
+// every dialog ends with it.
+void appLogSectionLast(DialogSpec&);
 
 struct ShownRow {   // what a widget shows
     DialogRow row;

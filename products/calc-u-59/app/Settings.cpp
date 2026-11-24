@@ -47,6 +47,7 @@ cs::ProductDecl makeDecl() {
     d.keys.push_back(cs::family::traceFolder());
     d.keys.push_back(cs::family::traceMaxFileSizeMb());
     d.keys.push_back(cs::family::traceLocation());
+    d.keys.push_back(cs::family::appLogLevel());
     d.keys.push_back(choice("display", "led-style", {"modernized", "classic"},
                             "The display's segments: modernized or classic."));
     d.keys.push_back(choice("keyboard", "feedback", {"off", "haptic", "click"},

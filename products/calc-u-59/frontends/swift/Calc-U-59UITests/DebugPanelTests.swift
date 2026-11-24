@@ -77,7 +77,7 @@ final class DebugPanelTests: XCTestCase {
     @MainActor
     func testTabsAndLabels() throws {
         let app = launchWithDebugPanel()
-        for (id, label) in [("btn-tab-calculator", "CALCULATOR"), ("btn-tab-cpu", "CPU"), ("btn-tab-log", "LOG")] {
+        for (id, label) in [("btn-tab-calculator", "CALCULATOR"), ("btn-tab-cpu", "CPU"), ("btn-tab-log", "RUN LOG")] {
             let tab = app.buttons[id]
             XCTAssertTrue(tab.waitForExistence(timeout: 3), "\(id) not found")
             XCTAssertEqual(tab.label, label)
@@ -94,9 +94,9 @@ final class DebugPanelTests: XCTestCase {
         XCTAssertFalse(app.buttons["btn-asm-run"].isEnabled, "Run without an overlay loaded")
         app.buttons["btn-tab-log"].tap()
         for label in ["SCOM", "Memory", "Prog", "Vars"] {
-            XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 3), "the LOG tab has no \(label)")
+            XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 3), "the RUN LOG tab has no \(label)")
         }
-        XCTAssertTrue(app.buttons["btn-trace"].exists, "the LOG tab has no TRACE")
-        attachScreenshot(app, name: "Debug panel — LOG tab")
+        XCTAssertTrue(app.buttons["btn-trace"].exists, "the RUN LOG tab has no TRACE")
+        attachScreenshot(app, name: "Debug panel — RUN LOG tab")
     }
 }

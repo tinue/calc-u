@@ -5,6 +5,8 @@
 
 namespace calcu::peripherals {
 
-std::unique_ptr<HostLink> openHostLink(const std::optional<std::string>&, const std::string&) { return nullptr; }
+std::unique_ptr<HostLink> openHostLink(const std::optional<std::string>&, const std::string&, std::string*) {
+    return nullptr;
+}
 
 } // namespace calcu::peripherals

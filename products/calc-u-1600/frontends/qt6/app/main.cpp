@@ -10,12 +10,13 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "AppLogging.hpp"
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
 #include "MainWindow.hpp"
 #include "MachineController.hpp"
 #include "opening/OpenRequest.hpp"
+#include "Version.h"
+#include "qt6/AppLogSink.hpp"
 #include "qt6/FileOpening.hpp"
 #include "qt6/MacHost.hpp"
 #ifdef CALCU_ATTACH
@@ -28,7 +29,7 @@
 #endif
 
 int main(int argc, char** argv) {
-    AppLogging::install();
+    calcu::qt6::installAppLog("Calc-U-1600", APP_VERSION, APP_BUILD_ID, argc, argv);
 #ifdef __APPLE__
     calcu::qt6::macDisableWindowRestoration(); // the restore prompt deadlocks the startup preset
     calcu::qt6::macDisablePressAndHold();      // held letters stay held keys
@@ -82,7 +83,8 @@ int main(int argc, char** argv) {
     const bool parsed = parser.parse(QCoreApplication::arguments());
 
     // --dap <port> for this run; a port out of range is
-    // said on standard error and in a notice, and the server is off.
+    // said in the app log (which shows on standard error too) and in a
+    // notice, and the server is off.
     std::optional<long> dapPort;
     if (parser.isSet(dapOption)) {
         bool number = false;
@@ -92,7 +94,7 @@ int main(int argc, char** argv) {
     const auto applyDapPort = [&dapPort](MachineController* controller) {
         if (!dapPort || !controller) return;
         if (const std::optional<std::string> refused = controller->setDapRunPort(*dapPort))
-            std::fprintf(stderr, "--dap %ld: %s\n", *dapPort, refused->c_str());
+            calcu::qt6::appLog().warn("--dap " + std::to_string(*dapPort) + ": " + *refused);
     };
 
 #ifdef CALCU_ATTACH
@@ -108,8 +110,11 @@ int main(int argc, char** argv) {
         window.show();
 #ifdef CALCU_ATTACH
         std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = cu1600::makeHarnessProduct();
-        window.host().openAttach(*attachProduct, calcu::qt6::SessionHost::attachPortFrom(QCoreApplication::arguments()),
-                                 window.controller()->app().libraryParts());
+        // The window runs on without the harness attach.
+        const std::string attachProblem =
+            window.host().openAttach(*attachProduct, calcu::qt6::SessionHost::attachPortFrom(QCoreApplication::arguments()),
+                                     window.controller()->app().libraryParts());
+        if (!attachProblem.empty()) calcu::qt6::appLog().warn("The harness attach is not open: " + attachProblem);
 #endif
         window.start();
         fileOpen.setHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });

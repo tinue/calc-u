@@ -2,6 +2,7 @@
 #include "files/Files.hpp"
 #include <fstream>
 #include <iterator>
+#include <system_error>
 
 namespace calcu::presets {
 
@@ -10,10 +11,19 @@ namespace fs = std::filesystem;
 namespace {
 
 
-std::optional<std::vector<std::uint8_t>> readFile(const fs::path& p) {
+// The bytes, or none with the system's reason in `why`.
+std::optional<std::vector<std::uint8_t>> readFile(const fs::path& p, std::string& why) {
     std::error_code ec;
-    if (!fs::is_regular_file(p, ec)) return std::nullopt;
-    return files::readBytes(p);
+    const fs::file_status st = fs::status(p, ec);
+    if (ec || !fs::exists(st)) {
+        why = (ec ? ec : std::make_error_code(std::errc::no_such_file_or_directory)).message();
+        return std::nullopt;
+    }
+    if (!fs::is_regular_file(st)) {
+        why = "it is not a file";
+        return std::nullopt;
+    }
+    return files::readBytes(p, &why);
 }
 
 // `~/x` against the home folder; nullopt when the path does not start so.
@@ -35,7 +45,9 @@ std::optional<std::string> decoded(const std::vector<std::uint8_t>& bytes, const
     return t;
 }
 
-std::string notRead(std::string_view path) { return "The file " + std::string(path) + " cannot be read."; }
+std::string notRead(std::string_view path, const std::string& why) {
+    return "The file " + std::string(path) + " cannot be read: " + why + ".";
+}
 
 // A preset in a folder on disk. An upload (the Web) is a preset chosen with
 // its files, all of them put into one folder by their names alone: a file it
@@ -48,9 +60,10 @@ public:
     std::string name() const override { return upload_ ? files::fromPath(file_.filename()) : files::fromPath(file_); }
     std::string stem() const override { return stemOf(files::fromPath(file_.filename())); }
     std::optional<std::string> text() const override {
-        const auto bytes = readFile(file_);
+        std::string why;
+        const auto bytes = readFile(file_, why);
         if (!bytes) {
-            why_ = "The file " + name() + " cannot be read.";
+            why_ = notRead(name(), why);
             return std::nullopt;
         }
         return decoded(*bytes, name(), &why_);
@@ -58,11 +71,12 @@ public:
     std::string readError() const override { return why_; }
     std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view path) const override {
         const fs::path p = resolve(path);
-        if (auto b = readFile(p)) return *b;
+        std::string why;
+        if (auto b = readFile(p, why)) return *b;
         if (upload_ && chosenWith(path))
             return "The preset " + name() + " names the file " + std::string(path) +
                    ", which was not chosen with it: choose the preset together with every file it names.";
-        return notRead(files::fromPath(p));
+        return notRead(files::fromPath(p), why);
     }
     std::string resolvedName(std::string_view path) const override { return files::fromPath(resolve(path)); }
 
@@ -98,8 +112,9 @@ public:
         if (!p)   // content without a folder
             return "The preset " + name_ + " was handed over without its folder, so the file " + std::string(path) +
                    " it names cannot be read.";
-        if (auto b = readFile(*p)) return *b;
-        return notRead(files::fromPath(*p));
+        std::string why;
+        if (auto b = readFile(*p, why)) return *b;
+        return notRead(files::fromPath(*p), why);
     }
     std::string resolvedName(std::string_view path) const override {
         if (auto h = homePath(path, home_)) return files::fromPath(*h);
@@ -153,7 +168,8 @@ private:
 std::optional<std::vector<std::uint8_t>> DirectoryPresetBundle::read(std::string_view pathInBundle) const {
     const auto p = normalBundlePath(pathInBundle);
     if (!p) return std::nullopt;
-    return readFile(root_ / files::toPath(*p));
+    std::string unused;   // a bundled file that is not there is missing, whatever the reason
+    return readFile(root_ / files::toPath(*p), unused);
 }
 
 std::string DirectoryPresetBundle::where() const { return files::fromPath(root_); }

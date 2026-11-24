@@ -25,7 +25,7 @@ skill).
   The panel draws the session's product topics
   `c59.calculator-debug`, `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`,
   `c59.asm-overlay`, `c59.debug-view` (app/TIDebugPart.hpp), which the bridge
-  mirrors; the LOG tab is the bridge's `cu59::RingLog` of the session's `log`
+  mirrors; the RUN LOG tab is the bridge's `cu59::RingLog` of the session's `log`
   (Clear empties the view only); the buttons send `c59.show-calculator-debug`,
   `c59.show-cpu-debug`, `c59.heatmap-reset`, `c59.dump`,
   `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and the library's

@@ -77,7 +77,7 @@ test('preset prop takes a path of bundle.yaml', async ({ page }) => {
 });
 
 // A layout that is not one of Calc-U-59's
-// is ignored with a console warning, and the default, portrait, is drawn.
+// is ignored with an app log warning, and the default, portrait, is drawn.
 test('an unknown layout is ignored with a warning', async ({ page }) => {
   const warnings = [];
   page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()); });
@@ -90,7 +90,7 @@ test('an unknown layout is ignored with a warning', async ({ page }) => {
   });
   await expect(page.locator('#layout-tall .calcu-client')).toHaveAttribute('data-layout', 'portrait', { timeout: 10000 });
   await expect.poll(() => warnings.filter((w) => /layout/.test(w))).toEqual(
-    ['CalcU59: layout "tall" is not one of its layouts ("portrait", "wide", "auto"); it is ignored.']);
+    ['[Calc-U] CalcU59: layout "tall" is not one of its layouts ("portrait", "wide", "auto"); it is ignored.']);
 });
 
 test('an unknown model or preset gives a notice and starts without it', async ({ page }) => {
@@ -111,7 +111,7 @@ test('only the messages of the session protocol', async ({ page }) => {
     received: window.__calcuReceived.map((m) => m && m.kind),
   }));
   for (const k of sent) expect(['listen', 'shell', 'command', 'request', 'answer']).toContain(k);
-  for (const k of received) expect(['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop']).toContain(k);
+  for (const k of received) expect(['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop', 'app-log']).toContain(k);
   expect(sent).toContain('listen');
 });
 

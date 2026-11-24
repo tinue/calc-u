@@ -202,7 +202,7 @@ function CalcU1600(props) {
   // of Load BASIC Program… or Load Machine Code… without its file dialog.
   // A WAV with several files asks which one; the file chosen goes to the
   // flow of its own kind. One flow at a time: one that comes meanwhile is
-  // dropped with a log line. The last program taken marks the place in the
+  // dropped with an app log line. The last program taken marks the place in the
   // stream (which keeps only its last items and starts anew on a reset).
   const programTaken = React.useRef(null);
   React.useEffect(() => {
@@ -211,7 +211,7 @@ function CalcU1600(props) {
     if (!fresh.length) return;
     const p = fresh[0];
     programTaken.current = p;
-    if (programFlow.current) { console.log(`[open] a program flow runs; dropped ${p.name}`); return; }
+    if (programFlow.current) { calcuAppLog("info", `Open: a program flow runs; ${p.name} is dropped.`); return; }
     programFlow.current = true;
     (async () => {
       let flow = p.kind === "machine-code-program" ? "code" : "basic";
@@ -225,8 +225,13 @@ function CalcU1600(props) {
   }, [shell, programs, dialogs.open]);
 
   const copyScreen = () => {
-    const image = shell.request("c1600.screen-image", null).then((r) => r.value);
-    copyImageOrDownload("screen.png", { "image/png": image.then(grayPng), "text/plain": image.then((i) => i.text) });
+    // A refused picture rejects both entries: nothing is copied, and the app
+    // log names the session's reason.
+    const image = shell.request("c1600.screen-image", null).then((r) => {
+      if (!r.done || !r.value) throw new Error(r.reason || "the screen's picture did not come");
+      return r.value;
+    });
+    copyImageOrDownload("Copy Screen", "screen.png", { "image/png": image.then(grayPng), "text/plain": image.then((i) => i.text) });
   };
 
   // The product's shell data with the page's acts. Load Preset…: the

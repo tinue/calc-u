@@ -1,4 +1,5 @@
 #pragma once
+#include "applog/AppLog.hpp"
 #include "pacing/WallClock.hpp"
 #include "sessions/HostServices.hpp"
 #include "sessions/Messages.hpp"
@@ -33,6 +34,8 @@ struct AppSessionSetup {
     std::vector<SessionPart*> parts;   // library features first, then the product's
     Hosting hosting = Hosting::Paced;
     std::optional<std::uint32_t> jitterSeed;   // same seed, same slice lengths; none: differs per run
+    // The host's app log (SessionContext::appLog); null: none.
+    applog::AppLog* appLog = nullptr;
     // The parts and what they need (settings, paths), when the session owns
     // them: released first when the session goes, while its machine is still
     // there (a part saves its media into the machine's files), and never

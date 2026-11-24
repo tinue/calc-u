@@ -20,6 +20,7 @@ namespace cs = calcu::sessions;
 NSString *const TIShellActionLoadPreset = @"load-preset";
 NSString *const TIShellActionSettings = @"settings";
 NSString *const TIShellActionHelp = @"help";
+NSString *const TIShellActionShowAppLog = @"show-app-log";
 
 // ── Value objects (type translation only) ────────────────────────────────────
 

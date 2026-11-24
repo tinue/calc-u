@@ -20,7 +20,7 @@ function page() {
     CALCU_SENTENCES: { startFailed: () => "failed" },
     CALC_BASE: "",
   });
-  for (const f of ["shell.js", "embed.js"]) vm.runInContext(fs.readFileSync(path.join(SRC, f), "utf8"), ctx);
+  for (const f of ["appLog.js", "shell.js", "embed.js"]) vm.runInContext(fs.readFileSync(path.join(SRC, f), "utf8"), ctx);
   const shell = ctx.createShell({ product: "Test", start: {} });
   const stream = (topic, value, reset) => worker.onmessage({ data: { kind: "stream", topic, value, reset } });
   const items = (topic) => shell.getState().streams[topic] || [];

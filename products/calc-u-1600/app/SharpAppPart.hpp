@@ -213,7 +213,6 @@ private:
     CommandOutcome change(calcu::startup::PlugChange ch, std::function<void()> after = {});
     void refreshTopics();
     void notice(const std::string& sentence);
-    void log(const std::string& line);
     // The model and the counters of the machine topic follow a new machine.
     void followNewMachine();
     std::string pluggedAt(const char* place) const;
@@ -228,6 +227,9 @@ private:
     // the product quits or the model is switched.
     std::string m_ce1600pChoice = "New";
 
+    // What failed while the members below were made (a module definition,
+    // the host drive's ROM), for the app log once a session is attached.
+    std::vector<std::string> m_startProblems;
     // The one lookup, at the start: the whole full set
     // or nothing. The host drive's ROM is bundled beside it.
     calcu::roms::LookupResult m_found;

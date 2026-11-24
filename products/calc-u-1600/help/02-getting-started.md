@@ -160,7 +160,7 @@ A link can choose the model by its name (`model=PC-1500`, `PC-1500A` or
 | The debugger (VS Code) | yes | no |
 | The serial ports (CE-158, the PC-1600's RS-232C) | yes | no |
 | The host drive `S3:` (**File ▸ Host Drive…**) | yes | no |
-| **Machine ▸ Trace** and **Log Level ▸** | yes | no |
+| **Machine ▸ Trace** and **Run Log ▸** | yes | no |
 | Quit, the window size, the folder settings | yes | no |
 
 ## Opening files

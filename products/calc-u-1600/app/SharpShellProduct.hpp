@@ -22,7 +22,7 @@ inline constexpr const char* kItemLoadBasic = "load-basic-program";
 inline constexpr const char* kItemLoadCode = "load-machine-code";
 inline constexpr const char* kItemHostDrive = "host-drive";
 inline constexpr const char* kItemUnmountHostDrive = "unmount-host-drive";
-// Machine ▸ Trace (the trace file, CALCU1600_TRACE.bin) and Log Level ▸
+// Machine ▸ Trace (the trace file, CALCU1600_TRACE.bin) and Run Log ▸
 // Off, Info, Debug (the session's `log-level`).
 inline constexpr const char* kItemTrace = "trace";
 inline constexpr const char* kItemLogLevel = "log-level";
@@ -37,7 +37,7 @@ inline constexpr const char* kHelpUrl = "https://calc-u.org/1600/";
 inline constexpr double kFaceplateHitDistance = 24;
 
 // `withHostFolders`: the Qt6 frontend's FileMedia items (Host Drive…,
-// Unmount); `withTrace`: its Machine items Trace and Log Level ▸, which
+// Unmount); `withTrace`: its Machine items Trace and Run Log ▸, which
 // follow the topics `trace` and `log-level` and send their commands. The
 // Web has neither: a page has no folder to mount, cannot reach the trace
 // file and shows no log.

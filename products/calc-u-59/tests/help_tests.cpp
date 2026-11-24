@@ -48,7 +48,7 @@ FamilyKeys familyKeys() {
     FamilyKeys f;
     for (const cs::KeyDecl& d : {cs::family::startupModel(), cs::family::startupLastModel(), cs::family::saveFolder(),
                                  cs::family::cassetteFolder(), cs::family::traceFolder(), cs::family::traceMaxFileSizeMb(),
-                                 cs::family::traceLocation(), cs::family::serialLinkFolder()})
+                                 cs::family::traceLocation(), cs::family::appLogLevel(), cs::family::serialLinkFolder()})
         f.fixed.insert("[" + d.section + "] " + d.key);
     f.namedSections = {cs::family::presetFor("x").section, cs::family::openFolder("x").section,
                        cs::family::windowNumber("x", 0).section};

@@ -136,6 +136,7 @@ public:
         startupPart = std::make_unique<startup::StartupPart>(
             startup::StartupSetup{machineControl, *settings, presets.get()});
         sessions::AppSessionSetup s;
+        s.appLog = &appLog;
         s.clock = clock.fn();
         s.hostTime = [] { return std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50)); };
         s.parts = {&peripherals, presets.get(), startupPart.get(), &typing};
@@ -192,6 +193,13 @@ public:
             if (const auto* l = sessions::payloadAs<sessions::LogLine>(p)) out.push_back(l->text);
         return out;
     }
+    // The app log's lines since the last call, every level.
+    std::vector<std::string> appLogLines() {
+        std::vector<std::string> out;
+        for (const auto& l : appLog.lines()) out.push_back(l.text);
+        appLog.clear();
+        return out;
+    }
     std::vector<std::string> notices() { return fe.noticeSentences(); }
     const sessions::BusyState* busy() const { return fe.busy(); }
     // The ticks of the machine's key events of `key` going down.
@@ -206,6 +214,7 @@ public:
     RigOptions opts_;
     calcu::testing::TempFolder folder, shots;
     sessions::test::ScriptedClock clock;
+    applog::MemoryAppLog appLog{applog::AppLogLevel::Debug};   // the session's app log, every level
     sessions::test::TestFrontend fe;
     RigMachines machines;
     std::unique_ptr<settings::SettingsFile> settings;

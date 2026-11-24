@@ -53,9 +53,10 @@ std::optional<std::string> folderOrNone(const std::string& dir) {
 
 // The catalogue with the module definitions: the bundled ones and the ROM
 // modules of the set (the CE-502B).
-calcu::machine::Catalogue catalogueOf(const AppPaths& paths, const calcu::roms::RomSet* roms) {
+calcu::machine::Catalogue catalogueOf(const AppPaths& paths, const calcu::roms::RomSet* roms,
+                                      std::vector<std::string>& problems) {
     calcu::machine::Catalogue c = sharp::sharpCatalogue();
-    sharp::addModuleDefinitions(c, paths.bundledModulesDir());
+    sharp::addModuleDefinitions(c, paths.bundledModulesDir(), &problems);
     if (roms) sharp::addModuleDefinitions(c, *roms);
     return c;
 }
@@ -64,8 +65,11 @@ calcu::roms::LookupResult lookUp(const AppPaths& paths) {
     return sharp::lookUpRoms(calcu::roms::DirectoryBundle(calcu::files::toPath(paths.bundledRomsDir())));
 }
 
-std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRomOf(const AppPaths& paths) {
-    auto rom = sharp::readHostDriveRom({paths.bundledHostDriveRomDir()});
+// `problems` null: a host without the host drive, which bundles no ROM for it.
+std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRomOf(const AppPaths& paths, std::vector<std::string>* problems) {
+    std::string why;
+    auto rom = sharp::readHostDriveRom({paths.bundledHostDriveRomDir()}, &why);
+    if (!rom && problems) problems->push_back("The host drive is off: its ROM cannot be read: " + why);
     return rom ? std::make_shared<const std::vector<std::uint8_t>>(std::move(*rom)) : nullptr;
 }
 
@@ -78,8 +82,8 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
       m_paths(paths),
       m_options(options),
       m_found(lookUp(paths)),
-      m_hostDriveRom(hostDriveRomOf(paths)),
-      m_catalogue(catalogueOf(paths, m_found.set.get())),
+      m_hostDriveRom(hostDriveRomOf(paths, options.canMountHostFolder ? &m_startProblems : nullptr)),
+      m_catalogue(catalogueOf(paths, m_found.set.get(), m_startProblems)),
       m_machines(m_catalogue, m_hostDriveRom),
       m_rules(SharpKeywordSetup{[this] { return canMountHostFolder(); }}),
       m_bundle(calcu::files::toPath(paths.bundledExamplesDir())),
@@ -156,15 +160,13 @@ void SharpAppPart::notice(const std::string& sentence) {
     if (m_ctx) m_ctx->notice(sentence);
 }
 
-void SharpAppPart::log(const std::string& line) {
-    if (m_ctx) m_ctx->log(line);
-}
-
 // ── SessionPart ─────────────────────────────────────────────────────────
 
 void SharpAppPart::attach(sessions::SessionSetup& setup) {
     m_ctx = &setup.context();
     m_ms = &m_ctx->machineSession();
+    for (const std::string& p : m_startProblems) m_ctx->appLog().warn(p);
+    m_startProblems.clear();
 
     m_lampsTopic = &setup.stateTopic(topics::kLamps);
     m_serialTopic = &setup.stateTopic(topics::kSerialLinks);

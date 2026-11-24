@@ -76,6 +76,7 @@ public:
         switch (way) {
             case ProgramWay::LoadBasic: {
                 const sharp::loaders::BasicLoaded r = sharp::loaders::loadBasic(*m, bytes);
+                sharp::loaders::logNotes(run.session().appLog(), r);
                 if (!r.ok) co_return failed(sharp::loaders::refusal(name, r.refusal));
                 co_return ItemResult{};
             }

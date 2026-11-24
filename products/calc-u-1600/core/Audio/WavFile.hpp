@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -41,12 +42,22 @@ inline std::vector<uint8_t> wavMono16Bytes(const std::vector<int16_t>& samples, 
     return out;
 }
 
-inline bool writeWavMono16(const std::string& path, const std::vector<int16_t>& samples, int sampleRate) {
+// False when the file is not written, with the system's reason in `error`.
+inline bool writeWavMono16(const std::string& path, const std::vector<int16_t>& samples, int sampleRate,
+                           std::string* error = nullptr) {
     FILE* f = std::fopen(path.c_str(), "wb");
-    if (!f) return false;
+    if (!f) {
+        if (error) *error = std::strerror(errno);
+        return false;
+    }
     const std::vector<uint8_t> bytes = wavMono16Bytes(samples, sampleRate);
-    const bool ok = std::fwrite(bytes.data(), 1, bytes.size(), f) == bytes.size();
-    return std::fclose(f) == 0 && ok;
+    bool ok = std::fwrite(bytes.data(), 1, bytes.size(), f) == bytes.size();
+    if (!ok && error) *error = std::strerror(errno);
+    if (std::fclose(f) != 0 && ok) {
+        ok = false;
+        if (error) *error = std::strerror(errno);
+    }
+    return ok;
 }
 
 // Decoded WAV contents: the channels mixed down to mono, each sample

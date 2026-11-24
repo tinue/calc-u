@@ -321,6 +321,7 @@ std::vector<MenuItem> machineMenu(const ShellInputs& in, const ShellProduct& p, 
 std::vector<MenuItem> helpMenu(const ShellInputs& in, const ShellProduct& p, Traits t) {
     std::vector<MenuItem> items;
     if (!p.helpUrl.empty()) items.push_back(action(actions::kHelp, p.name + " Help"));
+    items.push_back(action(actions::kShowAppLog, "Show App Log"));
     for (auto& i : productItems(in, p, MenuGroup::Help)) items.push_back(std::move(i));
     if (t.about) {
         MenuItem about = action(actions::kAbout, p.aboutLabel.empty() ? "About " + p.name : p.aboutLabel);

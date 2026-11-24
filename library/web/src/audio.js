@@ -10,10 +10,16 @@ function calcuCreateAudio() {
   let node = null;
   let rate = 48000;
   let starting = null;
+  let warned = false;   // once: every key would try again
+  const warnOnce = (what, e) => {
+    if (warned) return;
+    warned = true;
+    calcuAppLog("warn", `audio: the sound could not be ${what}: ${calcuErrorText(e)}`);
+  };
 
   const unlock = () => {
     if (context || starting || typeof AudioContext === "undefined") {
-      if (context && context.state === "suspended") context.resume();
+      if (context && context.state === "suspended") context.resume().catch((e) => warnOnce("resumed", e));
       return;
     }
     const ctx = new AudioContext({ latencyHint: "interactive" });
@@ -22,7 +28,7 @@ function calcuCreateAudio() {
       node.connect(ctx.destination);
       node.port.postMessage({ rate });
       context = ctx;
-    }).catch(() => { /* no audio */ }).finally(() => { starting = null; });
+    }).catch((e) => warnOnce("started", e)).finally(() => { starting = null; });
   };
 
   const message = (m) => {

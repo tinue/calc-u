@@ -132,7 +132,9 @@ TEST(instance_written_when_given_back) {
     const std::string after = r.cardFile("Prog");
     CHECK(after != before && after.find("saved: ") != std::string::npos);
     CHECK(CardRig::sideOf(after, 0) == CardRig::sideOf(before, 0));   // the other side kept
-    CHECK(r.logged("Saved magnetic card “Prog”."));
+    // "Saved …" says how the app ran: the app log has it, the calculator's log not.
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Info, "Saved magnetic card"));
+    CHECK(!r.logged("Saved magnetic card"));
 }
 
 TEST(read_pass_writes_nothing) {

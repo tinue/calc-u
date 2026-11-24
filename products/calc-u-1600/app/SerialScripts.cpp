@@ -55,6 +55,7 @@ std::optional<std::string> SerialScriptsPart::capture(const std::string& word, c
     std::ofstream out(calcu::files::toPath(path), std::ios::binary | std::ios::trunc);
     if (!out) return "The file " + path + " cannot be written.";
     ports_[word].capturePath = path;
+    ports_[word].captureFailed = false;
     return std::nullopt;
 }
 
@@ -75,9 +76,11 @@ SerialScriptsPart::Report SerialScriptsPart::report(const std::string& word) {
     return r;
 }
 
-void SerialScriptsPart::append(const std::string& path, const std::uint8_t* bytes, std::size_t n) {
+bool SerialScriptsPart::append(const std::string& path, const std::uint8_t* bytes, std::size_t n) {
     std::ofstream out(calcu::files::toPath(path), std::ios::binary | std::ios::app);
     out.write(reinterpret_cast<const char*>(bytes), static_cast<std::streamsize>(n));
+    out.flush();
+    return static_cast<bool>(out);
 }
 
 void SerialScriptsPart::drain() {
@@ -96,7 +99,12 @@ void SerialScriptsPart::drain() {
         std::uint8_t buf[1024];
         for (std::size_t n; (n = sp->takeSent(buf)) > 0;) {
             p.sent.insert(p.sent.end(), buf, buf + n);
-            if (!p.capturePath.empty()) append(p.capturePath, buf, n);
+            // The script's `report` still has the bytes; the file misses them.
+            if (!p.capturePath.empty() && !append(p.capturePath, buf, n) && !p.captureFailed) {
+                p.captureFailed = true;
+                ctx_->appLog().warn("The serial capture of " + std::string(word) + " cannot be written to " +
+                                    p.capturePath + "; the bytes sent from now on may be missing from it.");
+            }
         }
     }
 }

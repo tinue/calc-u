@@ -6,6 +6,9 @@ struct CalcU59App: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        // The app log first, so the start is in it: the sandbox's Library/Logs.
+        let logs = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0].appendingPathComponent("Logs")
+        TIAppLog.install(inFolder: logs.path, arguments: ProcessInfo.processInfo.arguments)
         let made = EmulatorViewModel()
         _viewModel = State(initialValue: made)
     }

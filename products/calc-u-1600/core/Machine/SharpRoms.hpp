@@ -51,8 +51,10 @@ int addModuleDefinitions(calcu::machine::Catalogue& catalogue, const calcu::roms
 
 /// The host drive's own ROM, Calc-U-1600's firmware: always bundled, not
 /// in the full set and not looked up. Read from
-/// the first of `folders` that has it; std::nullopt when none has. The one
+/// the first of `folders` that has it; std::nullopt when none has, with
+/// the reason in `problem` if given. The one
 /// ROM file read outside the lookup (CalcU1600NoOwnRomLookup lists it).
-std::optional<std::vector<std::uint8_t>> readHostDriveRom(const std::vector<std::string>& folders);
+std::optional<std::vector<std::uint8_t>> readHostDriveRom(const std::vector<std::string>& folders,
+                                                          std::string* problem = nullptr);
 
 } // namespace sharp

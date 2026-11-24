@@ -34,7 +34,7 @@ DebugPanel::DebugPanel(EmulatorController& controller, QWidget* parent) : QWidge
     auto* trow = new QHBoxLayout(tabBar);
     trow->setContentsMargins(0, 0, 0, 0);
     trow->setSpacing(0);
-    const char* names[3] = {"CALCULATOR", "CPU", "LOG"};
+    const char* names[3] = {"CALCULATOR", "CPU", "RUN LOG"};
     for (int i = 0; i < 3; ++i) {
         m_tabs[i] = new QToolButton(tabBar);
         m_tabs[i]->setText(QLatin1String(names[i]));

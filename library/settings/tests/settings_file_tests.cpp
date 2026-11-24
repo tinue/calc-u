@@ -319,3 +319,42 @@ TEST(settings_defaults_only_reads_and_writes_nothing) {
     CHECK(w.ok);  // nothing is meant to be written
     CHECK_EQ(f.text("test", "style"), std::string("two"));
 }
+
+// A read or a write that fails carries the system's reason, for the app log.
+TEST(settings_failed_read_and_write_carry_the_system_reason) {
+    TempDir dir;
+    std::string why;
+    CHECK(!readWholeFile(dir / "none.ini", &why));
+    CHECK_EQ(why, std::string("No such file or directory"));
+    namespace fs = std::filesystem;
+    const std::string locked = dir / "locked.ini";
+    writeText(locked, kVersioned);
+    fs::permissions(locked, fs::perms::none);
+    why.clear();
+    if (!readWholeFile(locked)) {   // not where the user may read anything (root)
+        CHECK(!readWholeFile(locked, &why));
+        CHECK_EQ(why, std::string("Permission denied"));
+        const SettingsFile f = SettingsFile::open(testProduct(), locked);
+        CHECK(f.outcome() == Outcome::Unreadable);
+        CHECK(f.problem().find("cannot be read (Permission denied)") != std::string::npos);
+    }
+    fs::permissions(locked, fs::perms::owner_all);
+    const std::string folder = dir / "read-only";
+    fs::create_directories(folder);
+    fs::permissions(folder, fs::perms::owner_read | fs::perms::owner_exec);
+    const FileWrite w = writeFileAtomically(folder + "/x.ini", "x");
+    if (!w.ok) CHECK(w.problem.find("cannot write beside " + folder + "/x.ini: Permission denied") != std::string::npos);
+    fs::permissions(folder, fs::perms::owner_all);
+}
+
+// A stored value the key does not accept: its default, and named for the app log.
+TEST(settings_values_not_accepted_are_named) {
+    TempDir dir;
+    writeText(iniPath(dir), kVersioned + "[test]\nflag = maybe\nstyle = two\nport = many\n");
+    const SettingsFile f = SettingsFile::open(testProduct(), iniPath(dir));
+    CHECK_EQ(f.text("test", "flag"), std::string("false"));
+    const std::vector<std::string> bad = f.notAccepted();
+    CHECK(std::find(bad.begin(), bad.end(), "[test] flag = \"maybe\"") != bad.end());
+    CHECK(std::find(bad.begin(), bad.end(), "[test] port = \"many\"") != bad.end());
+    CHECK_EQ(bad.size(), std::size_t{2});
+}

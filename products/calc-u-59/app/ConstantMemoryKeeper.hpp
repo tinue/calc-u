@@ -21,10 +21,12 @@ namespace cu59 {
 
 class ConstantMemoryKeeper {
 public:
-    // `savedAt`: the time of a write for the file's `saved:` key (ISO-8601 UTC).
+    // `warn`: the app log's line of a failure, with the path and the cause the
+    // notice leaves out. `savedAt`: the time of a write for the file's
+    // `saved:` key (ISO-8601 UTC).
     ConstantMemoryKeeper(TIFileAccess& files, std::function<void(std::string)> notice,
-                         std::function<std::string()> savedAt = {})
-        : m_files(files), m_notice(std::move(notice)), m_savedAt(std::move(savedAt)) {}
+                         std::function<void(std::string)> warn, std::function<std::string()> savedAt = {})
+        : m_files(files), m_notice(std::move(notice)), m_warn(std::move(warn)), m_savedAt(std::move(savedAt)) {}
 
     /// What a TI-58C built without a preset gets (the
     /// file's registers, or zeroed memory); reads the file, once per build,
@@ -47,9 +49,12 @@ public:
 private:
     std::optional<ConstantMemoryContents> current(calcu::machine::Machine*, const std::optional<CueCardContent>&) const;
     void write(const ConstantMemoryContents&);
+    std::string path() const;
+    void warn(const std::string&) const;
 
     TIFileAccess& m_files;
     std::function<void(std::string)> m_notice;
+    std::function<void(std::string)> m_warn;
     std::function<std::string()> m_savedAt;
     std::optional<CueCardContent> m_fileCard;
     std::shared_ptr<const calcu::machine::ProductData> m_handed;   // the content of the last contentForBuild()

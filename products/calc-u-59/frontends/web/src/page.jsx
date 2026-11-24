@@ -5,12 +5,12 @@
 //
 //   createC59Traces() → {services, list, subscribe, download}
 //       the page's host services for useShell (the library's, with the
-//       traces the session hands over with keep-file kept: the LOG tab
+//       traces the session hands over with keep-file kept: the RUN LOG tab
 //       lists them; the worker keeps no copy). Every
 //       keep-file is a download; only those of kind "trace" are listed (a
 //       preset's screenshot and an exported medium are not)
 //   C59_PAGE        the context: {shell, s (useCalcuShell), traces, log}
-//   useLogView(shell) → {lines, clear}: the LOG tab's view of the session's
+//   useLogView(shell) → {lines, clear}: the RUN LOG tab's view of the session's
 //       `log`, its last 2000 lines; clear empties this view only
 
 const PRODUCT = "Calc-U-59";

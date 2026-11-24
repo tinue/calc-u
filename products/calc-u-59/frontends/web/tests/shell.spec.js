@@ -86,14 +86,14 @@ test('the desktop page has the menus and more at the end of the bar', async ({ p
   await el(page, 'bar-more').click();
   await expect.poll(() => menuIds(page, 'more-item-', el(page, 'more-menu'))).toEqual(
     ['heading-file', 'load-preset', 'examples', 'import-media', 'saved-media', 'arm-card', 'arm-fresh-card', 'settings',
-      'heading-machine', 'model', 'peripherals', 'reset', 'cold-boot', 'resume', 'heading-help', 'help', 'about']);
+      'heading-machine', 'model', 'peripherals', 'reset', 'cold-boot', 'resume', 'heading-help', 'help', 'show-app-log', 'about']);
   await el(page, 'bar-more').click();
   await el(page, 'menu-machine').click();
   await el(page, 'item-cold-boot').click();
   await expect(el(page, 'more-confirm')).toHaveCount(0);   // the menu item asks nothing (the More menu's asks first)
   await expect.poll(() => commands(page)).toContain('cold-boot');
   await el(page, 'menu-help').click();
-  await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['help', 'about']);
+  await expect.poll(() => menuIds(page, 'item-', el(page, 'menu-bar'))).toEqual(['help', 'show-app-log', 'about']);
   await expect(el(page, 'item-help')).toHaveText(/Calc-U-59 Help/);
   await expect(el(page, 'item-about')).toHaveText(/About Calc-U-59/);
 });
@@ -137,7 +137,7 @@ test('more holds every menu item under its heading', async ({ page }) => {
   await expect(menu).toBeVisible();
   await expect.poll(() => menuIds(page, 'more-item-', menu)).toEqual(
     ['heading-file', 'load-preset', 'examples', 'import-media', 'saved-media', 'arm-card', 'arm-fresh-card', 'settings',
-      'heading-machine', 'model', 'peripherals', 'reset', 'cold-boot', 'resume', 'heading-help', 'help', 'about']);
+      'heading-machine', 'model', 'peripherals', 'reset', 'cold-boot', 'resume', 'heading-help', 'help', 'show-app-log', 'about']);
   await expect(el(page, 'more-item-resume')).toHaveAttribute('aria-disabled', 'true');
   // Inside the client at the narrowest portrait.
   const client = await page.locator('.calcu-client').boundingBox();
@@ -199,7 +199,7 @@ test('the web settings per layout', async ({ page }) => {
   await el(page, 'item-settings').click();
   const dialog = el(page, 'settings-dialog');
   await expect(dialog).toContainText('Settings');
-  expect(await sections(page)).toEqual(['General', 'Startup presets', 'Tracing']);
+  expect(await sections(page)).toEqual(['General', 'Startup presets', 'Tracing', 'App log']);
   await expect(dialog).toContainText('Startup model');
   await expect(el(page, 'setting-startup-model').locator('option').first()).toHaveText('Last used');
   await expect(el(page, 'setting-general-version')).toHaveText(/^Version \d+\.\d+/);
@@ -219,7 +219,7 @@ test('the web settings per layout', async ({ page }) => {
   await gotoReady(page, 'layout=portrait');
   await el(page, 'bar-more').click();
   await el(page, 'more-item-settings').click();
-  expect(await sections(page)).toEqual(['General', 'Startup presets', 'Keyboard']);
+  expect(await sections(page)).toEqual(['General', 'Startup presets', 'Keyboard', 'App log']);
   await expect(el(page, 'setting-keyboard-feedback').locator('option')).toHaveText(['Off', 'Click Sound']);
   await expect(el(page, 'setting-startup-model')).toHaveValue('TI-58C');   // kept
   await expect(el(page, 'setting-trace-max-file-size-mb')).toHaveCount(0);

@@ -48,7 +48,7 @@ test('CalcU1600 takes the shared component props, the model by its name', async 
 });
 
 // `layout` is a shared prop; Calc-U-1600 has one layout and takes "auto"
-// only (its default); another value is ignored with a console warning.
+// only (its default); another value is ignored with an app log warning.
 test('layout auto only, another value ignored with a warning', async ({ page }) => {
   const warnings = [];
   page.on('console', (m) => { if (m.type() === 'warning') warnings.push(m.text()); });
@@ -64,7 +64,7 @@ test('layout auto only, another value ignored with a warning', async ({ page }) 
   await expect(page.locator('#layout-wide .calcu-client')).toHaveCount(1);
   await expect(page.locator('#layout-auto .calcu-client')).toHaveCount(1);
   await expect.poll(() => warnings.filter((w) => /layout/.test(w))).toEqual(
-    ['CalcU1600: layout "wide" is not one of its layouts ("auto"); it is ignored.']);
+    ['[Calc-U] CalcU1600: layout "wide" is not one of its layouts ("auto"); it is ignored.']);
 });
 
 test('settings in Calc-U-1600.ini, media in the save folder', async ({ page }) => {
@@ -177,7 +177,7 @@ test('only the messages of the session protocol', async ({ page }) => {
     received: window.__calcuReceived.map((m) => m && m.kind),
   }));
   for (const k of sent) expect(['listen', 'shell', 'command', 'request', 'answer']).toContain(k);
-  for (const k of received) expect(['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop']).toContain(k);
+  for (const k of received) expect(['state', 'stream', 'reply', 'ask', 'sound-start', 'sound', 'sound-stop', 'app-log']).toContain(k);
   expect(sent).toContain('listen');
 });
 

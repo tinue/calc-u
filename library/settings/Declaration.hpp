@@ -62,6 +62,7 @@ KeyDecl cassetteFolder();                                // [storage] cassette-f
 KeyDecl traceFolder();                               // [trace] folder
 KeyDecl traceMaxFileSizeMb();                        // [trace] max-file-size-mb = 50
 KeyDecl traceLocation();                             // [trace] location = app-support
+KeyDecl appLogLevel();                               // [app-log] level = default
 KeyDecl serialLinkFolder();                          // [serial] link-folder
 KeyDecl openFolder(const std::string& kind);         // [folders] <kind> (app)
 KeyDecl windowNumber(const std::string& key, long defaultValue);  // [window] <key> (app)

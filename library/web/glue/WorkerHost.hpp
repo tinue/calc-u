@@ -1,4 +1,5 @@
 #pragma once
+#include "applog/AppLog.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/Listener.hpp"
 #include "sessions/Messages.hpp"
@@ -10,6 +11,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -45,6 +47,10 @@ struct WebStart {
     // The shell's own part (web.start, web.storage): the factory lists it
     // first among the session's parts.
     sessions::SessionPart* shellPart = nullptr;
+    // The worker's app log (posted to the page as {kind: "app-log", level,
+    // text}), and the level the page's `?app-log-level=` fixes for this run.
+    applog::AppLog* appLog = nullptr;
+    std::optional<applog::AppLogLevel> appLogLevel;
 
     // The host folders of the product's places: `dirs`, home the save
     // folder's parent (/persist) when the page gives none.
@@ -85,11 +91,13 @@ public:
 
 private:
     class ShellPart;
+    class PageLog;
 
     void post(const sessions::Message&, double pageCall = 0);
     void answerFilePicker(sessions::CallId ask, emscripten::val message);
     void postShell();   // the models, when they changed
 
+    std::unique_ptr<PageLog> log_;
     std::unique_ptr<ShellPart> part_;
     WebStart start_;
     std::unique_ptr<sessions::AppSession> session_;

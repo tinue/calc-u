@@ -15,7 +15,8 @@
 //                                              CALCU_STREAM_KEEP items: the paper)
 //     unlockAudio(), destroy(),
 //   }
-//   state: {start: "starting" | "running" | "failed", failure,
+//   state: {start: "starting" | "running" | "failed", failure (the sentence:
+//           could not start, or stopped once running),
 //           topics: {name → last state}, streams: {name → appended since the last reset}}
 //
 // Everything that crosses postMessage is a session message in its JS form
@@ -42,9 +43,12 @@ function createShell({ product, workerUrl, start, services }) {
     state = next;
     listeners.forEach((l) => l());
   };
-  const failWith = (why) => {
+  // `detail` goes to the app log only. A failure after the start is a stop.
+  const failWith = (why, detail) => {
     if (state.start === "failed") return;
-    set({ ...state, start: "failed", failure: CALCU_SENTENCES.startFailed(product, why) });
+    calcuAppLog("error", `${product} stopped: ${why}${detail ? `\n${detail}` : ""}`);
+    const sentence = state.start === "running" ? CALCU_SENTENCES.stopped : CALCU_SENTENCES.startFailed;
+    set({ ...state, start: "failed", failure: sentence(product, why) });
     waiters.forEach((w) => w({ done: false, reason: "The product could not start.", value: null }));
     waiters.clear();
   };
@@ -78,7 +82,7 @@ function createShell({ product, workerUrl, start, services }) {
       return;
     }
     if (m.topic === "web.start") {
-      if (m.value && m.value.state === "failed") failWith(m.value.failure);
+      if (m.value && m.value.state === "failed") failWith(m.value.failure, m.value.detail);
       else if (state.start === "starting") set({ ...state, start: "running", topics: { ...state.topics, [m.topic]: m.value } });
       return;
     }
@@ -92,7 +96,11 @@ function createShell({ product, workerUrl, start, services }) {
   const onAsk = (m) => {
     Promise.resolve()
       .then(() => offered.answer(m.name, m.value))
-      .catch((e) => ({ done: false, reason: String((e && e.message) || e), value: null }))
+      .catch((e) => {
+        const reason = String((e && e.message) || e);
+        calcuAppLog("warn", `The host service ${m.name} failed: ${(e && e.name) || "Error"}: ${reason}`);
+        return { done: false, reason, value: null };
+      })
       .then((a) => {
         const value = a.value === undefined ? null : a.value;
         post({ kind: "answer", call: m.call, done: !!a.done, reason: a.reason || "", value });
@@ -100,7 +108,10 @@ function createShell({ product, workerUrl, start, services }) {
   };
 
   try {
-    worker = new Worker(workerUrl || `${CALC_BASE}calc-engine-worker.js`);
+    // The page's `?app-log-level=` holds for the worker's app log too.
+    const level = calcuAppLogLevelOfPage();
+    const url = workerUrl || `${CALC_BASE}calc-engine-worker.js`;
+    worker = new Worker(level ? `${url}${url.includes("?") ? "&" : "?"}app-log-level=${level}` : url);
   } catch (e) {
     failWith(String((e && e.message) || e));
   }
@@ -118,6 +129,7 @@ function createShell({ product, workerUrl, start, services }) {
           break;
         }
         case "ask": onAsk(m); break;
+        case "app-log": calcuAppLog(m.level, m.text, true); break;
         case "sound-start": case "sound": case "sound-stop": audio.message(m); break;
         default: break;
       }
@@ -125,7 +137,8 @@ function createShell({ product, workerUrl, start, services }) {
     // A script that cannot be fetched or throws, a message that cannot be read.
     worker.onerror = (e) => {
       if (e && e.preventDefault) e.preventDefault();
-      failWith((e && e.message) || "the worker could not be started");
+      const where = e && e.filename ? ` (${e.filename}:${e.lineno || 0}:${e.colno || 0})` : "";
+      failWith(`${(e && e.message) || "the worker could not be started"}${where}`);
     };
     worker.onmessageerror = () => failWith("a message from the worker could not be read");
     post({ kind: "listen", args: { services: offered.names } });

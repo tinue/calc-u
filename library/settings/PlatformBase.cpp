@@ -35,6 +35,32 @@ std::string settingsBaseFor(HostOs os, const EnvLookup& env, const std::string& 
     return passedFolder;
 }
 
+std::string appLogFilePathFor(HostOs os, const EnvLookup& env, const std::string& home, const std::string& productName,
+                              const std::string& passedFolder) {
+    const auto lookup = [&](const char* name) -> std::optional<std::string> {
+        if (!env) return std::nullopt;
+        std::optional<std::string> v = env(name);
+        if (v && v->empty()) return std::nullopt;
+        return v;
+    };
+    std::string folder;
+    switch (os) {
+    case HostOs::MacOS: folder = joinPath(joinPath(home, "Library"), "Logs"); break;
+    case HostOs::IOS: folder = passedFolder; break;
+    case HostOs::Windows:
+        if (auto local = lookup("LOCALAPPDATA")) folder = *local;
+        else folder = joinPath(joinPath(home, "AppData"), "Local");
+        break;
+    case HostOs::Linux:
+        if (auto state = lookup("XDG_STATE_HOME")) folder = *state;
+        else folder = joinPath(joinPath(home, ".local"), "state");
+        break;
+    case HostOs::Web: return {};
+    }
+    if (folder.empty()) return {};
+    return joinPath(joinPath(folder, productName), productName + ".log");
+}
+
 std::string settingsFilePath(const ProductDecl& product, const HostDirs& dirs) {
     return joinPath(joinPath(dirs.settingsBase, product.productName), product.productName + ".ini");
 }

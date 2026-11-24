@@ -48,7 +48,8 @@ open-would-take  {name, size?} → {takes}
 | `kept` | empty: the session was busy or had no machine; the file is opened when it is free (§6) |
 
 A refusal is the reply `done = false` with its sentence, and the same
-sentence as a notice. Every sentence names the file.
+sentence as a notice; the app log takes it at warn ("A file was not
+opened: <sentence>"). Every sentence names the file.
 
 `open-would-take` answers for a drag before the drop: `takes` is true
 when the drop would not be refused by size or as hidden, and the name has
@@ -203,14 +204,14 @@ folder of its own.
 | Case | Sentence |
 |---|---|
 | the folder cannot be made | "The files could not be put together in `<folder>`: `<reason>`" |
-| a file cannot be written | "`<file>` could not be written to `<folder>`." |
+| a file cannot be written | "`<file>` could not be written to `<folder>`: `<reason>`." |
 | a relative file the preset names is not in the folder | "The preset `<preset>` names the file `<path>`, which was not chosen with it: choose the preset together with every file it names." |
 
 ## 6. A file while the session is busy
 
 When the session runs an operation or has no machine, the request is
 kept and replied to with `as: kept`. A later request replaces the kept
-one (logged). The kept file is opened when the session is free; a
+one (the app log says so, at info). The kept file is opened when the session is free; a
 refusal is then a notice only, and a question becomes the notice
 "`<name>` was not opened: `<question>`".
 

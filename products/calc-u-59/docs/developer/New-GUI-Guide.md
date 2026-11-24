@@ -61,7 +61,7 @@ source).
    hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),
    …) and the debug panel's product topics (`c59.calculator-debug`,
    `c59.program-listing`, `c59.cpu-debug`, `c59.heatmap`, `c59.asm-overlay`, `c59.debug-view`;
-   `docs/developer/Debug-API.md`; the LOG tab keeps the last 2000 lines of the
+   `docs/developer/Debug-API.md`; the RUN LOG tab keeps the last 2000 lines of the
    `log` topic). Send every file the user hands over as the library's `open`
    (a drag asks `open-would-take`). Show `notices` as alerts. Offer `clipboard-image` and
    `clipboard-text` for Copy of the paper, and `keep-file` where a trace

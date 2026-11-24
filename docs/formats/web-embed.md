@@ -173,6 +173,7 @@ plain object. No message type of a product's own.
 | worker → page | `{kind: "sound-start", value: <sample rate>}` |
 | worker → page | `{kind: "sound", value: Int16Array}` (mono) |
 | worker → page | `{kind: "sound-stop"}` |
+| worker → page | `{kind: "app-log", level, text}`: an app log line, already filtered at the level of the session (C++) or of the worker's `?app-log-level=` (the worker's own script, default `warn`); the page writes it to the console and keeps it for Help ▸ Show App Log |
 
 - `call` numbers the page's command or request; the reply carries the
   same number. `call: 0` asks for no reply.
@@ -205,7 +206,7 @@ with the wall time.
 
 | Topic | Kind | Value |
 |---|---|---|
-| `web.start` | state | `{state: "running" \| "failed", failure}` |
+| `web.start` | state | `{state: "running" \| "failed", failure, detail}`: `detail` (may be empty) goes to the app log only |
 | `web.storage` | state | `{mode, sentence}`: §5 |
 | `web.shell` | state | `{menus, bar, panels, dialog, nameAndSave}`: the shell's models for the page's last `shell` message |
 
@@ -224,7 +225,10 @@ The page's start state is `starting`, then `running` at the first
 `web.start`, or `failed` at `web.start` with `failed`, at an error of
 the worker or a message from it that cannot be read. The page shows
 "`<Product>` could not start: `<failure>`" (without a failure:
-"`<Product>` could not start."). A failure names what went wrong: a file
+"`<Product>` could not start."), or, when the failure comes once it is
+`running`, "`<Product>` stopped: `<failure>`" ("`<Product>` stopped.").
+The app log gets one error line, "`<Product>` stopped: `<failure>`" with
+the `detail` (where in the worker, the stack) below it. A failure names what went wrong: a file
 that could not be fetched (`<path> could not be fetched (<status>)`), the
 engine that did not load or start, an abort, an uncaught exception in a
 call. A command or request after the failure gets `done: false, reason:

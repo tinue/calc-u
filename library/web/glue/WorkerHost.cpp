@@ -1,5 +1,6 @@
 #include "web/glue/WorkerHost.hpp"
 #include "web/glue/MessageCodec.hpp"
+#include "files/Files.hpp"
 #include <emscripten.h>
 #include <exception>
 #include <filesystem>
@@ -74,9 +75,30 @@ public:
     std::string pendingNotice;
 };
 
+// The app log of the worker: each line to the page, which writes it to the
+// browser's console and keeps the last ones for Help ▸ Show App Log.
+class WorkerHost::PageLog final : public applog::AppLog {
+public:
+    explicit PageLog(val post) : post_(std::move(post)) {}
+
+protected:
+    void put(applog::AppLogLevel l, std::string_view text) override {
+        val m = val::object();
+        m.set("kind", "app-log");
+        m.set("level", std::string(applog::appLogLevelName(l)));
+        m.set("text", std::string(text));
+        post_(m, val::array());
+    }
+
+private:
+    val post_;
+};
+
 WorkerHost::WorkerHost(const AppSessionFactory& factory, val start)
-    : part_(std::make_unique<ShellPart>()), post_(start["post"]) {
+    : log_(std::make_unique<PageLog>(start["post"])), part_(std::make_unique<ShellPart>()), post_(start["post"]) {
     start_.product = text(start, "product");
+    start_.appLog = log_.get();
+    start_.appLogLevel = applog::appLogLevelNamed(text(start, "appLogLevel"));
     const val dirs = start["dirs"];
     start_.dirs.frontend = settings::FrontendKind::Web;
     start_.dirs.settingsBase = text(dirs, "settingsBase");
@@ -97,7 +119,7 @@ WorkerHost::WorkerHost(const AppSessionFactory& factory, val start)
         failure_ = "The session could not be built.";
     }
     if (failure_.empty() && !session_) failure_ = "The session could not be built.";
-    if (!failure_.empty()) return;
+    if (!failure_.empty()) return;   // the page logs the failure (shell.js failWith)
     part_->storage->set(std::make_shared<StorageState>(start_.storage, start_.storageSentence));
     part_->start->set(std::make_shared<StartState>("running", ""));
     part_->pendingNotice = start_.storageSentence;
@@ -214,6 +236,7 @@ void WorkerHost::answerFilePicker(s::CallId ask, val message) {
         const s::Value picked = fromJs(message["value"]);
         std::error_code ec;
         std::filesystem::create_directories(start_.uploadsDir, ec);
+        if (ec) log_->warn("The uploads folder " + start_.uploadsDir + " cannot be made: " + ec.message());
         if (const auto* files = picked.elements())
             for (const s::Value& f : *files) {
                 const s::Value* name = f.find("name");
@@ -221,10 +244,14 @@ void WorkerHost::answerFilePicker(s::CallId ask, val message) {
                 if (!name || !name->string() || !bytes || !bytes->bytes()) continue;
                 const std::string file = std::filesystem::path(*name->string()).filename().string();
                 const std::string path = start_.uploadsDir + "/" + file;
+                errno = 0;
                 std::ofstream out(path, std::ios::binary | std::ios::trunc);
                 out.write(reinterpret_cast<const char*>(bytes->bytes()->data()),
                           static_cast<std::streamsize>(bytes->bytes()->size()));
                 if (out) paths.push_back(s::Value(path));
+                else   // left out of the pick
+                    log_->warn("The picked file " + file + " cannot be written to " + path + ": " +
+                               calcu::files::osReason(errno));
             }
         a.result = s::Value(std::move(paths));
     }

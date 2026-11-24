@@ -67,6 +67,7 @@ inline constexpr const char* kQuit = "quit";
 inline constexpr const char* kCopyScreen = "copy-screen";   // each frontend brings its act
 inline constexpr const char* kPasteText = "paste-text";     // `paste {text}` with the clipboard's text
 inline constexpr const char* kHelp = "help";
+inline constexpr const char* kShowAppLog = "show-app-log";   // the app log: its file, or (Web) a download
 inline constexpr const char* kAbout = "about";
 // Mobile, a media place's submenu: `<prefix><place>`, args {place}, the
 // media components' Name & Save dialog for that place.

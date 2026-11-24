@@ -121,16 +121,14 @@ next to itself, and the preset that uses them:
 [make_diskworks_media.pc1600](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/examples/dwx/make_diskworks_media.pc1600)
 and [DiskWorks.pc1600](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/examples/dwx/DiskWorks.pc1600).
 
-## Other steps of this product
+## Calc-U-1600's steps
+
+Besides the [family's steps](../../../library/help/06-presets.md#steps):
 
 | Step | What it does |
 |---|---|
 | `- expect: 11834` | Stops the preset with an error unless one line of the display contains that text. A backslash is written `\\`, a character outside ASCII `\xHH` (its code); between slashes (`/ERROR 1\b/`) the text is a regular expression |
-| `- screenshot: shot.png` | Saves the LCD's picture, as Copy Screen does, in the save folder; in the browser it is a download |
 | `- sync-clock:` | Sets the computer's clock from your computer's. Put it last: a preset runs at full speed, so the clock runs ahead |
-| `- trace: run.bin` / `- trace: off` | Starts or stops a CPU trace ([Debugger](07-debugger.md)) |
-| `- cut-paper:` | Copies the paper of the plotter that is plugged in to the clipboard, then cuts it; in the browser it only cuts |
-| `- copy-paper:` | Copies the paper of the plotter that is plugged in to the clipboard; in the browser it does nothing |
 
 The debugger steps of the family (`pause:`, `step:`, `resume:`) are not
 available on the Sharp models.

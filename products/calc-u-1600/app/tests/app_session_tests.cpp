@@ -338,8 +338,6 @@ TEST(set_at_build_and_after_operation) {
     }
 }
 
-} // namespace
-
 // What fails while the part is made goes to the app log once the session
 // is there: a module definition that does not read, the host drive's ROM
 // where the host offers the drive. The session starts all the same.
@@ -361,3 +359,5 @@ TEST(no_host_drive_no_rom_warning) {
     f.open();
     CHECK(!f.appLog.has(calcu::applog::AppLogLevel::Warn, "host drive"));
 }
+
+} // namespace

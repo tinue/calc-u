@@ -46,7 +46,7 @@ greyed out; where the platform shows tooltips, its tooltip says why.
 | File | Load Preset…; Examples ▸; the product's own kinds of files; the items for media (Import Media…, Saved Media… in the browser); Settings…; Quit |
 | Edit | the product's items for the display and the clipboard, where it has them |
 | Machine | Model ▸; a submenu for each thing that has variants; Peripherals ▸; Reset; Cold boot; Resume |
-| Help | `<Product>` Help; About `<Product>` |
+| Help | `<Product>` Help; Show App Log; About `<Product>` |
 
 - **Load Preset…** opens a preset file, and **Examples ▸** lists the
   examples that come with the product, one submenu per group
@@ -61,7 +61,9 @@ greyed out; where the platform shows tooltips, its tooltip says why.
 - **Resume** lets a paused machine run on
   ([Debugger](07-debugger.md)).
 - **`<Product>` Help** opens this help on calc-u.org in your browser.
-  **About `<Product>`** shows the product's name, its version, its
+- **Show App Log** shows what the app itself did, for a bug report
+  ([The app log](08-settings.md#the-app-log)).
+- **About `<Product>`** shows the product's name, its version, its
   build and links to its source and to support, and under **Support
   Information** the package the app came in (the DMG, the AppImage, the
   Windows installer, or "self-built"), when it was built and what it runs

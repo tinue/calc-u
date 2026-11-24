@@ -182,6 +182,14 @@
   background: var(--calcu-menu-hover);
   color: var(--calcu-menu-hover-text);
 }
+/* A button held down looks pressed: in the highlighted item's colours, the
+   default button (already in them) darker. */
+.calcu-client .calcu-shell-modal-buttons button:active:not(:disabled),
+.calcu-client .calcu-shell-modal .calcu-media-buttons button:active:not(:disabled) {
+  background: var(--calcu-menu-hover);
+  color: var(--calcu-menu-hover-text);
+}
+.calcu-client .calcu-shell-modal .calcu-shell-default:active:not(:disabled) { filter: brightness(0.85); }
 .calcu-client .calcu-shell-modal .calcu-shell-default.calcu-shell-destructive:not(:disabled) {
   background: var(--calcu-alert);
   color: var(--calcu-menu);

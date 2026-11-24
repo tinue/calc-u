@@ -431,7 +431,7 @@ protocol of `serve`, as a second listener without host services.
 | Builds | Only where `CALCU_ATTACH` is defined: POSIX development and test trees (the Qt6 apps), Debug builds of the Swift app on the iOS simulator. Never in a release build, a device build, or on Windows |
 | Address | TCP, bound to `127.0.0.1` only. No authentication beyond that |
 | Port | The app's launch argument `--attach-port N` or `--attach-port=N` (1 to 65535; another value is ignored), else 59059. `--attach-port 0` lets the system pick one (the Qt6 apps) |
-| Bind fails | The app runs on; a line of the session's log: `Attach is not available on port <port>: <problem>.` |
+| Bind fails | The app runs on; a line of the app log at warn: `Attach is not available on port <port>: <problem>.` |
 | Clients | One at a time. A second gets the line `refused: one harness is already attached` and is closed; the first stays |
 | `quit` | Ends the attach, not the app. A connection that closes without `quit` is taken as `quit` |
 | Ending | The listener goes, with its pending replies; the keys held down through it come up |

@@ -50,4 +50,15 @@ struct ServiceAnswer {
     std::string reason;   // why it was not given
 };
 
+// The reason of an answer the user cancelled (a picker closed, a save
+// dialog dismissed): no failure.
+inline constexpr std::string_view kCancelled = "cancelled";
+
+// Why the service failed, for the app log; nullopt when it was given or
+// the user cancelled it.
+inline std::optional<std::string> serviceFailure(const ServiceAnswer& a) {
+    if (a.given || a.reason == kCancelled) return std::nullopt;
+    return a.reason.empty() ? std::string("the host gives no reason") : a.reason;
+}
+
 } // namespace calcu::sessions

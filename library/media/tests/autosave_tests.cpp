@@ -53,12 +53,17 @@ TEST(autosave_within_half_a_second_at_60_hz) {
 TEST(autosave_not_while_nothing_changes) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
-    f.logLines();
+    f.appLogLines();
     for (int i = 0; i < 120; ++i) f.call(16'667us);
-    CHECK_EQ(savedLines(f.logLines()), 0);
+    CHECK_EQ(savedLines(f.appLogLines()), 0);
     f.drive()->write("once");
     for (int i = 0; i < 120; ++i) f.call(16'667us);
-    CHECK_EQ(savedLines(f.logLines()), 1);
+    CHECK_EQ(savedLines(f.appLogLines()), 1);
+    // What the app did for the user: at info, and not in the calculator's log.
+    f.drive()->write("twice");
+    for (int i = 0; i < 120; ++i) f.call(16'667us);
+    CHECK(f.appLog.has(calcu::applog::AppLogLevel::Info, "Saved test disk “Work”."));
+    CHECK_EQ(savedLines(f.logLines()), 0);
 }
 
 // A place whose writes wait for its own moments (a tape: the motor stopped)
@@ -97,13 +102,13 @@ TEST(pass_through_written_when_given_back_if_written) {
     FixtureOptions o;
     o.prepare = [](auto& s, auto&) { s.write("Prog.testcard.yaml", card("Prog", "p").text()); };
     MediaFixture f(o);
-    f.logLines();
+    f.appLogLines();
     f.reader()->writeOnPass = "written";
     CHECK(f.done(f.step("test-card", "{ name: Prog, side: 1 }")));
     CHECK_EQ(field(f.saved("Prog.testcard.yaml"), "content"), std::string("written"));
-    CHECK_EQ(savedLines(f.logLines()), 1);
+    CHECK_EQ(savedLines(f.appLogLines()), 1);
     CHECK(f.done(f.step("test-card", "{ name: Prog }")));   // read only: not written
-    CHECK_EQ(savedLines(f.logLines()), 0);
+    CHECK_EQ(savedLines(f.appLogLines()), 0);
     CHECK(f.place("reader")->holds && f.place("reader")->holds->name == "Prog");
 }
 
@@ -216,9 +221,12 @@ TEST(failed_medium_write_next_change_tries_again) {
     f.drive()->write("lost for now");
     f.ok("media.refresh");
     settings::testing::failBeforeRename(false);
-    f.logLines();
+    // The app log has the cause, with the file.
+    CHECK(f.appLog.has(calcu::applog::AppLogLevel::Warn, "could not be saved to "));
+    CHECK(f.appLog.has(calcu::applog::AppLogLevel::Warn, "the write was interrupted before the rename"));
+    f.appLogLines();
     f.ok("media.refresh");
-    CHECK_EQ(savedLines(f.logLines()), 0);   // no change, no retry
+    CHECK_EQ(savedLines(f.appLogLines()), 0);   // no change, no retry
     f.drive()->write("next");
     f.ok("media.refresh");
     CHECK_EQ(content(f), std::string("next"));

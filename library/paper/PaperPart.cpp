@@ -145,8 +145,8 @@ void PaperPart::bindAll(SessionContext& c) {
             const std::size_t i = e ? static_cast<std::size_t>(e - entries_.data()) : 0;
             if (!e || found[i]) {   // not declared, or a second of its type: logged once, left unbound
                 if (logged_.insert(cap.id.value).second)
-                    c.log("Paper output " + cap.id.value + (e ? " is a second printer of its type" : " is not a printer of the product") +
-                          "; it is not shown.");
+                    c.appLog().warn("Paper output " + cap.id.value + (e ? " is a second printer of its type" : " is not a printer of the product") +
+                                    "; it is not shown.");
                 continue;
             }
             found[i] = out;
@@ -238,8 +238,11 @@ CommandOutcome PaperPart::copy(SessionContext& c, Entry& e, bool cutAfter) {
     args.push_back({"dotsPerInch", size.dotsPerInch});
     const std::string owner = e.owner;
     StreamTopic* copies = copiesTopic_;
+    // The answer comes later, without a SessionContext; the host's app log
+    // outlives the session.
+    applog::AppLog* log = &c.appLog();
     const auto asked = c.askHost(HostService::ClipboardImage, sessions::Value(std::move(args)),
-                                 [copies, owner](const ServiceAnswer& a) {
+                                 [copies, owner, log](const ServiceAnswer& a) {
                                      auto o = std::make_shared<CopyOutcome>();
                                      o->owner = owner;
                                      const sessions::Value* t = a.result.find("textOnly");
@@ -247,6 +250,12 @@ CommandOutcome PaperPart::copy(SessionContext& c, Entry& e, bool cutAfter) {
                                                   : t && t->boolean() && *t->boolean() ? CopyOutcome::Kind::TextOnly
                                                                                       : CopyOutcome::Kind::Copied;
                                      o->reason = a.given ? std::string() : a.reason;
+                                     if (o->outcome == CopyOutcome::Kind::Failed)
+                                         log->warn("Copy of the " + owner + "'s paper failed: " +
+                                                   (a.reason.empty() ? "the host gives no reason" : a.reason));
+                                     else if (o->outcome == CopyOutcome::Kind::TextOnly)
+                                         log->info("Copy of the " + owner +
+                                                   "'s paper: the clipboard took the text without the picture.");
                                      copies->append(o);
                                  });
     if (cutAfter) {

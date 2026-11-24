@@ -1,5 +1,7 @@
 #pragma once
+#include <cerrno>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -35,23 +37,41 @@ inline std::string fromPathNative(const std::filesystem::path& p) {
     return std::string(u.begin(), u.end());
 }
 
-// The whole file, or nullopt when it cannot be opened (missing, no access)
-// or reading it fails. Neither checks that the path is a regular file: a
-// caller that refuses a folder asks std::filesystem::is_regular_file first.
-inline std::optional<std::string> readText(const std::filesystem::path& p) {
-    std::ifstream in(p, std::ios::binary);
-    if (!in) return std::nullopt;
-    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    if (in.bad()) return std::nullopt;
-    return text;
+// The system's words for an errno value ("No such file or directory"):
+// file streams report no reason of their own, the C library below them
+// leaves it in errno.
+inline std::string osReason(int err) {
+    if (err == 0) return "the system gives no reason";
+    return std::strerror(err);
 }
 
-inline std::optional<std::vector<std::uint8_t>> readBytes(const std::filesystem::path& p) {
+// The whole file, or nullopt when it cannot be opened (missing, no access)
+// or reading it fails; `problem`, when given, then takes the system's
+// reason. Neither checks that the path is a regular file: a caller that
+// refuses a folder asks std::filesystem::is_regular_file first.
+template <class Whole>
+std::optional<Whole> readWhole(const std::filesystem::path& p, std::string* problem) {
+    errno = 0;
     std::ifstream in(p, std::ios::binary);
-    if (!in) return std::nullopt;
-    std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    if (in.bad()) return std::nullopt;
-    return bytes;
+    if (!in) {
+        if (problem) *problem = osReason(errno);
+        return std::nullopt;
+    }
+    Whole whole((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    if (in.bad()) {
+        if (problem) *problem = osReason(errno);
+        return std::nullopt;
+    }
+    return whole;
+}
+
+inline std::optional<std::string> readText(const std::filesystem::path& p, std::string* problem = nullptr) {
+    return readWhole<std::string>(p, problem);
+}
+
+inline std::optional<std::vector<std::uint8_t>> readBytes(const std::filesystem::path& p,
+                                                          std::string* problem = nullptr) {
+    return readWhole<std::vector<std::uint8_t>>(p, problem);
 }
 
 } // namespace calcu::files

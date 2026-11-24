@@ -179,7 +179,9 @@ public:
     Outcome importBytes(sessions::SessionContext&, const std::string& fileName, const std::string& bytes,
                      const MediumCodec::Companion&, bool replaceConfirmed = false);
     // The medium's files, its own first, by file name.
-    std::optional<std::vector<FileOut>> exportFiles(const KindDecl&, const std::string& name, std::string* reason);
+    // `log`: takes the companions left out (they cannot be read), when given.
+    std::optional<std::vector<FileOut>> exportFiles(const KindDecl&, const std::string& name, std::string* reason,
+                                                    applog::AppLog* log = nullptr);
     Outcome remove(sessions::SessionContext&, const KindDecl&, const std::string& name, bool confirmed);
 
     // Opened files, for the opening area (library/opening/).

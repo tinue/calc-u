@@ -60,11 +60,12 @@ SettingsFile SettingsFile::open(const ProductDecl& product, std::string path, bo
     f.product_ = &product;
     f.path_ = std::move(path);
     f.doc_ = defaultDocument(product);
-    const std::optional<std::string> bytes = readWholeFile(f.path_);
+    std::string why;
+    const std::optional<std::string> bytes = readWholeFile(f.path_, &why);
     if (!bytes) {
         if (fileExists(f.path_)) {
             f.outcome_ = Outcome::Unreadable;
-            f.problem_ = f.path_ + " cannot be read; the settings have their defaults and are not saved in this run";
+            f.problem_ = f.path_ + " cannot be read (" + why + "); the settings have their defaults and are not saved in this run";
             return f;
         }
         // The first start: written at once, with every key at its default
@@ -106,6 +107,16 @@ std::optional<std::string> SettingsFile::raw(std::string_view section, std::stri
     return doc_.get(section, key);
 }
 
+std::vector<std::string> SettingsFile::notAccepted() const {
+    std::vector<std::string> out;
+    for (const KeyDecl& k : product_->keys) {
+        const std::optional<std::string> value = doc_.get(k.section, k.key);
+        if (value && !accepts(*product_, k, *value))
+            out.push_back("[" + k.section + "] " + k.key + " = \"" + *value + "\"");
+    }
+    return out;
+}
+
 std::string SettingsFile::text(std::string_view section, std::string_view key) const {
     const std::optional<std::string> value = doc_.get(section, key);
     const KeyDecl* decl = product_->find(section, key);
@@ -139,7 +150,10 @@ SettingsFile::WriteResult SettingsFile::writePending() {
     IniDocument disk = doc_;  // the file is gone: write it whole
     if (const std::optional<std::string> bytes = readWholeFile(path_)) {
         ParseResult parsed = IniDocument::parse(*bytes);
-        if (!parsed.doc || versionOutcome(*parsed.doc) != Outcome::Read)
+        if (!parsed.doc)
+            return {false, "not saved: " + path_ + " was changed while the product runs and cannot be read now (" +
+                               parsed.problem + ")"};
+        if (versionOutcome(*parsed.doc) != Outcome::Read)
             return {false, "not saved: " + path_ + " was changed while the product runs and cannot be read now"};
         disk = std::move(*parsed.doc);
         for (const auto& [s, k] : pending_)

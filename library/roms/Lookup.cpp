@@ -42,7 +42,8 @@ LookupResult lookUp(const FullSet& full, const Bundle& bundle, const ProductRomR
         }
         auto bytes = bundle.read(e.fileName);
         if (!bytes) {
-            problem(Problem::Missing, {});
+            if (std::string why = bundle.problem(e.fileName); !why.empty()) problem(Problem::Unreadable, std::move(why));
+            else problem(Problem::Missing, {});
             continue;
         }
         if (e.encoding == machine::RomEncoding::Binary) {

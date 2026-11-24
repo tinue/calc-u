@@ -1,5 +1,7 @@
 #include "shell/SessionThread.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include <exception>
+#include <string>
 #ifdef CALCU_ATTACH
 #include "harness/attach/AttachEndpoint.hpp"
 #include "harness/attach/AttachedHarness.hpp"
@@ -141,7 +143,14 @@ void SessionThread::run(Factory factory) {
     // put the thread on an efficiency core and the 60 Hz pace slips.
     pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);
 #endif
+    // A throw out of the factory has no session whose app log could take
+    // it: it ends the app through std::terminate, whose handler prints what().
     std::unique_ptr<sessions::AppSession> session = factory();   // built on this thread
+    // A throw out of the session ends the app as well (std::terminate); its
+    // cause goes to the session's app log first, so the log file keeps it.
+    auto ends = [&session](const char* where, const std::exception& e) {
+        session->context().appLog().error(std::string("The session ends: ") + where + " threw: " + e.what());
+    };
     // The frontend's listener: a message goes into the staged batch, which
     // the thread publishes after each job and each host call.
     sessions::Listener listener;
@@ -163,13 +172,23 @@ void SessionThread::run(Factory factory) {
                 job = std::move(inbox_.front());
                 inbox_.pop_front();
             }
-            job(listener);
+            try {
+                job(listener);
+            } catch (const std::exception& e) {
+                ends("a call from the frontend", e);
+                throw;
+            }
             publish();
         }
         const auto now = Clock::now();
         auto next = t0 + (n + 1) * kPeriod;
         if (!suspended_ && now >= next) {
-            session->call(clock_());   // one host call
+            try {
+                session->call(clock_());   // one host call
+            } catch (const std::exception& e) {
+                ends("a host call", e);
+                throw;
+            }
             ++calls_;
 #ifdef CALCU_ATTACH
             if (attach_ && attach_->harness) attach_->harness->afterHostCall();

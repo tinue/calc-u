@@ -1,4 +1,5 @@
 #include "qt6/FileOpening.hpp"
+#include "qt6/AppLogSink.hpp"
 #include "opening/StartFile.hpp"
 #include "qt6/SessionHost.hpp"
 #include "sessions/Payload.hpp"
@@ -49,6 +50,9 @@ opening::OpenRequest openRequest(const QString& path, opening::Way way,
         const QByteArray raw =
             limit != limits.end() ? f.read(static_cast<qint64>(limit->second) + 1) : f.readAll();
         file.bytes = std::vector<std::uint8_t>(raw.begin(), raw.end());
+    } else if (info.isFile()) {   // the session says it cannot be opened; the cause is Qt's
+        appLog().warn("The file " + info.absoluteFilePath().toStdString() + " cannot be read: " +
+                      f.errorString().toStdString());
     }
     opening::OpenRequest request;
     request.files.push_back(std::move(file));

@@ -261,11 +261,11 @@ TEST(kept_before_machine_built) {
 TEST(second_kept_file_replaces_first) {
     OpenRig r;
     r.runOperation(200'000);
-    r.fixture.logLines();
+    r.fixture.appLogLines();
     r.open(file("first.lst", "x"));
     const CallId second = r.open(file("second.lst", "x"));
     CHECK(isAs(r.replyOf(r.fixture.fe.reply(second)), OpenedAs::Kept));
-    CHECK(hasText(r.fixture.logLines(), "first.lst"));   // a log line, no notice
+    CHECK(r.fixture.appLog.has(calcu::applog::AppLogLevel::Info, "first.lst"));   // an app log line, no notice
     CHECK(r.notices().empty());
     r.fixture.callWhileBusy();
     r.fixture.call();

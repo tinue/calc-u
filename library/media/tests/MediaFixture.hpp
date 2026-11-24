@@ -151,6 +151,7 @@ public:
         sessions::AppSessionSetup s;
         s.clock = clock.fn();
         s.hostTime = [] { return std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50)); };
+        s.appLog = &appLog;
         s.parts = {&peripherals, presetsPart.get(), startupPart.get(), control.get(), media.get()};
         if (o.moreParts)
             for (sessions::SessionPart* p : o.moreParts(*this)) s.parts.push_back(p);
@@ -227,6 +228,13 @@ public:
             if (const auto* l = sessions::payloadAs<sessions::LogLine>(p)) out.push_back(l->text);
         return out;
     }
+    // The app log's lines since the last call, every level.
+    std::vector<std::string> appLogLines() {
+        std::vector<std::string> out;
+        for (const auto& l : appLog.lines()) out.push_back(l.text);
+        appLog.clear();
+        return out;
+    }
     std::vector<std::string> notices() { return fe.noticeSentences(); }
     std::string saved(const std::string& file) const { return calcu::testing::readText(saveRoot.path() / file); }
     bool exists(const std::string& file) const { return std::filesystem::exists(saveRoot.path() / file); }
@@ -237,6 +245,7 @@ public:
     calcu::testing::TempFolder saveRoot, bundled, presetsDir;
     std::string saveFolder;
     sessions::test::ScriptedClock clock;
+    applog::MemoryAppLog appLog{applog::AppLogLevel::Debug};   // the session's app log, every level
     sessions::test::TestFrontend fe;
     FixtureMachines machines;
     std::unique_ptr<settings::SettingsFile> settings;

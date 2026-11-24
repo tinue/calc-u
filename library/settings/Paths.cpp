@@ -97,12 +97,15 @@ Paths::Ensured Paths::ensure(Folder which) const {
     std::random_device rd;
     const fs::path probe = p / (".calcu-write-check-" + std::to_string(rd()));
     bool writable = false;
+    std::string reason;
     {
+        errno = 0;
         std::ofstream out(probe, std::ios::binary);
         writable = static_cast<bool>(out << "x");
+        if (!writable) reason = files::osReason(errno);
     }
     fs::remove(probe, ec);
-    if (!writable) return {false, *where, "cannot write to the folder " + *where};
+    if (!writable) return {false, *where, "cannot write to the folder " + *where + ": " + reason};
     return {true, *where, {}};
 }
 

@@ -156,8 +156,11 @@ TEST(medium_log_names_kind_and_name_tag) {
     f.ok("media.refresh");
     const auto lines = f.logLines();
     CHECK(hasLine(lines, "test-disk: test disk “Work”: done"));
-    CHECK(hasLine(lines, "Saved test disk “Work”."));
+    CHECK(!hasLine(lines, "Saved test disk"));   // how the app ran: the app log's
+    CHECK(f.appLog.has(calcu::applog::AppLogLevel::Info, "Saved test disk “Work”."));
     for (const auto& l : lines) CHECK(l.find(f.saveRoot.str()) == std::string::npos);   // never the path
+    for (const auto& l : f.appLogLines())
+        if (l.rfind("Saved ", 0) == 0) CHECK(l.find(f.saveRoot.str()) == std::string::npos);
 }
 
 TEST(medium_steps_table) {

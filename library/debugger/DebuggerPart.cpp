@@ -373,8 +373,12 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
         }
         const std::string file = sessions::textArg(a, "file");
         std::optional<std::vector<std::uint8_t>> bytes = sessions::bytesArg(a, "bytes");
-        if (!bytes) bytes = files::readBytes(files::toPath(file));
-        if (!bytes) return Refused{"Cannot read " + file + "."};
+        std::string unread;
+        if (!bytes) bytes = files::readBytes(files::toPath(file), &unread);
+        if (!bytes) {
+            c.appLog().warn("The symbols of " + file + " were not loaded: " + unread);
+            return Refused{"Cannot read " + file + ": " + unread + "."};
+        }
         for (const SymbolReader* r : setup_.symbolReaders) {
             if (!r->reads(file, *bytes)) continue;
             std::string error;

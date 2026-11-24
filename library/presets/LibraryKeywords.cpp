@@ -264,17 +264,25 @@ public:
         if (!png) co_return failed("There is no picture of the display.");
         if (const auto folder = run.screenshotFolder()) {   // the folder for screenshots
             const std::filesystem::path p = files::toPath(*folder) / files::toPath(name_);
+            errno = 0;
             std::ofstream out(p, std::ios::binary | std::ios::trunc);
             out.write(reinterpret_cast<const char*>(png->data()), static_cast<std::streamsize>(png->size()));
-            if (!out) co_return failed("The screenshot " + name_ + " cannot be written to " + *folder + ".");
+            if (!out)
+                co_return failed("The screenshot " + name_ + " cannot be written to " + *folder + ": " +
+                                 files::osReason(errno) + ".");
             co_return ItemResult{};
         }
         sessions::SessionContext& s = run.session();
         if (!s.hostOffers(sessions::HostService::KeepFile))
             co_return failed("There is no folder for screenshots.");
-        // The Web: the picture handed to the user to keep.
+        // The Web: the picture handed to the user to keep. The answer comes
+        // later; the host's log outlives the session.
         s.askHost(sessions::HostService::KeepFile,
-                  sessions::Value::object({{"name", name_}, {"bytes", sessions::Value(*png)}}), nullptr);
+                  sessions::Value::object({{"name", name_}, {"bytes", sessions::Value(*png)}}),
+                  [log = &s.appLog(), name = name_](const sessions::ServiceAnswer& a) {
+                      if (const auto why = sessions::serviceFailure(a))
+                          log->warn("The screenshot " + name + " was not kept: " + *why);
+                  });
         co_return ItemResult{};
     }
     After after() const override { return After::TakenEffect; }

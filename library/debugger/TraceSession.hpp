@@ -28,6 +28,8 @@ public:
     std::uint64_t bytes() const { return bytes_; }
     bool memory() const { return memory_; }
     std::vector<std::uint8_t> takeMemory() { return std::move(kept_); }
+    // Why a write or the close failed, in the system's words ("" while none did).
+    const std::string& problem() const { return problem_; }
     void close();
 
 private:
@@ -35,6 +37,7 @@ private:
     bool memory_ = false;
     std::ofstream out_;
     std::vector<std::uint8_t> kept_;
+    std::string problem_;
     std::uint64_t bytes_ = 0;
 };
 

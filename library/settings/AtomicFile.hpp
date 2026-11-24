@@ -10,8 +10,9 @@ namespace calcu::settings {
 
 struct FileWrite { bool ok = false; std::string problem; };
 
-// The file's bytes, or none when it does not exist or cannot be read.
-std::optional<std::string> readWholeFile(const std::string& path);
+// The file's bytes, or none when it does not exist or cannot be read;
+// `problem`, when given, then takes the system's reason.
+std::optional<std::string> readWholeFile(const std::string& path, std::string* problem = nullptr);
 bool fileExists(const std::string& path);
 // Creates the parent folders, writes beside, renames into place.
 FileWrite writeFileAtomically(const std::string& path, const std::string& bytes);

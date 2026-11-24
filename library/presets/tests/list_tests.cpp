@@ -126,12 +126,14 @@ TEST(missing_entry_left_out_and_logged) {
     RigOptions o;
     o.bundle = &b;
     Rig r(o);
-    r.logLines();
+    r.appLogLines();
     const auto l = listOf(r);
     CHECK(l.size() == 1 && l[0].bundlePath == "examples:good.test-seg");
-    const auto log = r.logLines();
-    CHECK(hasLine(log, "The preset list leaves out examples:gone.test-seg: There is no bundled preset"));
-    CHECK(hasLine(log, "The preset list leaves out examples:old.test-seg: "));
+    // How the app ran: the app log's, at warn; the calculator's log has none.
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Warn,
+                       "The preset list leaves out examples:gone.test-seg: There is no bundled preset"));
+    CHECK(r.appLog.has(calcu::applog::AppLogLevel::Warn, "The preset list leaves out examples:old.test-seg: "));
+    CHECK(!hasLine(r.logLines(), "The preset list leaves out"));
     // The suite's check fails on it.
     Reading rd;
     CHECK(!checkBundle(b, rd.setup()).empty());

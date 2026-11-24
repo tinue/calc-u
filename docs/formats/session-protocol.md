@@ -144,10 +144,11 @@ silence.
   already so.
 - `speed` sets the speed outside an operation; while an operation runs it
   is done and changes nothing.
-- `log-level` sets what `log` tells; it starts at `off`. At `off` the log
-  holds what a step gives on purpose (`elapsed-time: report`), the
-  library's and the products' events (a medium saved, why a preset
-  stopped, a file left out); `info` adds how a preset is carried out (the
+- `log-level` sets what `log` tells; it starts at `off`. The log says what
+  the calculator ran. At `off` it holds what a step gives on purpose
+  (`elapsed-time: report`), the library's and the products' events of the
+  run (why a preset stopped, a trace ended by a new machine, a medium
+  armed and never fed); `info` adds how a preset is carried out (the
   machine and its peripherals, each item as it is done, its end);
   `debug` adds a product's own detail (Calc-U-59: each write to the
   registers and the memory). Another level: `The log level is off, info or debug.`
@@ -158,7 +159,13 @@ silence.
   (`[app-log] level`) where the platform keeps logs: a file, standard
   error in the harness, or, from the Web worker, a message
   `{kind: "app-log", level, text}` to the page, which writes the
-  browser's console.
+  browser's console. The session writes an error for a command, a
+  request, an operation or a host's answer that throws (`The command
+  <name> threw: <what>`, `The operation of the command <name> threw:
+  <what>`), and a warn for an operation that fails (`The operation of
+  the command <name> failed: <reason>`); the parts write theirs (a
+  medium saved, imported or deleted at info; a file left out, a write
+  that failed, with the system's reason, at warn).
 - `key-down` and `key-up` call the machine at the current tick; an
   unknown key: `Unknown key: <key>.`; arguments without `key`: `The key
   command needs key: <key ID>.`
@@ -273,7 +280,7 @@ Its members, in this order:
   emulated time; on a paused machine: `The machine is paused.`
 - `preset-list` without bundled presets: `This product bundles no presets
   of format 2 yet.`; an entry that cannot be read is left out and its
-  sentence goes to `log`.
+  sentence goes to the app log (warn).
 
 ## 8. Peripherals
 
@@ -361,6 +368,8 @@ delete).
 - `marks` in the order made: a run of dots is one flat array `[x, y,
   darkness, …]`; a stroke is `{colour: "#rrggbb", path: [x, y, …]}`.
 - `paper.copy` asks `clipboard-image`; its outcome comes on `paper-copies`.
+  A failed copy is an app log line at warn with the reason (`Copy of the
+  <owner>'s paper failed: <reason>`), the text alone one at info.
   `paper.cut` with `copy: true` copies, then cuts whatever the answer;
   with `copy: false` it only cuts, also an empty paper.
 - Sentences: `No printer is plugged in.`, `The paper is empty.`, `No
@@ -423,6 +432,8 @@ delete).
   size limit (`[trace] max-file-size-mb`, 50 MB when it is 0 or less) with the notice `The
   trace <name> reached the size limit of <n> MB and ended.`, or at a new
   machine (log: `The trace <name> ended: a new machine was built.`).
+  A trace whose writes fail, and a kept trace the listener does not
+  keep, are app log lines at warn, with the system's reason.
   Without a trace folder it is kept in memory where a listener offers
   `keep-file`, and handed over when it ends; otherwise `There is no
   folder for traces.`
@@ -450,10 +461,11 @@ delete).
   word, or `imported`), `file-kind` (`detail`: the kind's name) or `kept`.
 - While an operation runs or before a machine exists, the file is
   **kept** (reply `as: kept`) and opened after the operation; a second
-  one replaces it (a log line says so). A refusal of a kept file, or a
+  one replaces it (the app log says so, at info). A refusal of a kept file, or a
   question, comes as a notice: `<file> was not opened: <reason>`.
 - A refusal is the reply `done: false` with its sentence, and the same
-  sentence as a notice; a question (`asks: `, §9) is no notice.
+  sentence as a notice and an app log line (warn); a question (`asks: `,
+  §9) is neither.
 - `open-would-take` answers, during a drag, whether a drop of that file
   would be taken.
 
@@ -509,7 +521,10 @@ as values: `control-state`, `busy`, `run-state`, `roms-missing`,
   that cannot be loaded gives the notice `The startup preset of the
   <model> could not be loaded: <reason>. The <model> starts as its
   built-in default machine.`; one that fails while it runs `The startup
-  preset of the <model> stopped: <reason>.`
+  preset of the <model> stopped: <reason>.`; the app log has either at
+  warn, with the preset it names. Without the full set of ROM files
+  `start` is refused and the app log has `Cannot start: <the
+  roms-missing text>` at error.
 - `model` and `variant` take a name in any case; the same one again is
   done at once. Refused: `There is no model "<name>".`, `The <model> has
   no variant "<name>".`
@@ -536,7 +551,7 @@ The full set of ROM files is needed; no machine starts without it. In a local bu
 |---|---|
 | missing | `missing` |
 | wrong amount (size, or what the reader yields) | `wrong size` |
-| unreadable | `cannot be read` |
+| unreadable (the detail: the reader's error, or the system's reason for a file that is there) | `cannot be read` |
 | the product's check | `fails its check` |
 | the catalogue | `listed twice in different forms` |
 

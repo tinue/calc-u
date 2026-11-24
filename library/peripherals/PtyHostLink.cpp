@@ -35,15 +35,24 @@ namespace {
 constexpr std::chrono::milliseconds kIdleBackoff{10};
 constexpr std::size_t kRxHighWater = 8192;
 
-// <folder>/<name> -> target; the link path, or "" if it could not be made.
-std::string makeLink(const std::string& target, std::string folder, const std::string& name) {
-    ::mkdir(folder.c_str(), 0755);   // EEXIST ignored: a folder the user granted exists
+// <folder>/<name> -> target; the link path, or "" if it could not be made,
+// with why in `problem`.
+std::string makeLink(const std::string& target, std::string folder, const std::string& name, std::string& problem) {
+    problem.clear();
+    // EEXIST is no failure: a folder the user granted exists.
+    if (::mkdir(folder.c_str(), 0755) != 0 && errno != EEXIST)
+        problem = "the folder " + folder + " cannot be made: " + std::strerror(errno);
     // A folder given as "/private/tmp/" must not give "/private/tmp//...".
     while (folder.size() > 1 && folder.back() == '/') folder.pop_back();
     if (folder == "/") folder.clear();
     const std::string link = folder + "/" + name;
     ::unlink(link.c_str());
-    if (::symlink(target.c_str(), link.c_str()) != 0) return "";
+    if (::symlink(target.c_str(), link.c_str()) != 0) {
+        const std::string why = "the serial port file " + link + " cannot be made: " + std::strerror(errno);
+        problem = problem.empty() ? why : problem + "; " + why;
+        return "";
+    }
+    problem.clear();   // the folder was there after all
     return link;
 }
 
@@ -65,7 +74,7 @@ public:
         : master_(master), device_(std::move(device)), name_(std::move(name)) {
         if (folder) {
             folder_ = *folder;
-            link_ = makeLink(device_, folder_, name_);
+            link_ = makeLink(device_, folder_, name_, linkProblem_);
         }
         reader_ = std::thread(&PtyHostLink::readerLoop, this);
         writer_ = std::thread(&PtyHostLink::writerLoop, this);
@@ -103,8 +112,18 @@ public:
         removeLinkIfOurs(link_, device_);
         link_.clear();
         folder_ = folder.value_or(std::string());
-        if (folder) link_ = makeLink(device_, folder_, name_);
+        linkProblem_.clear();
+        if (folder) link_ = makeLink(device_, folder_, name_, linkProblem_);
         return !link_.empty();
+    }
+    std::string problem() const override {
+        std::string out = linkProblem_;
+        auto add = [&out](const std::string& s) { out += (out.empty() ? "" : "; ") + s; };
+        if (const int e = readError_.load(std::memory_order_relaxed))
+            add(std::string("reading the pseudo-terminal failed and the link takes nothing more: ") + std::strerror(e));
+        if (const int e = writeError_.load(std::memory_order_relaxed))
+            add(std::string("writing the pseudo-terminal failed: ") + std::strerror(e));
+        return out;
     }
 
 private:
@@ -113,7 +132,10 @@ private:
 
     int master_;
     std::string device_, name_;
-    std::string folder_, link_;   // the session thread's only
+    std::string folder_, link_, linkProblem_;   // the session thread's only
+    // The errno that ended the reader, and the first fatal one of the writer
+    // (0: none); set by the I/O threads, read by problem().
+    std::atomic<int> readError_{0}, writeError_{0};
     std::thread reader_, writer_;
     std::atomic<bool> stop_{false};
     std::atomic<bool> peerOpen_{true};
@@ -156,6 +178,7 @@ void PtyHostLink::readerLoop() {
         } else if (errno == EAGAIN || errno == EINTR) {
             // spurious wake-up
         } else {
+            readError_.store(errno, std::memory_order_relaxed);
             break;   // unexpected: the end of this link
         }
     }
@@ -183,6 +206,11 @@ void PtyHostLink::writerLoop() {
                 ::poll(&pfd, 1, 200);
                 continue;
             }
+            // EIO is no program on the file, the usual case; another error is kept.
+            if (n < 0 && errno != EIO) {
+                int none = 0;
+                writeError_.compare_exchange_strong(none, errno, std::memory_order_relaxed);
+            }
             break;   // EIO (no reader) or fatal: the rest of the chunk is dropped
         }
     }
@@ -190,17 +218,25 @@ void PtyHostLink::writerLoop() {
 
 } // namespace
 
-std::unique_ptr<HostLink> openHostLink(const std::optional<std::string>& folder, const std::string& fileName) {
-    const int master = ::posix_openpt(O_RDWR | O_NOCTTY);
-    if (master < 0) return nullptr;
-    if (::grantpt(master) != 0 || ::unlockpt(master) != 0) {
-        ::close(master);
+std::unique_ptr<HostLink> openHostLink(const std::optional<std::string>& folder, const std::string& fileName,
+                                       std::string* problem) {
+    auto none = [problem](const char* call) -> std::unique_ptr<HostLink> {
+        if (problem) *problem = std::string("no pseudo-terminal: ") + call + " failed: " + std::strerror(errno);
         return nullptr;
+    };
+    const int master = ::posix_openpt(O_RDWR | O_NOCTTY);
+    if (master < 0) return none("posix_openpt");
+    const char* failed = ::grantpt(master) != 0 ? "grantpt" : ::unlockpt(master) != 0 ? "unlockpt" : nullptr;
+    if (failed) {
+        auto out = none(failed);   // errno before close() changes it
+        ::close(master);
+        return out;
     }
     const char* sp = ::ptsname(master);   // static storage: copied at once
     if (!sp) {
+        auto out = none("ptsname");
         ::close(master);
-        return nullptr;
+        return out;
     }
     std::string device = sp;
     const int fl = ::fcntl(master, F_GETFL, 0);

@@ -210,6 +210,8 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         const auto asked = c.askHost(sessions::HostService::FilePicker,
                                      Value::object({{"accept", accept}, {"multiple", true}}),
                                      [this, &c](const sessions::ServiceAnswer& ans) {
+                                         if (const auto failed = sessions::serviceFailure(ans))
+                                             c.appLog().warn("Import: the file picker failed: " + *failed);
                                          if (!ans.given) return;
                                          const auto* list = ans.result.elements();
                                          if (!list) return;
@@ -235,15 +237,19 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         const KindDecl* k = kind(sessions::textArg(a, "kind"));
         if (!k) return Refused{"There is no kind of medium " + sessions::textArg(a, "kind") + "."};
         std::string reason;
-        const auto files = exportFiles(*k, sessions::textArg(a, "name"), &reason);
+        const auto files = exportFiles(*k, sessions::textArg(a, "name"), &reason, &c.appLog());
         if (!files) return Refused{reason};
         if (!c.hostOffers(sessions::HostService::KeepFile)) return Refused{"Nobody keeps a file here."};
+        applog::AppLog* log = &c.appLog();   // the answer comes later; the host's log outlives the session
         for (const FileOut& f : *files)   // the medium's file first
             c.askHost(sessions::HostService::KeepFile,
                       Value::object({{"name", f.relativePath},
                                      {"bytes", Value::Bytes(f.bytes.begin(), f.bytes.end())},
                                      {"mediaType", hasSuffix(f.relativePath, *k) ? "application/yaml" : "application/octet-stream"}}),
-                      [](const sessions::ServiceAnswer&) {});
+                      [log, file = f.relativePath](const sessions::ServiceAnswer& ans) {
+                          if (const auto failed = sessions::serviceFailure(ans))
+                              log->warn("Export: the file " + file + " was not kept: " + *failed);
+                      });
         return done();
     });
     s.command(kDeleteCommand, [this](const Value& a, SessionContext& c) -> CommandOutcome {
@@ -306,7 +312,7 @@ void MediaPart::closing(SessionContext& c) { flushAll(c); }   // quit
 void MediaPart::refreshShelf(SessionContext* c) {
     const std::vector<std::string> lines = shelf_.reread();
     if (c)
-        for (const auto& l : lines) c->log(l);
+        for (const auto& l : lines) c->appLog().warn(l);
 }
 
 // ── Places and bindings ─────────────────────────────────────────────────
@@ -474,7 +480,11 @@ void MediaPart::newMachine(SessionContext& c) {
             MediaPlace* cap = p && m ? placeCap(*m, *p) : nullptr;
             if (!cap) continue;
             if (b.content && !p->passThrough) {
-                if (!cap->insert(b.content, b.side.value_or(0)).ok) continue;
+                if (const auto in = cap->insert(b.content, b.side.value_or(0)); !in.ok) {
+                    c.appLog().warn("The " + labelled(b) + " was not put back after the variant switch: " +
+                                    (in.refusal.empty() ? std::string("the place refused it") : in.refusal));
+                    continue;
+                }
                 b.written = cap->revision();
             }
             bindings_[word] = b;
@@ -558,13 +568,14 @@ bool MediaPart::write(SessionContext& c, const Place*, Binding& b, Content conte
     WriteResult r;
     if (b.kind->rereadBeforeWrite && !b.started) {   // what the file holds now
         const FileAccess::Read now = shelf_.files().read(b.path);
-        if (now.unreadable) r.problem = "the file cannot be read.";
+        if (now.unreadable) r.problem = "the file cannot be read" + (now.problem.empty() ? "." : ": " + now.problem + ".");
         else w.source = now.bytes;
     }
     if (r.problem.empty()) r = writeMedium(*b.kind, w, b.path, shelf_);
     b.written = revision;
     b.pending = false;
-    if (!r.ok) {   // one notice until a write succeeds
+    if (!r.ok) {   // one notice until a write succeeds; the app log has every failure
+        c.appLog().warn("The " + labelled(b) + " could not be saved to " + b.path + ": " + r.problem);
         if (!b.failed) c.notice("The " + labelled(b) + " could not be saved: " + r.problem);
         b.failed = true;
         return false;
@@ -573,7 +584,7 @@ bool MediaPart::write(SessionContext& c, const Place*, Binding& b, Content conte
     b.unsaved = false;
     b.started = false;
     b.source = r.bytes;
-    c.log("Saved " + labelled(b) + ".");   // kind and name tag, never the path
+    c.appLog().info("Saved " + labelled(b) + ".");   // kind and name tag, never the path
     refreshShelf(&c);
     return true;
 }
@@ -821,6 +832,7 @@ MediaPart::SaveResult MediaPart::save(SessionContext& c, const std::string& word
     const WriteResult res = writeMedium(*b.kind, w, plan.path, shelf_);
     if (!res.ok) {
         out.reason = "The " + b.kind->label + " " + inQuotes(plan.name) + " could not be saved: " + res.problem;
+        c.appLog().warn(out.reason + " (" + plan.path + ")");
         return out;
     }
     const std::string oldInFile = b.inFile;
@@ -842,7 +854,7 @@ MediaPart::SaveResult MediaPart::save(SessionContext& c, const std::string& word
             }
         b.inFile.clear();
     }
-    c.log("Saved " + labelled(b) + ".");
+    c.appLog().info("Saved " + labelled(b) + ".");
     if (protect) {
         b.writeProtected = true;
         if (p->slot) {
@@ -883,9 +895,10 @@ MediaPart::SaveResult MediaPart::saveInFile(SessionContext& c, const KindDecl& k
     const WriteResult res = writeMedium(k, w, plan.path, shelf_);
     if (!res.ok) {
         out.reason = "The " + k.label + " " + inQuotes(plan.name) + " could not be saved: " + res.problem;
+        c.appLog().warn(out.reason + " (" + plan.path + ")");
         return out;
     }
-    c.log("Saved " + k.label + " " + inQuotes(plan.name) + ".");
+    c.appLog().info("Saved " + k.label + " " + inQuotes(plan.name) + ".");
     if (r.by != SaveBy::SaveasTemplate) {   // `as: live` binds it
         for (InFileItem& i : inFile_)
             if (i.kind == k.id && i.name == name) {
@@ -954,6 +967,8 @@ MediaPart::Outcome MediaPart::importBytes(SessionContext& c, const std::string& 
         const ShelfEntry* same = k && ip.info.content ? shelf_.find(*k, nameOf(ip.info, fileName, *k)) : nullptr;
         if (!replaceConfirmed || !same || same->origin != Origin::Saved) {
             out.reason = ip.plan.refusal;
+            if (!out.reason.starts_with(kAsks))   // a question is no failure
+                c.appLog().warn("The file " + fileName + " was not imported: " + out.reason);
             return out;
         }
         ip.plan.verdict = Plan::Verdict::Write;
@@ -961,14 +976,20 @@ MediaPart::Outcome MediaPart::importBytes(SessionContext& c, const std::string& 
         ip.plan.name = same->name;
     }
     std::vector<FileOut> files{FileOut{baseName(ip.plan.path), bytes}};
-    for (const std::string& rel : ip.info.companions)
-        if (const auto b = companion ? companion(rel) : std::nullopt) files.push_back(FileOut{rel, *b});
+    for (const std::string& rel : ip.info.companions) {
+        if (!companion) continue;   // an upload brings none
+        if (const auto b = companion(rel)) files.push_back(FileOut{rel, *b});
+        else
+            c.appLog().warn("The " + ip.kind->label + " " + inQuotes(ip.plan.name) + " was imported without " + rel +
+                            ", which cannot be read beside " + fileName + ".");
+    }
     const WriteResult w = writeFiles(*ip.kind, files, ip.plan.path, shelf_);
     if (!w.ok) {
         out.reason = "The " + ip.kind->label + " " + inQuotes(ip.plan.name) + " could not be imported: " + w.problem;
+        c.appLog().warn(out.reason + " (" + ip.plan.path + ")");
         return out;
     }
-    c.log("Imported " + ip.kind->label + " " + inQuotes(ip.plan.name) + ".");
+    c.appLog().info("Imported " + ip.kind->label + " " + inQuotes(ip.plan.name) + ".");
     refreshShelf(&c);
     out.ok = true;
     out.path = ip.plan.path;
@@ -976,12 +997,17 @@ MediaPart::Outcome MediaPart::importBytes(SessionContext& c, const std::string& 
 }
 
 MediaPart::Outcome MediaPart::importFile(SessionContext& c, const std::string& path) {
-    const auto bytes = shelf_.files().read(path).bytes;
-    if (!bytes) return Outcome{false, "The file " + baseName(path) + " cannot be read.", {}};
-    return importBytes(c, baseName(path), *bytes, companionsBeside(path));
+    const FileAccess::Read read = shelf_.files().read(path);
+    if (!read.bytes) {
+        const std::string why = read.problem.empty() ? std::string("there is no such file") : read.problem;
+        c.appLog().warn("The file " + path + " was not imported: " + why);
+        return Outcome{false, "The file " + baseName(path) + " cannot be read: " + why + ".", {}};
+    }
+    return importBytes(c, baseName(path), *read.bytes, companionsBeside(path));
 }
 
-std::optional<std::vector<FileOut>> MediaPart::exportFiles(const KindDecl& k, const std::string& name, std::string* reason) {
+std::optional<std::vector<FileOut>> MediaPart::exportFiles(const KindDecl& k, const std::string& name, std::string* reason,
+                                                           applog::AppLog* log) {
     shelf_.reread();
     const ShelfEntry* e = shelf_.find(k, name);
     if (!e || e->path.empty()) {
@@ -989,8 +1015,13 @@ std::optional<std::vector<FileOut>> MediaPart::exportFiles(const KindDecl& k, co
         return std::nullopt;
     }
     std::vector<FileOut> out{FileOut{e->fileName, e->bytes}};
-    for (const std::string& rel : e->info.companions)
-        if (const auto b = settings::readWholeFile(joinFile(folderOfPath(e->path), rel))) out.push_back(FileOut{rel, *b});
+    for (const std::string& rel : e->info.companions) {
+        std::string why;
+        if (const auto b = settings::readWholeFile(joinFile(folderOfPath(e->path), rel), &why))
+            out.push_back(FileOut{rel, *b});
+        else if (log)
+            log->warn("The " + k.label + " " + inQuotes(e->name) + " was exported without " + rel + ": " + why);
+    }
     return out;
 }
 
@@ -1009,10 +1040,11 @@ MediaPart::Outcome MediaPart::remove(SessionContext& c, const KindDecl& k, const
     fs::remove(files::toPath(plan.path), ec);
     if (ec) {
         out.reason = "The " + k.label + " " + inQuotes(plan.name) + " could not be deleted: " + ec.message();
+        c.appLog().warn(out.reason + " (" + plan.path + ")");
         return out;
     }
     for (const auto& rel : companions) fs::remove(files::toPath(joinFile(folderOfPath(plan.path), rel)), ec);
-    c.log("Deleted " + k.label + " " + inQuotes(plan.name) + ".");
+    c.appLog().info("Deleted " + k.label + " " + inQuotes(plan.name) + ".");
     refreshShelf(&c);
     out.ok = true;
     return out;

@@ -46,6 +46,9 @@ std::unique_ptr<sessions::AppSession> hostSessionOf(HostSessionSetup setup, std:
             setup.appLog->setLevel(applog::appLogLevelOfSetting(setup.settings->file().text("app-log", "level")));
         if (setup.settings && !setup.settings->problem().empty())
             setup.appLog->warn("Settings: " + setup.settings->problem());
+        if (setup.settings)
+            for (const std::string& value : setup.settings->file().notAccepted())
+                setup.appLog->warn("Settings: " + value + " is not accepted; the default is used.");
     }
     sessions::AppSessionSetup s;
     s.clock = setup.clock ? std::move(setup.clock) : pacing::WallClock(&pacing::steadyWallTime);

@@ -39,7 +39,7 @@ std::string withTilde(const std::string& path, const std::string& home) {
 
 DialogSpec familySections(const settings::ProductDecl& decl, const std::vector<std::string>& keysShown) {
     DialogSection general{"General", {}}, presets{"Startup presets", {}}, storage{"Storage", {}},
-        folders{"Folders", {}}, tracing{"Tracing", {}};
+        folders{"Folders", {}}, tracing{"Tracing", {}}, appLog{"App log", {}};
     for (const auto& d : decl.keys) {
         if (!wanted(keysShown, d)) continue;
         if (d.section == "startup" && d.key == "model")
@@ -56,11 +56,26 @@ DialogSpec familySections(const settings::ProductDecl& decl, const std::vector<s
             tracing.rows.push_back({Widget::Folder, d.section, d.key, "Trace folder"});
         else if (d.section == "trace" && d.key == "max-file-size-mb")
             tracing.rows.push_back({Widget::Integer, d.section, d.key, "Maximum file size (MB)"});
+        else if (d.section == "app-log" && d.key == "level") {
+            DialogRow level{Widget::Choice, d.section, d.key, "App log level"};
+            level.choices = {{"default", "Default"}, {"error", "Error"}, {"warn", "Warning"},
+                             {"info", "Info"},       {"debug", "Debug"}};
+            appLog.rows.push_back(std::move(level));
+        }
     }
     DialogSpec spec;
-    for (auto* s : {&general, &presets, &storage, &folders, &tracing})
+    for (auto* s : {&general, &presets, &storage, &folders, &tracing, &appLog})
         if (!s->rows.empty()) spec.sections.push_back(std::move(*s));
     return spec;
+}
+
+void appLogSectionLast(DialogSpec& spec) {
+    auto& s = spec.sections;
+    const auto at = std::find_if(s.begin(), s.end(), [](const DialogSection& d) { return d.title == "App log"; });
+    if (at == s.end()) return;
+    DialogSection moved = std::move(*at);
+    s.erase(at);
+    s.push_back(std::move(moved));
 }
 
 std::vector<ShownSection> dialog(const Value& settings, const Value& presetList, const DialogSpec& spec) {

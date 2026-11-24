@@ -133,6 +133,9 @@ function useCalcuShell(shell, product, traits, shellArgs) {
     else if (item.id === a.savedMedia) setOpen("saved-media");
     else if (item.id.startsWith(a.nameAndSavePrefix)) nameAndSave(item.args.place);
     else if (item.id === a.help) calcuWebHostServices().answer("open-url", { url: product.helpUrl });   // its result is ignored
+    else if (item.id === a.showAppLog) {   // a page writes no file: the kept lines as a download
+      calcuDownload(`${product.name || "Calc-U"}.log`, new TextEncoder().encode(calcuAppLogText()), "text/plain");
+    }
     else if (item.id === a.copyScreen) { if (product.copyScreen) product.copyScreen(); }
     else if (item.id === a.pasteText) {
       const read = typeof navigator !== "undefined" && navigator.clipboard ? navigator.clipboard.readText() : Promise.resolve("");

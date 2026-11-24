@@ -87,18 +87,20 @@ TEST(settings_spec_per_frontend_and_layout) {
     using F = cu59::ShellFrontend;
     CHECK_EQ(describe(cu59::settingsSpec(F::Qt6, "Version 3.0.0 (x)")),
              std::string("General: Startup model Version 3.0.0 (x);Startup presets: TI-59 TI-58 TI-58C;Storage: Save folder;"
-                         "Folders: Presets folder ASM overlay folder;Tracing: Trace folder Maximum file size (MB);Display: Segment Style;"));
+                         "Folders: Presets folder ASM overlay folder;Tracing: Trace folder Maximum file size (MB);Display: Segment Style;"
+                         "App log: App log level;"));
     CHECK_EQ(describe(cu59::settingsSpec(F::WebWide, "Version 3.0.0")),
              std::string("General: Startup model Version 3.0.0;Startup presets: TI-59 TI-58 TI-58C;"
-                         "Tracing: Maximum file size (MB);"));
+                         "Tracing: Maximum file size (MB);App log: App log level;"));
     CHECK_EQ(describe(cu59::settingsSpec(F::WebPortrait, "Version 3.0.0")),
-             std::string("General: Startup model Version 3.0.0;Startup presets: TI-59 TI-58 TI-58C;Keyboard: Keyboard Feedback;"));
+             std::string("General: Startup model Version 3.0.0;Startup presets: TI-59 TI-58 TI-58C;Keyboard: Keyboard Feedback;"
+                         "App log: App log level;"));
     // The labelled choices: the Web offers Off and Click Sound of the three values.
     const auto qt = cu59::settingsSpec(F::Qt6, "");
-    CHECK(qt.sections.back().rows[0].choices ==
+    CHECK(qt.sections.size() >= 2 && qt.sections[qt.sections.size() - 2].rows[0].choices ==
           (std::vector<std::pair<std::string, std::string>>{{"modernized", "Modernized"}, {"classic", "Classic"}}));
     const auto portrait = cu59::settingsSpec(F::WebPortrait, "");
-    CHECK(portrait.sections.back().rows[0].choices ==
+    CHECK(portrait.sections.size() >= 2 && portrait.sections[portrait.sections.size() - 2].rows[0].choices ==
           (std::vector<std::pair<std::string, std::string>>{{"off", "Off"}, {"click", "Click Sound"}}));
     // No Solid State Module row.
     for (const auto& s : qt.sections)

@@ -12,6 +12,7 @@ family [storage] save-folder
 family [storage] cassette-folder
 family [trace] folder
 family [trace] max-file-size-mb
+family [app-log] level
 product [debug] dap-enabled
 product [debug] dap-port
 family [serial] link-folder

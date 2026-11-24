@@ -84,7 +84,6 @@ typedef struct {
 - (void)showDebugPanel:(NSInteger)panel;   ///< 0 CALCULATOR, 1 CPU, 2 LOG
 /// A notice or a refusal is waiting in `shell` (one alert after the other).
 - (void)noticesChanged;
-- (void)diagnostic:(NSString *)message;
 - (void)changed:(TIChange)changes;
 /// A file of the save folder was written (the coordinated write succeeded).
 - (void)cardWritten;
@@ -214,14 +213,33 @@ typedef struct {
                               missing:(NSString *_Nullable *_Nullable)missing;
 @end
 
+/// The app log's levels (calcu::applog::AppLogLevel).
+typedef NS_ENUM(NSInteger, TIAppLogLevel) {
+    TIAppLogLevelError = 0,
+    TIAppLogLevelWarn = 1,
+    TIAppLogLevelInfo = 2,
+    TIAppLogLevelDebug = 3,
+};
+
+/// The app log of the app (how it ran; not the debugger's LOG): the library's
+/// file in `folder` (the sandbox's Library/Logs), each line also in the
+/// system log at its level. Installed once, at the app's start, before the
+/// session; written from any thread.
+@interface TIAppLog : NSObject
+/// `arguments`: the launch arguments, read for `--app-log-level <level>`
+/// (DEBUG builds only), which then holds for the run.
++ (void)installInFolder:(NSString *)folder arguments:(NSArray<NSString *> *)arguments;
++ (void)write:(NSString *)text level:(TIAppLogLevel)level NS_SWIFT_NAME(write(_:level:));
+/// The file, "" before install.
+@property (class, nonatomic, readonly) NSString *filePath;
+@end
+
 @interface TIAppSession : NSObject
 
 /// The session thread starts and builds the session on it; `delegate` is held weakly.
 - (instancetype)initWithRoms:(TIRomSet *)roms start:(TISessionStart *)start delegate:(id<TIAppSessionDelegate>)delegate;
 /// The library's shell models over this session's topics.
 @property (nonatomic, readonly) TIShell *shell;
-/// The settings file's problem when it was opened, nil when none.
-@property (nonatomic, readonly, nullable) NSString *settingsProblem;
 /// The settings file of this session (its path).
 /// Suspend is carried out (the TI-58C memory written), then no more
 /// calls; `done` on the main thread once the suspend was carried out.

@@ -31,7 +31,7 @@ tools/  ci/  .github/workflows/
 - Dependencies point one way: an area uses the standard library and areas
   of the levels below its own, never one of its own level or above. A new
   include against this order is a bug; tests and products may use any area.
-  1. `files`, `formats`, `machine`: the standard library only
+  1. `applog`, `files`, `formats`, `machine`: the standard library only
   2. `settings` (on `files`); `pacing`, `roms` (on `machine`)
   3. `sessions`
   4. `typing`, `peripherals`, `shell` (its `SessionThread` uses `parts`
@@ -53,6 +53,12 @@ tools/  ci/  .github/workflows/
   link of `peripherals`, and `qt6`.
 - A product's code that implements a library interface stays in the
   product (`core/`, `app/`), in the product's style.
+- Two logs, never mixed: the session's `log` says what the calculator
+  ran (presets, elapsed time, register writes; the LOG tab), the app log
+  (`applog`, `SessionContext::appLog()`, each host's sink) how the app
+  ran. A failure the app goes on after is an app log `warn` with its
+  cause; an end or a start that fails is an `error` with all that is
+  needed to find out why.
 
 ## The products must not drift apart
 

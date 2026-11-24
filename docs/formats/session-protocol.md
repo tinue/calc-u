@@ -151,6 +151,14 @@ silence.
   machine and its peripherals, each item as it is done, its end);
   `debug` adds a product's own detail (Calc-U-59: each write to the
   registers and the memory). Another level: `The log level is off, info or debug.`
+- The app log (how the app ran: a failure with its cause, what was saved
+  or opened) is not a topic. The host hands its sink to the session
+  (`AppSessionSetup::appLog`), the parts write to it directly
+  (`SessionContext::appLog()`), and the sink writes the lines at its level
+  (`[app-log] level`) where the platform keeps logs: a file, standard
+  error in the harness, or, from the Web worker, a message
+  `{kind: "app-log", level, text}` to the page, which writes the
+  browser's console.
 - `key-down` and `key-up` call the machine at the current tick; an
   unknown key: `Unknown key: <key>.`; arguments without `key`: `The key
   command needs key: <key ID>.`

@@ -93,7 +93,8 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
 
 shell::DialogSpec settingsSpec(bool qt6, bool serialPorts) {
     using W = shell::DialogRow::Widget;
-    const std::vector<std::string> webKeys{"startup.model", "preset.PC-1500", "preset.PC-1500A", "preset.PC-1600"};
+    const std::vector<std::string> webKeys{"startup.model", "preset.PC-1500", "preset.PC-1500A", "preset.PC-1600",
+                                          "app-log.level"};
     shell::DialogSpec spec = shell::familySections(settingsDecl(), qt6 ? std::vector<std::string>{} : webKeys);
     for (auto& s : spec.sections) {
         if (s.title != "Folders") continue;
@@ -107,11 +108,13 @@ shell::DialogSpec settingsSpec(bool qt6, bool serialPorts) {
     }
     if (!qt6) {
         spec.sections.push_back({"Storage", {{W::Note, "storage", "saved-media", kSavedMediaNote}}});
+        shell::appLogSectionLast(spec);
         return spec;
     }
     if (serialPorts) spec.sections.push_back({"Serial ports", {{W::Folder, "serial", "link-folder", "Link folder"}}});
     spec.sections.push_back({"Debugger",
                              {{W::Choice, "debug", "dap-enabled", "Debug server (DAP)"}, {W::Integer, "debug", "dap-port", "Port"}}});
+    shell::appLogSectionLast(spec);
     return spec;
 }
 

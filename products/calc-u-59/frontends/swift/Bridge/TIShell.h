@@ -118,6 +118,7 @@ typedef NS_ENUM(NSInteger, TIDialogWidget) {
 extern NSString *const TIShellActionLoadPreset;
 extern NSString *const TIShellActionSettings;
 extern NSString *const TIShellActionHelp;
+extern NSString *const TIShellActionShowAppLog;
 
 @interface TIShell : NSObject
 

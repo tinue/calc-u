@@ -728,6 +728,20 @@ it.
 A recorded per-instruction log of a CPU, saved as a **trace file**.
 _Avoid_: log (for this), trace dump
 
+**Log** (of the session):
+What the calculator ran, as lines of the session's topic `log` at the
+**log level** off, info or debug: how a preset was carried out, the
+elapsed time, Calc-U-59's register writes. Shown in Calc-U-59's LOG tab.
+_Avoid_: app log (for this)
+
+**App log**:
+How the product ran: its start and end, every failure with its cause,
+and at the lower levels what it did for the user, at the **app log
+level** error, warn, info or debug (`[app-log] level`). A file in the
+platform's place for logs; on the Web the browser's console. Never the
+session's log.
+_Avoid_: log (alone, for this), console log
+
 **Profile**:
 The debugger counting how often each address of each debug target is
 carried out while it is on (`profile on|off`); its report lists the

@@ -63,8 +63,6 @@ enum ProgramSource: Equatable {
 /// CLAUDE.md § "Frontend Parity".
 @Observable
 class EmulatorViewModel {
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Calc-U-59", category: "EmulatorViewModel")
-
     var displaySegments: [UInt8] = Array(repeating: 0, count: 12)
     var displayLevels:   [UInt8] = Array(repeating: 0, count: 12)  // brightness 0…255 per position
     var dpLevels:        [UInt8] = Array(repeating: 0, count: 12)  // decimal point brightness per position
@@ -244,6 +242,7 @@ class EmulatorViewModel {
         case .failure(let missing):
             romSet = nil
             romsMissingText = missing.text
+            TIAppLog.write("Calc-U-59 cannot start: \(missing.text)", level: .error)
             return
         }
         Task { await self.start() }
@@ -273,7 +272,6 @@ class EmulatorViewModel {
         // nothing: hand its flags over now.
         if liveDebugEnabled { made.setLiveDebugEnabled(true) }
         if cpuDebugEnabled { made.setCpuDebugEnabled(true) }
-        if let problem = made.settingsProblem { print("[Settings] \(problem)") }
         #if DEBUG && targetEnvironment(simulator)
         // Harness attach: `calcu attach`, the port of --attach-port, else 59059.
         session?.openAttach(withArguments: ProcessInfo.processInfo.arguments)
@@ -378,10 +376,24 @@ class EmulatorViewModel {
         case TIShellActionLoadPreset: presetDialogSerial &+= 1
         case TIShellActionSettings: settingsSerial &+= 1
         case TIShellActionHelp: openHelp()
+        case TIShellActionShowAppLog: showAppLog()
         case "arm-card": cardPickerMode = .arm
         case "arm-fresh-card": cardPickerMode = .armFresh
         default: break
         }
+    }
+
+    /// Help ▸ Show App Log: the app log's file, to share (Mail, Files, …).
+    func showAppLog() {
+        let path = TIAppLog.filePath
+        guard !path.isEmpty,
+              let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first,
+              var top = scene.keyWindow?.rootViewController else { return }
+        while let presented = top.presentedViewController { top = presented }
+        let sheet = UIActivityViewController(activityItems: [URL(fileURLWithPath: path)], applicationActivities: nil)
+        sheet.popoverPresentationController?.sourceView = top.view   // iPad: from the window
+        sheet.popoverPresentationController?.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.midY, width: 0, height: 0)
+        top.present(sheet, animated: true)
     }
 
     /// Help ▸ "Calc-U-59 Help": the help in the browser.
@@ -662,10 +674,6 @@ class EmulatorViewModel {
     private static func same(_ a: TIFreezeButtons, _ b: TIFreezeButtons) -> Bool {
         a.freeze == b.freeze && a.freezeOnStart == b.freezeOnStart && a.armed == b.armed
     }
-
-    fileprivate static func diagnostic(_ message: String) {
-        logger.debug("\(message, privacy: .public)")
-    }
 }
 
 // MARK: - Session delegate (Bridge/TIAppSession ↔ app)
@@ -687,7 +695,6 @@ final class SessionDelegate: NSObject, TIAppSessionDelegate {
         }
     }
     func noticesChanged() { target?.syncNotices() }
-    func diagnostic(_ message: String) { EmulatorViewModel.diagnostic(message) }
     func changed(_ changes: TIChange) { target?.apply(changes) }
     func cardWritten() { target?.cardWritten() }
     func paperCopied(_ text: String) { target?.paperCopied(text) }

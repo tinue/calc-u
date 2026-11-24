@@ -1,5 +1,6 @@
 #include "qt6/Shell.hpp"
 #include "media/MediaTopics.hpp"
+#include "qt6/AppLogSink.hpp"
 #include "qt6/FaceplateInput.hpp"
 #include "qt6/NameAndSaveDialog.hpp"
 #include "qt6/PanelArea.hpp"
@@ -247,6 +248,7 @@ void Shell::choose(const shell::MenuItem& item) {
     else if (item.id == a::kSettings) openSettings();
     else if (item.id == a::kAbout) openAbout();
     else if (item.id == a::kHelp) openHelp();
+    else if (item.id == a::kShowAppLog) showAppLog();
     else if (item.id == a::kQuit) window_.close();
     else if (item.id.rfind(a::kNameAndSavePrefix, 0) == 0) nameAndSave(shell::read::text(item.args, "place"));
     else if (item.id == a::kCopyScreen) {
@@ -302,6 +304,13 @@ void Shell::openAbout() {
 void Shell::openHelp() {
     if (product_.helpUrl.empty()) return;
     (void)choosers_.openUrl(QUrl(q(product_.helpUrl)));   // whatever happens, nothing else does
+}
+
+// The app log's file in the platform's viewer (Console on macOS).
+void Shell::showAppLog() {
+    const QString path = appLogFilePath();
+    if (path.isEmpty()) return;
+    if (!choosers_.openUrl(QUrl::fromLocalFile(path))) appLog().warn("The app log " + path.toStdString() + " could not be shown.");
 }
 
 QString Shell::startFolder(const std::string& kind) const {

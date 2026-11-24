@@ -68,7 +68,7 @@ void labelFolders(shell::DialogSpec& spec) {
 shell::DialogSpec swiftSpec(const std::string& versionLine) {
     using W = shell::DialogRow::Widget;
     // No folder rows: the iOS file importer takes no start folder.
-    const std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"};
+    const std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C", "app-log.level"};
     shell::DialogSpec spec = shell::familySections(settings::settingsDecl(), keys);
     for (auto& s : spec.sections)
         if (s.title == "General") s.rows.push_back({W::Note, "general", "version", versionLine});
@@ -87,6 +87,7 @@ shell::DialogSpec swiftSpec(const std::string& versionLine) {
     shell::DialogSection tracing{"Tracing", {location}};
     tracing.rows.push_back({W::Integer, "trace", "max-file-size-mb", "Maximum file size (MB)"});
     spec.sections.push_back(std::move(tracing));
+    shell::appLogSectionLast(spec);
     return spec;
 }
 
@@ -95,7 +96,7 @@ shell::DialogSpec swiftSpec(const std::string& versionLine) {
 shell::DialogSpec settingsSpec(ShellFrontend f, const std::string& versionLine) {
     using W = shell::DialogRow::Widget;
     if (f == ShellFrontend::SwiftIOS) return swiftSpec(versionLine);
-    std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C"};
+    std::vector<std::string> keys{"startup.model", "preset.TI-59", "preset.TI-58", "preset.TI-58C", "app-log.level"};
     if (f == ShellFrontend::Qt6) {
         keys.push_back("storage.save-folder");
         keys.insert(keys.end(), kFolderKeys.begin(), kFolderKeys.end());
@@ -116,6 +117,7 @@ shell::DialogSpec settingsSpec(ShellFrontend f, const std::string& versionLine) 
         feedback.choices = {{"off", "Off"}, {"click", "Click Sound"}};
         spec.sections.push_back({"Keyboard", {feedback}});
     }
+    shell::appLogSectionLast(spec);
     return spec;
 }
 

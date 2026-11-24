@@ -113,6 +113,7 @@ public:
     void openAbout();
     void loadPreset();
     void openHelp();
+    void showAppLog();
     // Name & Save of a media place: the media components' dialog with the
     // product's prompt for the place (shell::nameAndSavePrompt). The bar's
     // slot buttons, the place's submenu and a product's media control use it.

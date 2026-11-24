@@ -19,7 +19,7 @@
 
 const CALCU_SHELL_ACTIONS = {
   loadPreset: "load-preset", savedMedia: "saved-media", settings: "settings", quit: "quit",
-  copyScreen: "copy-screen", pasteText: "paste-text", help: "help", about: "about",
+  copyScreen: "copy-screen", pasteText: "paste-text", help: "help", showAppLog: "show-app-log", about: "about",
   nameAndSavePrefix: "media-name-and-save-",
 };
 const CALCU_SHELL_LOADING_MS = 500;

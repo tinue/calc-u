@@ -12,6 +12,7 @@ family [storage] save-folder
 family [trace] folder
 family [trace] max-file-size-mb
 family [trace] location
+family [app-log] level
 product [display] led-style
 product [keyboard] feedback
 family [folders] <kind>

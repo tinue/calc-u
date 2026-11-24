@@ -54,7 +54,6 @@ final class TestSession {
                 session?.shell.closeNotice()
             }
         }
-        func diagnostic(_ message: String) { print("[TestSession] log: \(message)") }
         func changed(_ changes: TIChange) { self.changes.formUnion(changes) }
         func cardWritten() {}
     }

@@ -38,7 +38,6 @@ typedef NS_ENUM(NSInteger, TIMenuItemKind) {
 @end
 
 @interface TIMenu : NSObject
-@property (nonatomic, readonly, copy) NSString *menuID;   ///< file, machine, help
 @property (nonatomic, readonly, copy) NSString *label;
 @property (nonatomic, readonly, copy) NSArray<TIMenuItem *> *items;
 @end
@@ -131,8 +130,6 @@ extern NSString *const TIShellActionShowAppLog;
 @property (nonatomic, readonly) BOOL started;
 /// File, Machine, Help with their items.
 @property (nonatomic, readonly) NSArray<TIMenu *> *menus;
-/// The items of the More button.
-@property (nonatomic, readonly) NSArray<TIMenuItem *> *moreItems;
 /// The bar, group by group, left to right.
 @property (nonatomic, readonly) NSArray<TIBarControl *> *bar;
 /// The sections and rows of the settings, with their values now.

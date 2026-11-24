@@ -27,8 +27,9 @@ function withWarnings(run) {
 
 test("shared_props_in_their_order", () => {
   const e = embedProps({ height: 2, workerUrl: "w.js", model: "TI-59", preset: "sum.ti59", layout: "wide",
-    keyboard: false, width: 1, settings: false }, C59);
-  assert.deepEqual(Object.keys(e), ["width", "keyboard", "layout", "preset", "height", "model", "workerUrl", "rest"]);
+    keyboard: false, width: 1, settings: false, paperWindow: true }, C59);
+  assert.deepEqual(Object.keys(e),
+    ["width", "keyboard", "layout", "preset", "height", "model", "workerUrl", "paperWindow", "rest"]);
   assert.equal(e.width, 1);
   assert.equal(e.keyboard, false);
   assert.equal(e.layout, "wide");
@@ -36,16 +37,18 @@ test("shared_props_in_their_order", () => {
   assert.equal(e.height, 2);
   assert.equal(e.model, "TI-59");
   assert.equal(e.workerUrl, "w.js");
+  assert.equal(e.paperWindow, true);
   // A product's own props stay in rest; layout is a shared one.
   assert.deepEqual(Object.keys(e.rest), ["settings"]);
 });
 
 test("no_layout_is_the_products_default", () => {
   // Each product defaults it (Calc-U-59 "portrait", Calc-U-1600 "auto");
-  // keyboard stays on by default.
+  // keyboard stays on by default, the paper's own window off.
   const { result: e, warnings } = withWarnings(() => embedProps({}, C59));
   assert.equal(e.layout, "portrait");
   assert.equal(e.keyboard, true);
+  assert.equal(e.paperWindow, false);
   assert.deepEqual(Object.keys(e.rest), []);
   assert.equal(withWarnings(() => embedProps({}, C1600)).result.layout, "auto");
   assert.deepEqual(warnings, []);

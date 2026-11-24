@@ -73,7 +73,8 @@ The shared props, in this order, then the product's own:
 | 5 | `height` | the parent's height (Calc-U-59: from the width) | the component's height in CSS pixels |
 | 6 | `model` | the startup model | the model to start with, by its name as the glossary writes it (`TI-58C`, `PC-1600`) |
 | 7 | `workerUrl` | `calc-engine-worker.js` beside `calc.js` | the worker's script, for a page that serves it from another path (the installed app: `app/engine-worker.js`) |
-| 8 | the product's own | | Calc-U-59: `settings` (default `true`): whether Settings… is offered; `paperWindow` (default `false`): the full app's paper in its own window (§6). Calc-U-1600: `paperWindow` (the same) |
+| 8 | `paperWindow` | `false` | the full app's paper in its own window (§6): on a desktop page, never on mobile, the paper panel's button that opens the paper in a window of its own, titled `<product> — Printer` (Calc-U-59: with `layout: "auto"` only) |
+| 9 | the product's own | | Calc-U-59: `settings` (default `true`): whether Settings… is offered |
 
 - Without both `width` and `height` as numbers the component fills its
   parent (Calc-U-1600) or sizes itself from the width (Calc-U-59); a

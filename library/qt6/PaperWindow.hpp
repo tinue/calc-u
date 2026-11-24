@@ -8,8 +8,8 @@ class QVBoxLayout;
 // so the window system treats it as any other window, not one kept above
 // the main window), titled "<product> — Printer", without a menu bar.
 // Its place is in [window] paper-x/y/width/height (settings::windowPlace),
-// restored when it is made, onto a screen that is there (a place off every
-// screen: beside the given main window); written when it closes or hides.
+// restored when it is made (applyWindowPlace: a place off every screen
+// goes beside the given main window); written when it closes or hides.
 // Closing it asks for the paper back (closed()); the panel area owns it.
 // Object name `paper-window`.
 
@@ -24,8 +24,9 @@ public:
     void release(QWidget* panel);    // out of it again (the caller reparents it)
     void savePlace();
     void setBackground(const QColor&);
-    // Hides the window without asking for the paper back: the main
-    // window's close (the setting stays: the next start opens it again).
+    // Hides the window without asking for the paper back (a hide is no
+    // close): the main window's close (the setting stays: the next start
+    // opens it again).
     void hideKeepingOwn();
 
 signals:
@@ -35,11 +36,8 @@ protected:
     void closeEvent(QCloseEvent*) override;
 
 private:
-    void restorePlace(const QWidget* mainWindow);
-
     settings::SettingsFile* file_;
     QVBoxLayout* layout_;
-    bool keepingOwn_ = false;
 };
 
 } // namespace calcu::qt6

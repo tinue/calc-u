@@ -3,7 +3,8 @@
 //
 //   embedProps(props, {name, layouts, layout}) → {width, keyboard (default
 //                        true), layout, preset, height, model, workerUrl,
-//                        rest}: the shared props in their order, then the
+//                        paperWindow (default false), rest}: the shared
+//                        props in their order, then the
 //                        product's own in rest; layout is
 //                        one of the product's layouts, else its default (a
 //                        value not among them is ignored with a console
@@ -29,7 +30,7 @@
 const CALCU_LAYOUT_WARNED = new Set();
 
 function embedProps(props, product) {
-  const { width, keyboard = true, layout, preset, height, model, workerUrl, ...rest } = props || {};
+  const { width, keyboard = true, layout, preset, height, model, workerUrl, paperWindow = false, ...rest } = props || {};
   const { name, layouts, layout: byDefault } = product;
   let taken = byDefault;
   if (layout !== undefined && layouts.includes(layout)) taken = layout;
@@ -38,7 +39,8 @@ function embedProps(props, product) {
     calcuAppLog("warn", `${name}: layout ${JSON.stringify(layout)} is not one of its layouts ` +
       `(${layouts.map((l) => JSON.stringify(l)).join(", ")}); it is ignored.`);
   }
-  return { width, keyboard: keyboard !== false, layout: taken, preset, height, model, workerUrl, rest };
+  return { width, keyboard: keyboard !== false, layout: taken, preset, height, model, workerUrl,
+    paperWindow: !!paperWindow, rest };
 }
 
 function bundlePathOf(preset) {

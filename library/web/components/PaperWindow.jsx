@@ -4,18 +4,21 @@
 // page's stylesheets, the panel drawn into it through a React portal, so it
 // shares the page's shell and paper store; no second worker.
 //
-//   const pw = useCalcuPaperWindow(shell, {offered, title, notify});
+//   const pw = useCalcuPaperWindow(shell, {paperWindow, product, notify});
 //   pw.own                   the paper is in its own window
 //   pw.toggle()              into its own window (inside the click: a
 //                            browser opens a window only within a gesture),
 //                            or back
+//   pw.ownWindow             {own, toggle} for the paper's header button
+//                            where the window is offered, else undefined
 //   pw.portal(element, style) the element drawn into the window, on a root
 //                            with the client's chrome custom properties
 //                            (null while the paper is in the page)
 //
-// offered: the page offers the window (a desktop page of the app, not an
-// embed, not mobile); title: the window's title; notify(text): a page
-// notice.
+// paperWindow: the embed prop of the page that offers the window (the full
+// app); it is offered with it on a desktop page, never on mobile.
+// product: the product's name, for the window's title "<product> — Printer"
+// (Qt6: the same title); notify(text): a page notice.
 // Closing the window puts the paper back; the page's own end closes the
 // window and keeps [window] paper-own-window, so that the next start opens
 // it again. A browser refuses a window outside a gesture, so that start
@@ -33,7 +36,9 @@ function calcuPaperWindowNumber(win, key, fallback) {
   return Number.isFinite(v) ? v : fallback;
 }
 
-function useCalcuPaperWindow(shell, { offered, title, notify }) {
+function useCalcuPaperWindow(shell, { paperWindow, product, notify }) {
+  const offered = !!paperWindow && !CALCU_SHELL_MOBILE;
+  const title = `${product} — Printer`;
   const win = useTopic(shell, "settings", (st) => (st && st.window) || null);
   const [popup, setPopup] = React.useState(null);   // {view, root}
   const popupRef = React.useRef(null);
@@ -74,7 +79,7 @@ function useCalcuPaperWindow(shell, { offered, title, notify }) {
     try { view = window.open("", "calcu-paper-window", features); } catch (_) { view = null; }
     if (!view) return false;
     const d = view.document;
-    d.title = title || "Printer";
+    d.title = title;
     d.documentElement.style.height = "100%";
     d.body.style.margin = "0";
     d.body.style.height = "100%";
@@ -139,5 +144,6 @@ function useCalcuPaperWindow(shell, { offered, title, notify }) {
       <div className="calcu-client calcu-paper-window" data-calcu="paper-window-root" style={style}>{element}</div>,
       popup.root);
   };
-  return { own: !!popup, toggle, portal, view: popup ? popup.view : null };
+  const own = !!popup;
+  return { own, toggle, portal, ownWindow: offered ? { own, toggle } : undefined };
 }

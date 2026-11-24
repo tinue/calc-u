@@ -48,8 +48,8 @@ std::vector<std::string_view> tiChromeNames();
 // debugger of the chrome; `extraWidth` what else lies beside the faceplate
 // (the splitter's handles). `paperOwnWindow`: the paper is in a window of
 // its own (desktop), the panels beside the faceplate are the debugger
-// alone: they take its width (panelsFit is the debugger's width; its
-// height, debuggerMinHeight, the frontend checks).
+// alone: they take its width, and debuggerFits is the debugger beside the
+// faceplate.
 calcu::shell::ViewInputs viewInputs(double width, double height, double extraWidth, bool mobile,
                                     bool paperOwnWindow = false);
 

@@ -98,7 +98,7 @@ private:
 // The steps `- cut-paper:` and `- copy-paper:` (no value, no emulated time,
 // also while paused; the harness has its own commands, PaperCommands.cpp).
 // The product, which owns both parts, adds them.
-void addPaperStep(presets::Vocabulary&, PaperPart&);
+void addPaperSteps(presets::Vocabulary&, PaperPart&);
 
 // Conformance: the printer's capability is there, its description
 // equals the one declared, its standing is 0 after a plug. The problem, or

@@ -53,7 +53,7 @@ LibraryParts::LibraryParts(LibraryPartsSetup s)
     startup_ = std::make_unique<startup::StartupPart>(
         startup::StartupSetup{machineControl_, *setup_.settings, presets_.get(), std::move(missing)});
     paper_ = std::make_unique<paper::PaperPart>(catalogue, setup_.papers, machineControl_);
-    paper::addPaperStep(presets_->vocabulary(), *paper_);
+    paper::addPaperSteps(presets_->vocabulary(), *paper_);
     debugger_ = std::make_unique<debugger::DebuggerPart>(withTraces(setup_.debugger, setup_));
     debugger::addDebuggerSteps(presets_->vocabulary(), *debugger_);
     media::MediaSetup m;

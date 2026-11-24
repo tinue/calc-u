@@ -352,3 +352,13 @@ test("view_debugger_fits", () => {
   assert.equal(alone.panelsAlone, true);
   assert.equal(alone.debuggerFits, false);
 });
+
+test("view_panels_are_the_debugger", () => {
+  const debugged = (v, extra) => m.calcuShellView(Object.assign(v, extra)).debuggerFits;
+  const own = { debuggerMinWidth: 220, debuggerMinHeight: 560, panelsAreDebugger: true };
+  assert.equal(debugged(tallView(800, 900, false), { debuggerMinWidth: 220, debuggerMinHeight: 560 }), false);
+  assert.equal(debugged(tallView(800, 900, false), own), true);
+  assert.equal(m.calcuShellView(Object.assign(tallView(800, 500, false), own)).panelsFit, true);
+  assert.equal(debugged(tallView(800, 500, false), own), false);
+  assert.equal(debugged(tallView(600, 900, false), own), false);
+});

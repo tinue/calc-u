@@ -77,7 +77,6 @@ public:
     // says where the panel is. A press asks with ownWindowRequested.
     void setOwnWindowOffered(bool);
     void setOwnWindow(bool);
-    bool ownWindow() const { return ownWindow_; }
 
     // What the panel shows now (the tests, the shell).
     std::string ownerName() const;               // "" without an owner

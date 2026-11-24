@@ -4,6 +4,7 @@
 #include "TIPresetKeys.hpp"
 #include "TextUtil.hpp"
 #include "../core/TIProductKinds.hpp"
+#include "files/Files.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <memory>
 
@@ -104,10 +105,8 @@ struct TIFileKinds::Kinds {
     KeystrokesKind keystrokes;
     RefusedKind romModule{"rom-module-file", [](std::string_view n) { return endsWith(n, ".rom.yaml"); },
                           "this release takes a Solid State ROM module by its ID only."};
-    RefusedKind constantMemory{"constant-memory-file", [](std::string_view n) {
-                                   const std::string_view base = n.substr(n.find_last_of("/\\") == std::string_view::npos ? 0 : n.find_last_of("/\\") + 1);
-                                   return base == "ti58c.memory.yaml";
-                               },
+    RefusedKind constantMemory{"constant-memory-file",
+                               [](std::string_view n) { return calcu::files::plainFileName(n) == "ti58c.memory.yaml"; },
                                "it is Calc-U-59's own constant memory file."};
     explicit Kinds(TIDebugPart& d) : asmKind(d) {}
 };

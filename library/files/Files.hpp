@@ -37,6 +37,12 @@ inline std::string fromPathNative(const std::filesystem::path& p) {
     return std::string(u.begin(), u.end());
 }
 
+// `name` without its folders: what follows its last '/' or '\'.
+inline std::string plainFileName(std::string_view name) {
+    const std::size_t slash = name.find_last_of("/\\");
+    return std::string(slash == std::string_view::npos ? name : name.substr(slash + 1));
+}
+
 // The system's words for an errno value ("No such file or directory"):
 // file streams report no reason of their own, the C library below them
 // leaves it in errno.

@@ -1,4 +1,5 @@
 #include "media/PresetMedia.hpp"
+#include "files/Files.hpp"
 #include "formats/Flow.hpp"
 #include "media/Names.hpp"
 #include "presets/Engine.hpp"
@@ -112,7 +113,7 @@ std::optional<Found> resolveByName(MediaPart& part, const KindDecl& k, const std
 
 std::optional<Found> resolveByFile(MediaPart& part, const KindDecl& k, const std::string& path, int line, ReadContext& ctx,
                                    const std::string& verb, bool moduleTaken = false) {
-    const std::string file = baseName(path);
+    const std::string file = files::plainFileName(path);
     if (!hasSuffix(file, k)) {
         ctx.error(line, verb + ": the file " + file + " is not a " + k.label + " (" + k.suffix + ").");
         return std::nullopt;
@@ -448,9 +449,9 @@ presets::PlaceResolution resolvePlace(MediaPart& part, const machine::PlaceName&
         const std::string path = text(*f);
         const KindDecl* byFile = nullptr;
         for (const KindDecl& x : part.kinds())
-            if (x.heldBy == HeldBy::ModuleSlot && hasSuffix(baseName(path), x)) byFile = &x;
+            if (x.heldBy == HeldBy::ModuleSlot && hasSuffix(files::plainFileName(path), x)) byFile = &x;
         if (!byFile) {
-            ctx.error(line, key + ": the file " + baseName(path) + " is not a module medium of this product.");
+            ctx.error(line, key + ": the file " + files::plainFileName(path) + " is not a module medium of this product.");
             return presets::PlaceResolution{How::Error, {}};
         }
         k = byFile;
@@ -524,7 +525,7 @@ void addMediaToPresets(presets::Vocabulary& v, MediaPart& part) {
     });
     // bundle.md §3: a file a preset names may be a bundled medium of the product.
     v.setBundledMedium([p](std::string_view named) {
-        const std::string file = baseName(named);
+        const std::string file = files::plainFileName(named);
         for (const KindDecl& k : p->kinds())
             if (!k.bundledFolder.empty() && hasSuffix(file, k) && settings::fileExists(joinFile(k.bundledFolder, file)))
                 return true;

@@ -111,7 +111,7 @@ public:
 private:
     std::optional<std::string> bundledText(const std::string& moduleName) const {
         for (const MemoryCardCatalogEntry& e : scanMemoryCardDirectory(m_bundledDir, nullptr)) {
-            if (e.moduleName != moduleName) continue;
+            if (e.definition.moduleName != moduleName) continue;
             std::vector<std::uint8_t> bytes;
             if (readWholeFile(calcu::files::toPath(e.filePath), &bytes)) return std::string(bytes.begin(), bytes.end());
         }
@@ -173,9 +173,8 @@ std::optional<CassetteDefinition> cassetteDefinition(const std::string& text, st
     calcu::formats::YamlNode root;
     if (!calcu::formats::parseYaml(text, &root, error)) return std::nullopt;
     calcu::media::Header header;
-    if (!calcu::media::readHeader(root, {"cassette", "cassette definition", 1, "cassette-name"}, &header, error))
-        return std::nullopt;
-    if (!root.requireOnlyKeys({"format", "format-version", "cassette-name", "description", "insert-notice", "template", "saved", "audio", "position"}, error))
+    if (!calcu::media::readHeader(root, {"cassette", "cassette definition", 1, "cassette-name", {"audio", "position"}}, &header,
+                                  error))
         return std::nullopt;
     CassetteDefinition t;
     t.name = header.name;
@@ -239,9 +238,8 @@ public:
                 if (t->name == w.name) audio = t->audio;
             }
         }
-        media::Header header{"Calc-U-1600 cassette", "cassette", 1, "cassette-name", w.name, description, w.asTemplate, w.savedAt};
-        header.insertNotice = insertNotice;
-        std::string text = media::headerText(header);
+        std::string text = media::headerText(
+            {"Calc-U-1600 cassette", "cassette", 1, "cassette-name", w.name, description, insertNotice, w.asTemplate, w.savedAt});
         text += "audio: { file: " + media::quotedScalar(audio) + " }\nposition: 0\n";
         return {FileOut{"", text}, FileOut{audio, std::string(tape->wav.begin(), tape->wav.end())}};
     }

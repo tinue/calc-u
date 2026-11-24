@@ -46,6 +46,12 @@ sessions::Done done() { return sessions::Done{}; }
 // A media place word as a refusal names it.
 std::string noPlace(const std::string& word) { return "There is no place " + word + " for a medium now."; }
 
+// A template the user put in says what its file's `insert-notice` says (a
+// binding carries one only for a template).
+void noticeInserted(SessionContext& c, const std::string& insertNotice) {
+    if (!insertNotice.empty()) c.notice(insertNotice);
+}
+
 Task<OperationResult> runChange(OperationContext& op, startup::MachineControl* control, startup::PlugChange ch) {
     co_await control->change(op, std::move(ch));
     co_return OperationResult{};
@@ -125,9 +131,9 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         if (!p || !p->passThrough) return Refused{"A medium is armed only for a pass-through place."};
         Resolved r = resolveEntry(*p, sessions::textArg(a, "entry"));
         if (r.refusal) return Refused{*r.refusal};
-        const Binding chosen = r.binding;
+        const std::string notice = r.binding.insertNotice;
         if (auto e = arm(c, word, std::move(r.binding), std::move(r.content))) return Refused{*e};
-        noticeInserted(c, chosen);
+        noticeInserted(c, notice);
         return done();
     });
     s.command(kFeedCommand, [this](const Value& a, SessionContext& c) -> CommandOutcome {
@@ -181,12 +187,12 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         b.unsaved = true;
         if (p->passThrough) {   // fitted, for the user to feed
             if (auto e = arm(c, word, std::move(b), std::move(r.content))) return Refused{*e};
-            noticeInserted(c, r.binding);
+            noticeInserted(c, r.binding.insertNotice);
             return done();
         }
         if (auto e = insert(c, word, std::move(b), std::move(r.content), p->sides.empty() ? 0 : p->sides[0]))
             return Refused{*e};
-        noticeInserted(c, r.binding);
+        noticeInserted(c, r.binding.insertNotice);
         return done();
     });
     s.command(kOpenFileCommand, [this](const Value& a, SessionContext& c) { return openFile(a, c); });
@@ -516,7 +522,7 @@ void MediaPart::bindSlots(SessionContext& c) {
         if (const auto pend = pendingSlot_.find(p.word); pend != pendingSlot_.end() && plugged &&
                                                           plugged->value == pend->second.peripheral) {
             Binding b = pend->second;
-            noticeInserted(c, b);   // only a choice or an open waits here: the plug is done
+            noticeInserted(c, b.insertNotice);   // only a choice or an open waits here: the plug is done
             b.written = revisionOf(m, p);
             bindings_[p.word] = std::move(b);
             pendingSlot_.erase(pend);
@@ -559,7 +565,7 @@ bool MediaPart::write(SessionContext& c, const Place*, Binding& b, Content conte
     if (!b.instance()) return false;   // a template is never written
     MediumCodec::Write w;
     w.name = b.name;
-    w.fileStem = stemOf(baseName(b.path), *b.kind);
+    w.fileStem = stemOf(files::plainFileName(b.path), *b.kind);
     w.asTemplate = false;
     if (b.hasWriteProtect) w.writeProtected = b.writeProtected;
     w.content = std::move(content);
@@ -685,10 +691,6 @@ bool MediaPart::hasPlace(SessionContext& c, const std::string& word) {
 const Binding* MediaPart::bindingOf(const std::string& word) const {
     const auto it = bindings_.find(word);
     return it == bindings_.end() ? nullptr : &it->second;
-}
-
-void MediaPart::noticeInserted(SessionContext& c, const Binding& b) {
-    if (b.isTemplate && !b.insertNotice.empty()) c.notice(b.insertNotice);
 }
 
 std::optional<std::string> MediaPart::insert(SessionContext& c, const std::string& word, Binding b, Content content, int side) {
@@ -822,7 +824,7 @@ MediaPart::SaveResult MediaPart::save(SessionContext& c, const std::string& word
     }
     MediumCodec::Write w;
     w.name = plan.name;
-    w.fileStem = stemOf(baseName(plan.path), *b.kind);
+    w.fileStem = stemOf(files::plainFileName(plan.path), *b.kind);
     w.asTemplate = r.by == SaveBy::SaveasTemplate;
     if (protect) w.writeProtected = true;
     else if (b.hasWriteProtect) w.writeProtected = b.writeProtected;
@@ -888,7 +890,7 @@ MediaPart::SaveResult MediaPart::saveInFile(SessionContext& c, const KindDecl& k
     }
     MediumCodec::Write w;
     w.name = plan.name;
-    w.fileStem = stemOf(baseName(plan.path), k);
+    w.fileStem = stemOf(files::plainFileName(plan.path), k);
     w.asTemplate = r.by == SaveBy::SaveasTemplate;
     w.content = inFileContent(k, name);
     w.savedAt = isoTime(c.hostTime());
@@ -975,7 +977,7 @@ MediaPart::Outcome MediaPart::importBytes(SessionContext& c, const std::string& 
         ip.plan.path = same->path;
         ip.plan.name = same->name;
     }
-    std::vector<FileOut> files{FileOut{baseName(ip.plan.path), bytes}};
+    std::vector<FileOut> files{FileOut{files::plainFileName(ip.plan.path), bytes}};
     for (const std::string& rel : ip.info.companions) {
         if (!companion) continue;   // an upload brings none
         if (const auto b = companion(rel)) files.push_back(FileOut{rel, *b});
@@ -1001,9 +1003,9 @@ MediaPart::Outcome MediaPart::importFile(SessionContext& c, const std::string& p
     if (!read.bytes) {
         const std::string why = read.problem.empty() ? std::string("there is no such file") : read.problem;
         c.appLog().warn("The file " + path + " was not imported: " + why);
-        return Outcome{false, "The file " + baseName(path) + " cannot be read: " + why + ".", {}};
+        return Outcome{false, "The file " + files::plainFileName(path) + " cannot be read: " + why + ".", {}};
     }
-    return importBytes(c, baseName(path), *read.bytes, companionsBeside(path));
+    return importBytes(c, files::plainFileName(path), *read.bytes, companionsBeside(path));
 }
 
 std::optional<std::vector<FileOut>> MediaPart::exportFiles(const KindDecl& k, const std::string& name, std::string* reason,
@@ -1055,15 +1057,15 @@ MediaPart::Outcome MediaPart::remove(SessionContext& c, const KindDecl& k, const
 MediaPart::OpenedMedium MediaPart::readOpened(std::string_view name, const std::string& bytes,
                                               const std::string& path) const {
     OpenedMedium out;
-    out.kind = shelf_.kindOfFile(baseName(name));
+    out.kind = shelf_.kindOfFile(files::plainFileName(name));
     if (!out.kind || !out.kind->codec) {
-        out.refusal = "The file " + baseName(name) + " is not a medium of this product.";
+        out.refusal = "The file " + files::plainFileName(name) + " is not a medium of this product.";
         return out;
     }
     const ReadOutcome r = out.kind->codec->read(bytes, path.empty() ? MediumCodec::Companion{} : companionsBeside(path));
     out.plainModule = isPlainModule(*out.kind, r);
     if (r.unreadable() && !out.plainModule)
-        out.refusal = "The " + out.kind->label + " file " + baseName(name) + " cannot be read" +
+        out.refusal = "The " + out.kind->label + " file " + files::plainFileName(name) + " cannot be read" +
                       (r.problem.empty() ? "." : ": " + r.problem);
     out.info = r.info;
     out.isModule = out.kind->heldBy == HeldBy::ModuleSlot;
@@ -1109,8 +1111,8 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     std::string bytes;
     if (const auto b = sessions::bytesArg(a, "bytes")) bytes.assign(b->begin(), b->end());
     else if (const auto f = shelf_.files().read(path).bytes) bytes = *f;
-    else return Refused{"The file " + baseName(name.empty() ? path : name) + " cannot be read."};
-    const std::string fileName = baseName(name.empty() ? path : name);
+    else return Refused{"The file " + files::plainFileName(name.empty() ? path : name) + " cannot be read."};
+    const std::string fileName = files::plainFileName(name.empty() ? path : name);
     const OpenedMedium o = readOpened(fileName, bytes, upload ? std::string() : path);
     if (o.refusal) return Refused{*o.refusal};
     const KindDecl& k = *o.kind;
@@ -1156,14 +1158,14 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
         b.peripheral = req->peripheral.value;
         return changeSlot(c, *p, std::move(req), std::move(b));
     }
-    const Binding opened = b;
+    const std::string notice = b.insertNotice;
     if (p->passThrough) {   // fitted, not fed
         if (auto e = arm(c, word, std::move(b), std::move(info.content))) return Refused{*e};
-        noticeInserted(c, opened);
+        noticeInserted(c, notice);
         return done();
     }
     if (auto e = insert(c, word, std::move(b), std::move(info.content), p->sides.empty() ? 0 : p->sides[0])) return Refused{*e};
-    noticeInserted(c, opened);
+    noticeInserted(c, notice);
     return done();
 }
 
@@ -1279,17 +1281,17 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
         if (r.binding.kind) b = r.binding;
         return changeSlot(c, *p, std::move(r.module), std::move(b));
     }
-    const Binding chosen = r.binding;
+    const std::string notice = r.binding.insertNotice;
     if (p->passThrough) {   // fitted, not fed
         if (auto e = arm(c, word, std::move(r.binding), std::move(r.content))) c.notice(*e);
-        else noticeInserted(c, chosen);
+        else noticeInserted(c, notice);
         return done();
     }
     if (auto e = insert(c, word, std::move(r.binding), std::move(r.content), p->sides.empty() ? 0 : p->sides[0])) {
         eject(c, word);
         c.notice(*e);
     } else {
-        noticeInserted(c, chosen);
+        noticeInserted(c, notice);
     }
     return done();
 }
@@ -1400,7 +1402,7 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
         for (const auto& [word, b] : bindings_)   // an opened medium while it is in a place
             if (b.origin == Origin::Opened && b.kind->id == k.id)
                 (b.isTemplate ? ks.templates : ks.instances)
-                    .push_back(KindState::Item{b.name, b.description, baseName(b.path), Origin::Opened, b.isTemplate, word});
+                    .push_back(KindState::Item{b.name, b.description, files::plainFileName(b.path), Origin::Opened, b.isTemplate, word});
         s->kinds.push_back(std::move(ks));
     }
     Machine* m = c.machine();

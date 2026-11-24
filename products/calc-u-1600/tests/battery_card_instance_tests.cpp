@@ -337,14 +337,15 @@ TEST(test_splice_write_protect) {
 // writes to them (and the bundle may be read-only anyway).
 TEST(test_bundled_files_are_templates) {
     const char* dir = "frontends/qt6/resources/cards";
-    std::string err;
-    const auto cards = scanMemoryCardDirectory(dir, &err);
+    std::vector<std::string> problems;
+    const auto cards = scanMemoryCardDirectory(dir, &problems);
     SKIP_UNLESS(!cards.empty(), (std::string(dir) + " not found").c_str());
-    CHECK(err.empty());
+    CHECK(problems.empty());
     for (const auto& e : cards) {
-        if (!e.isTemplate) std::fprintf(stderr, "  not a template: %s\n", e.filePath.c_str());
-        CHECK(e.isTemplate);
+        if (!e.definition.isTemplate) std::fprintf(stderr, "  not a template: %s\n", e.filePath.c_str());
+        CHECK(e.definition.isTemplate);
     }
+    std::string err;
     int disks = 0;
     for (const auto& entry : std::filesystem::directory_iterator(dir)) {
         const std::string path = entry.path().string();

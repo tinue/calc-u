@@ -1,4 +1,5 @@
 #include "media/Names.hpp"
+#include "files/Files.hpp"
 
 namespace calcu::media {
 
@@ -62,12 +63,7 @@ std::string stemOf(std::string_view f, const KindDecl& k) {
 
 std::string nameOf(const MediumInfo& info, std::string_view fileName, const KindDecl& k) {
     if (!info.name.empty()) return info.name;
-    return stemOf(baseName(fileName), k);
-}
-
-std::string baseName(std::string_view path) {
-    const std::size_t at = path.find_last_of("/\\");
-    return std::string(at == std::string_view::npos ? path : path.substr(at + 1));
+    return stemOf(files::plainFileName(fileName), k);
 }
 
 } // namespace calcu::media

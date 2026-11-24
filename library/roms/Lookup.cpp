@@ -40,9 +40,10 @@ LookupResult lookUp(const FullSet& full, const Bundle& bundle, const ProductRomR
             problem(Problem::Catalogue, "two ROM entries of this name differ");
             continue;
         }
-        auto bytes = bundle.read(e.fileName);
+        std::string why;
+        auto bytes = bundle.read(e.fileName, &why);
         if (!bytes) {
-            if (std::string why = bundle.problem(e.fileName); !why.empty()) problem(Problem::Unreadable, std::move(why));
+            if (!why.empty()) problem(Problem::Unreadable, std::move(why));
             else problem(Problem::Missing, {});
             continue;
         }

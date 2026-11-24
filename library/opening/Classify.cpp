@@ -1,4 +1,5 @@
 #include "opening/Classify.hpp"
+#include "files/Files.hpp"
 #include "machine/Names.hpp"
 #include "media/MediaPart.hpp"
 #include "opening/FileKind.hpp"
@@ -9,9 +10,7 @@ namespace calcu::opening {
 
 std::string fileNameOf(const OpenedFile& f) {
     if (!f.name.empty()) return f.name;
-    const std::string& p = f.path ? *f.path : std::string();
-    const std::size_t slash = p.find_last_of("/\\");
-    return slash == std::string::npos ? p : p.substr(slash + 1);
+    return f.path ? files::plainFileName(*f.path) : std::string();
 }
 
 bool endsWith(std::string_view s, std::string_view suffix) {

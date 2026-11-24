@@ -60,7 +60,7 @@ constexpr const char* kSideKeys[2] = {"0", "1"};
 
 // What the header of a disk's file must be.
 inline calcu::media::HeaderRules floppyHeaderRules() {
-    return {floppy_detail::kFormatTag, "floppy disk", kFloppyFormatVersion, "disk-name"};
+    return {floppy_detail::kFormatTag, "floppy disk", kFloppyFormatVersion, "disk-name", {"sides"}};
 }
 
 // Serializes `image` (must be CE1600FCard::kImageSize bytes) as a complete
@@ -75,10 +75,9 @@ inline std::string formatFloppyFile(const std::string& diskName, const std::vect
                                     const std::string& saved, const std::string& insertNotice = {}) {
     std::string out;
     out.reserve(4096);
-    calcu::media::Header header{"Calc-U-1600 CE-1600F floppy disk image", floppy_detail::kFormatTag,
-                                kFloppyFormatVersion, "disk-name", diskName, description, asTemplate, saved};
-    header.insertNotice = insertNotice;
-    out += calcu::media::headerText(header);
+    out += calcu::media::headerText({"Calc-U-1600 CE-1600F floppy disk image", floppy_detail::kFormatTag,
+                                     kFloppyFormatVersion, "disk-name", diskName, description, insertNotice, asTemplate,
+                                     saved});
     out += "sides:\n";
     for (size_t side = 0; side < 2; ++side) {
         const auto first = image.begin() + static_cast<std::ptrdiff_t>(side * CE1600FCard::kSideSize);
@@ -100,8 +99,6 @@ inline bool parseFloppyFile(const std::string& text, FloppyFile* out, std::strin
     if (!calcu::formats::parseYaml(text, &root, error)) return false;
     calcu::media::Header header;
     if (!calcu::media::readHeader(root, floppyHeaderRules(), &header, error)) return false;
-    if (!root.requireOnlyKeys({"format", "format-version", "disk-name", "description", "insert-notice", "template", "saved", "sides"}, error))
-        return false;
     out->diskName = header.name;
     out->description = header.description;
     out->insertNotice = header.insertNotice;

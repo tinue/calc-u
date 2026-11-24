@@ -32,7 +32,7 @@ std::variant<ConstantMemoryContents, ConstantMemoryProblem> readConstantMemoryFi
     std::string error;
     if (!calcu::formats::parseYaml(std::string(text), &root, &error)) return damaged(0, error);
     calcu::media::Header header;
-    if (!calcu::media::readHeader(root, {"ti58c-constant-memory", "constant memory", 1, ""}, &header, &error)) {
+    if (!calcu::media::readHeader(root, {"ti58c-constant-memory", "constant memory", 1, "", {}}, &header, &error)) {
         if (header.formatVersion > 1) return ConstantMemoryProblem{ConstantMemoryProblem::Kind::Newer, {}};
         return damaged(0, error);
     }

@@ -110,8 +110,8 @@ namespace {
 class LeavingOut final : public calcu::roms::Bundle {
 public:
     LeavingOut(const calcu::roms::Bundle& b, std::string name) : bundle_(b), name_(std::move(name)) {}
-    std::optional<std::vector<std::uint8_t>> read(std::string_view fileName) const override {
-        return fileName == name_ ? std::nullopt : bundle_.read(fileName);
+    std::optional<std::vector<std::uint8_t>> read(std::string_view fileName, std::string* problem = nullptr) const override {
+        return fileName == name_ ? std::nullopt : bundle_.read(fileName, problem);
     }
     std::string where() const override { return bundle_.where(); }
 

@@ -7,7 +7,7 @@
 // are compared exactly, as DirectoryBundle does.
 class QtResourceBundle final : public calcu::roms::Bundle {
 public:
-    std::optional<std::vector<std::uint8_t>> read(std::string_view fileName) const override;
+    std::optional<std::vector<std::uint8_t>> read(std::string_view fileName, std::string* problem = nullptr) const override;
     std::string where() const override;
     /// A file the lookup does not find from now on (CalcU59QtTests' case
     /// of ROMs missing; empty: none).

@@ -276,7 +276,7 @@ TEST(ce502b_not_in_qt6_resources) {
     CHECK(ignore.find("ce502b.module.yaml") == std::string::npos);
     CHECK(sharp::isFullSetFile(kCe502bFile));
     SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/");
-    for (const auto& e : scanMemoryCardDirectory("roms", nullptr)) CHECK(e.moduleName != "CE-502B");
+    for (const auto& e : scanMemoryCardDirectory("roms", nullptr)) CHECK(e.definition.moduleName != "CE-502B");
 }
 
 // ---- No machine without the full set, no substitution ----

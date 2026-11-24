@@ -59,16 +59,12 @@ std::unique_ptr<calcu::machine::Machine> buildMachine(const ModelId& model, cons
     return std::move(r.machine);
 }
 
-std::optional<std::vector<uint8_t>> moduleImage(const calcu::roms::RomSet& roms, const std::string& romFile,
-                                                std::string* problem) {
+std::optional<std::vector<uint8_t>> moduleImage(const calcu::roms::RomSet& roms, const std::string& romFile) {
     const auto* bytes = roms.bytes(romFile);
     if (!bytes) return std::nullopt;
     std::string error;
     TIModuleFile m = readModuleFile({reinterpret_cast<const char*>(bytes->data()), bytes->size()}, error);
-    if (!error.empty()) {   // the lookup read it already: a slip of the set
-        if (problem) *problem = error;
-        return std::nullopt;
-    }
+    if (!error.empty()) return std::nullopt;   // not reachable: the lookup read it
     return std::move(m.rom);
 }
 

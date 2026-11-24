@@ -13,6 +13,7 @@
 #include "debugger/DebuggerPart.hpp"
 #include "debugger/RunControl.hpp"
 #include "debugger/RunState.hpp"
+#include "files/Files.hpp"
 #include "machine/Machine.hpp"
 #include "machine/Names.hpp"
 #include "sessions/MachineSession.hpp"
@@ -42,11 +43,6 @@ std::string hexBare(std::uint32_t v, int digits) {
 std::string upper(std::string s) {
     for (char& c : s) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
     return s;
-}
-
-std::string fileName(const std::string& path) {
-    const std::size_t at = path.find_last_of("/\\");
-    return at == std::string::npos ? path : path.substr(at + 1);
 }
 
 // The condition / hit condition / log message every breakpoint kind shares.
@@ -386,7 +382,7 @@ std::string DapSession::instructionText(int thread, std::uint16_t pc) const {
 }
 
 Value DapSession::sourceObject(const std::string& path) const {
-    return Value::object({{"name", Value(fileName(path))}, {"path", Value(path)}});
+    return Value::object({{"name", Value(calcu::files::plainFileName(path))}, {"path", Value(path)}});
 }
 
 bool DapSession::memoryArgs(const Value& args, int* thread, std::uint16_t* addr, bool* me1, std::string* error) const {

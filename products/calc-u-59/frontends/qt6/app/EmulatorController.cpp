@@ -12,6 +12,7 @@
 #include "shell/Inputs.hpp"
 #include "typing/TypingTopics.hpp"
 #include <QFile>
+#include <QDebug>
 #include <QFileInfo>
 #include <memory>
 #include <utility>
@@ -25,7 +26,10 @@ QString qs(const std::string& s) { return QString::fromStdString(s); }
 
 std::optional<std::string> readResource(const QString& path) {
     QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) return std::nullopt;
+    if (!f.open(QIODevice::ReadOnly)) {
+        qDebug("The resource %s cannot be read: %s", qPrintable(path), qPrintable(f.errorString()));
+        return std::nullopt;
+    }
     return f.readAll().toStdString();
 }
 

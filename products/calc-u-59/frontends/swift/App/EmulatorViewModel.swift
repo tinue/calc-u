@@ -524,7 +524,14 @@ class EmulatorViewModel {
     func loadASMOverlayFile(_ url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        session?.loadAsm(try? String(contentsOf: url, encoding: .utf8), fileName: url.lastPathComponent)
+        // Unread, the session refuses it with a notice; the cause goes to the app log.
+        var text: String?
+        do {
+            text = try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            TIAppLog.write("\(url.path) could not be read: \(error.localizedDescription)", level: .warn)
+        }
+        session?.loadAsm(text, fileName: url.lastPathComponent)
     }
 
     func runASMOverlay() { session?.runAsm() }
@@ -538,8 +545,15 @@ class EmulatorViewModel {
     /// its security scope). A refusal is the session's notice.
     func loadPreset(_ url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
+        // Unread, the session refuses it with a notice; the cause goes to the app log.
+        var bytes: Data?
+        do {
+            bytes = try Data(contentsOf: url)
+        } catch {
+            TIAppLog.write("\(url.path) could not be read: \(error.localizedDescription)", level: .warn)
+        }
         // The scope stays open until the session has replied.
-        session?.openFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent, way: "dialog") { _ in
+        session?.openFile(bytes, path: url.path, fileName: url.lastPathComponent, way: "dialog") { _ in
             if scoped { url.stopAccessingSecurityScopedResource() }
         }
     }

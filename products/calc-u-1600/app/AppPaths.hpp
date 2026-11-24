@@ -1,8 +1,10 @@
 #pragma once
+#include <set>
 #include <string>
 #include <utility>
 
 #include "app/Settings.hpp"
+#include "applog/AppLog.hpp"
 #include "settings/HostDirs.hpp"
 #include "settings/Paths.hpp"
 
@@ -51,6 +53,8 @@ public:
     std::string bundledExamplesDir() const;
     // The library's places (settings file, save folder, ...).
     const calcu::settings::Paths& places() const { return m_paths; }
+    // Where a folder that cannot be created is told (none: nowhere).
+    void useAppLog(calcu::applog::AppLog& log) { m_appLog = &log; }
 
     // A preset reference -- a path, or an "examples:" one -- as a path.
     std::string resolvePresetRef(const std::string& ref) const;
@@ -87,8 +91,11 @@ public:
 
 private:
     const std::string& orResources(const std::string& dir) const { return dir.empty() ? m_bundle.bundledResources : dir; }
+    void makeDirs(const std::string& dir) const;
     calcu::settings::Paths m_paths;
     BundleDirs m_bundle;
+    calcu::applog::AppLog* m_appLog = nullptr;
+    mutable std::set<std::string> m_unmade;   // told once each
 };
 
 

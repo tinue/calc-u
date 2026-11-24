@@ -142,7 +142,7 @@ TEST(menus_in_family_order) {
                     {"Load Preset…", "Examples ▸", "-", "Arm Card…", "Arm Fresh Card…", "-", "Settings…", "Quit"}));
     CHECK(checkList("Machine", labels(f.find<QMenu>(names::menu("machine"))),
                     {"Model ▸", "Peripherals ▸", "-", "Reset", "Cold boot", "Resume"}));
-    CHECK(checkList("Help", labels(f.find<QMenu>(names::menu("help"))), {"Calc-U-59 Help", "About Calc-U-59"}));
+    CHECK(checkList("Help", labels(f.find<QMenu>(names::menu("help"))), {"Calc-U-59 Help", "Show App Log", "About Calc-U-59"}));
     CHECK(checkList("Model", labels(f.find<QMenu>(names::item("model"))), {"TI-59", "TI-58", "TI-58C"}));
     // The module slot is the bar's picker (M6): Peripherals ▸ has the PC-100C only.
     CHECK(checkList("Peripherals", labels(f.find<QMenu>(names::item("peripherals"))), {"PC-100C"}));
@@ -257,7 +257,7 @@ TEST(settings_sections_and_rows) {
     CHECK(d->windowTitle() == QStringLiteral("Settings"));
     std::vector<std::string> sections;
     for (QGroupBox* g : d->findChildren<QGroupBox*>()) sections.push_back(g->title().toStdString());
-    CHECK(checkList("sections", sections, {"General", "Startup presets", "Storage", "Folders", "Tracing", "Display"}));
+    CHECK(checkList("sections", sections, {"General", "Startup presets", "Storage", "Folders", "Tracing", "Display", "App log"}));
     for (const auto& [section, key] : std::vector<std::pair<std::string, std::string>>{
              {"startup", "model"}, {"preset", "TI-59"}, {"preset", "TI-58"}, {"preset", "TI-58C"},
              {"storage", "save-folder"}, {"folders", "presets"}, {"folders", "asm-overlays"}, {"trace", "folder"}, {"trace", "max-file-size-mb"},

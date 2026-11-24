@@ -23,8 +23,8 @@ public:
 
     /// The file's text (nullopt: no file, or it cannot be read; `unreadable` says which).
     std::optional<std::string> readConstantMemory(bool* unreadable = nullptr);
-    /// False when the write failed.
-    bool writeConstantMemory(const std::string& text);
+    /// `ok` false when the write failed, with the reason in `problem`.
+    calcu::media::FileAccess::Written writeConstantMemory(const std::string& text);
     /// The path of `fileName` in the save folder.
     std::string savePath(const std::string& fileName) const;
     std::string saveFolder() const { return m_saveFolder(); }

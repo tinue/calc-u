@@ -99,7 +99,9 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   with a copy of `sharp::sharpCatalogue()` (the models, CE-150, CE-158,
   CE-1600P, host drive) to which the module definitions are added
   (`sharp::addModuleDefinitions`, `moduleDescriptor`; the CE-502B's from
-  the ROM set). The ROM images come from the session's ROM set: one
+  the ROM set; a definition that does not read is left out, and a warn line
+  of the app log names it and why, as one does a host drive ROM that does
+  not read where the host offers the drive). The ROM images come from the session's ROM set: one
   lookup when `SharpAppPart` is made (`sharp::lookUpRoms`,
   `core/Machine/SharpRoms`) over the bundled resources folder,
   then `RomSet::imagesFor()` for every build and attach. Without the full set no machine is

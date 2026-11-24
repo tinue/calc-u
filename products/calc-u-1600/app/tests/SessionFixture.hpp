@@ -18,6 +18,7 @@
 
 #include "Connector/ExpansionCard.hpp"
 #include "TempFolder.hpp"
+#include "applog/AppLog.hpp"
 #include "TestFrontend.hpp"
 #include "TestSettings.hpp"
 #include "app/SharpSession.hpp"
@@ -53,6 +54,7 @@ struct SessionFixture {
     sessions::HostServices services;
     int calls = 0;
     std::vector<std::shared_ptr<const calcu::media::MediaState>> keptMedia;   // what mediaPlace() points into
+    calcu::applog::MemoryAppLog appLog;   // the session's app log, every level
     // Wall time each read of the clock takes: the host's work inside a call
     // (an operation at full speed runs until its allowance is used up).
     // Without it, a call at full speed (an operation) would never see its
@@ -89,6 +91,8 @@ struct SessionFixture {
             o.hostTime = [t] { return t; };
         }
         o.canMountHostFolder = hostDirectories;
+        o.appLog = &appLog;
+        o.appLogLevel = calcu::applog::AppLogLevel::Debug;
         app = cu1600::makeSharpSession(settings, *paths, std::move(o));
         listener.onMessage = [this](const sessions::Message& m) {
             messages.push_back(m);

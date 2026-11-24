@@ -332,9 +332,15 @@ void TIDebugPart::refreshModule() {
     m_moduleID = id;
     std::vector<uint8_t> image;
     if (!id.empty() && m_setup.roms)
-        if (auto file = moduleRomFile(id)) image = moduleImage(*m_setup.roms, *file).value_or(std::vector<uint8_t>{});
+        if (auto file = moduleRomFile(id)) {
+            std::string unread;
+            image = moduleImage(*m_setup.roms, *file, &unread).value_or(std::vector<uint8_t>{});
+            if (!unread.empty() && m_ctx) m_ctx->appLog().debug("The module file " + *file + " cannot be read: " + unread);
+        }
     m_debug.moduleChanged(image);
-    if (!m_debug.moduleImageError().empty() && m_ctx) m_ctx->log(m_debug.moduleImageError());
+    // The debugger goes on without the module's step view.
+    if (!m_debug.moduleImageError().empty() && m_ctx)
+        m_ctx->appLog().warn("The module image of " + id + " cannot be read: " + m_debug.moduleImageError());
 }
 
 void TIDebugPart::follow() {

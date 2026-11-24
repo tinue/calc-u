@@ -71,12 +71,14 @@ private:
         std::size_t taken = 0;                 // of feed
         calcu::machine::Ticks due = 0;         // the next character time of the feed
         std::string capturePath;
+        bool captureFailed = false;   // told once per capture file
         std::vector<std::uint8_t> sent;        // since the machine was built
         std::vector<std::uint8_t> printer;     // ce158: its printer's port (c1600.ce158-printer-port)
     };
     calcu::machine::Ticks charTicks(const calcu::machine::Machine&, calcu::peripherals::SerialPort&) const;
     void drain();   // every port's sent bytes out, unless it is linked
-    void append(const std::string& path, const std::uint8_t* bytes, std::size_t n);
+    // False when the bytes did not reach the file.
+    bool append(const std::string& path, const std::uint8_t* bytes, std::size_t n);
 
     std::function<bool(const std::string&)> linked_;
     calcu::sessions::SessionContext* ctx_ = nullptr;

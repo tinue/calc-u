@@ -80,9 +80,15 @@ struct CalculatorView: View {
             filePickerMode = nil
             filePickerPresented = false
 
-            guard case .success(let urls) = result, let url = urls.first else {
+            let urls: [URL]
+            switch result {
+            case .success(let picked):
+                urls = picked
+            case .failure(let error):
+                TIAppLog.write("The file picker failed: \(error.localizedDescription)", level: .warn)
                 return
             }
+            guard let url = urls.first else { return }
 
             switch mode {
             case .asm:       viewModel.loadASMOverlayFile(url)

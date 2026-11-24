@@ -32,8 +32,14 @@ struct CardStorage {
         if _resolvedURL != nil { return }
         if let cloudBase = FileManager.default.url(forUbiquityContainerIdentifier: nil) {
             let docs = cloudBase.appendingPathComponent("Documents", isDirectory: true)
-            try? FileManager.default.createDirectory(
-                at: docs, withIntermediateDirectories: true)
+            do {
+                try FileManager.default.createDirectory(
+                    at: docs, withIntermediateDirectories: true)
+            } catch {
+                // Still the folder: the files' own writes say what fails.
+                TIAppLog.write("The iCloud folder \(docs.path) cannot be created: \(error.localizedDescription)",
+                               level: .warn)
+            }
             _resolvedURL = docs
         } else {
             _resolvedURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]

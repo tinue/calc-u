@@ -89,13 +89,19 @@ bool writeImage(sharp::LoaderMemory& machine, const pc1600::PlacementResult& pla
 // Erase the resident program -- from the area's start through its end mark,
 // bank-end marks included -- so a shorter reload leaves no stale tokens.
 void eraseOld(sharp::LoaderMemory& machine, const std::vector<pc1600::ProgramSegment>& segs, int endSegment,
-              uint16_t end) {
+              uint16_t end, std::vector<std::string>& warnings) {
     for (int i = 0; i <= endSegment; ++i) {
         const pc1600::ProgramSegment& sg = segs[i];
         const uint16_t last = i == endSegment ? end : sg.top;
         const std::vector<uint8_t> blank(static_cast<size_t>(last - sg.base) + 1, 0x00);
-        if (!writeAt(machine, sg.kind, sg.adtblBank, sg.base, blank.data(), blank.size()))
-            std::fprintf(stderr, "[PC1600BasicLoader] note: failed to clear the old program\n");
+        if (!writeAt(machine, sg.kind, sg.adtblBank, sg.base, blank.data(), blank.size())) {
+            char buf[160];
+            std::snprintf(buf, sizeof(buf),
+                          "The PC-1600 BASIC load did not clear the old program at $%04X-$%04X; its tokens may stay "
+                          "behind the new end.",
+                          sg.base, last);
+            warnings.push_back(buf);
+        }
     }
 }
 
@@ -152,6 +158,7 @@ BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& machine, const std::
     in.slot2 = pc1600SlotGeometry(machine, 2);
 
     std::string error;
+    std::vector<std::string> warnings, details;
 
     if (title == 1 || title == 2) {
         // ── S1 / S2 program module ─────────────────────────────────────
@@ -169,7 +176,7 @@ BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& machine, const std::
         }
         pc1600::PlacementResult plan = pc1600::planModuleRegionPlacement(in, title, payload);
         if (!plan.ok) return fail(plan.error);
-        eraseOld(machine, areaPlan.segments, oldEndSegment, oldEnd);
+        eraseOld(machine, areaPlan.segments, oldEndSegment, oldEnd, warnings);
         if (!writeImage(machine, plan, &error)) return fail(error);
 
         // End triple (Z-80 page-2 address lo, hi, ADTBL index).
@@ -213,10 +220,13 @@ BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& machine, const std::
         pc1600::PlacementResult plan = pc1600::planS0Placement(in, payload);
         if (!plan.ok) return fail(plan.error);
         uint16_t f5cf = readLE16(machine, kRamBaseLE);
-        if (f5cf != plan.startAddr)
-            std::fprintf(stderr, "[PC1600BasicLoader] note: $F5CF=$%04X != program start $%04X\n", f5cf,
-                         plan.startAddr);
-        eraseOld(machine, areaPlan.segments, oldEndSegment, oldEnd);
+        if (f5cf != plan.startAddr) {
+            char buf[96];
+            std::snprintf(buf, sizeof(buf), "PC-1600 BASIC load: $F5CF is $%04X, not the program start $%04X.", f5cf,
+                          plan.startAddr);
+            details.push_back(buf);
+        }
+        eraseOld(machine, areaPlan.segments, oldEndSegment, oldEnd, warnings);
         if (!writeImage(machine, plan, &error)) return fail(error);
 
         const pc1600::ProgramSegment& endSeg = plan.segments[plan.endSegment];
@@ -245,6 +255,8 @@ BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& machine, const std::
 
     BasicLoadResult r;
     r.ok = true;
+    r.warnings = std::move(warnings);
+    r.details = std::move(details);
     r.baseAddr = startZ80;
     r.endAddr = static_cast<uint16_t>(machine.peek(kPrgAdrStart + 3) | (machine.peek(kPrgAdrStart + 4) << 8));
     return r;

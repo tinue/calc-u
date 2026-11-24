@@ -47,18 +47,28 @@ std::unique_ptr<calcu::machine::Machine> buildMachine(const ModelId& model, cons
     request.content = std::move(content);
     TIMachineBuilder builder;
     calcu::machine::BuildResult r = calcu::machine::build(catalogue, builder, request);
-    if (!r.machine)
-        throw std::logic_error("a looked-up ROM set did not build " + request.model.value + ": " +
-                               (r.missingRoms.empty() ? r.refusal : r.missingRoms.front()));
+    if (!r.machine) {
+        // The terminate handler logs what(): it names every missing file.
+        std::string why = r.refusal;
+        if (!r.missingRoms.empty()) {
+            why = "missing ";
+            for (std::size_t i = 0; i < r.missingRoms.size(); ++i) why += (i ? ", " : "") + r.missingRoms[i];
+        }
+        throw std::logic_error("A looked-up ROM set did not build the " + request.model.value + ": " + why);
+    }
     return std::move(r.machine);
 }
 
-std::optional<std::vector<uint8_t>> moduleImage(const calcu::roms::RomSet& roms, const std::string& romFile) {
+std::optional<std::vector<uint8_t>> moduleImage(const calcu::roms::RomSet& roms, const std::string& romFile,
+                                                std::string* problem) {
     const auto* bytes = roms.bytes(romFile);
     if (!bytes) return std::nullopt;
     std::string error;
     TIModuleFile m = readModuleFile({reinterpret_cast<const char*>(bytes->data()), bytes->size()}, error);
-    if (!error.empty()) return std::nullopt;   // not reachable: the lookup read it
+    if (!error.empty()) {   // the lookup read it already: a slip of the set
+        if (problem) *problem = error;
+        return std::nullopt;
+    }
     return std::move(m.rom);
 }
 

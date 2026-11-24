@@ -26,4 +26,7 @@ struct BasicLoadResult {
     uint16_t baseAddr = 0;  // where the payload was written (the program start)
     uint16_t endAddr = 0;   // the 0xFF program-end marker
     std::string error;      // set when ok == false
+    // For the app log: what failed while the load went on (warn), and the
+    // loader's own detail (debug).
+    std::vector<std::string> warnings, details;
 };

@@ -51,7 +51,9 @@ std::unique_ptr<calcu::machine::Machine> buildMachine(const ModelId& model, cons
                                                       std::shared_ptr<const calcu::machine::ProductData> content = nullptr);
 
 /// The ROM image of the module file `romFile` (`<ID>.rom.yaml`) in the set;
-/// std::nullopt when the set has no such file.
-std::optional<std::vector<uint8_t>> moduleImage(const calcu::roms::RomSet& roms, const std::string& romFile);
+/// std::nullopt when the set has no such file, or when it does not read
+/// (the reason in `problem`, if given).
+std::optional<std::vector<uint8_t>> moduleImage(const calcu::roms::RomSet& roms, const std::string& romFile,
+                                                std::string* problem = nullptr);
 
 } // namespace cu59

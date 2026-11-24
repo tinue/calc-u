@@ -258,7 +258,7 @@ TEST(testRecord) {
     driveTone(bad, 1200.0, 0.1);
     std::string why;
     CHECK(!bad.eject(&why));
-    CHECK(!why.empty());
+    CHECK(why.find("/nonexistent-dir/x.wav: ") != std::string::npos);   // the path and the system's reason
     bad.armRecord("/nonexistent-dir/x.wav");
     bad.setMotor(true);
     driveTone(bad, 1200.0, 0.1);

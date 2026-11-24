@@ -126,6 +126,8 @@ int main(int argc, char* argv[]) {
         std::fprintf(stderr, "pacing-probe: attach: %s\n", problem.c_str());
         return 2;
     }
+    // The window runs on without the harness attach.
+    if (!problem.empty()) calcu::qt6::appLog().warn("The harness attach is not open: " + problem);
 #endif
     window.show();
     window.start();
@@ -138,7 +140,12 @@ int main(int argc, char* argv[]) {
     fileOpen.setHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });
     if (!grabPath.isEmpty()) {
         QTimer::singleShot(grabAfter, &window, [&window, grabPath] {
-            window.grab().save(grabPath);
+            // The app log's lines go to standard error too, so a script sees why.
+            if (!window.grab().save(grabPath)) {
+                calcu::qt6::appLog().error("--grab: the screenshot cannot be saved to " + grabPath.toStdString() + ".");
+                QApplication::exit(1);
+                return;
+            }
             QApplication::quit();
         });
     }

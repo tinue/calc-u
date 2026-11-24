@@ -1,5 +1,6 @@
 #pragma once
 #include "../app/Settings.hpp"
+#include "applog/AppLog.hpp"
 #include "../app/TIAppPart.hpp"
 #include "../app/TIPresetKeys.hpp"
 #include "Pump.hpp"
@@ -9,6 +10,7 @@
 #include "TestRoms.hpp"
 #include "presets/PresetsPart.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "shell/HostSession.hpp"
 #include "startup/StartupPart.hpp"
 #include "typing/TypingTopics.hpp"
 #include <chrono>
@@ -54,6 +56,7 @@ struct Rig {
     calcu::pacing::WallTime now{std::chrono::hours(1)};
     calcu::sessions::test::TestFrontend fe;
     std::unique_ptr<calcu::settings::Paths> paths = testroms::rigPaths(settings, "save", "");   // the save folder in `files`, no trace folder
+    calcu::applog::MemoryAppLog appLog;   // every level
     calcu::sessions::ProductSession<cu59::TIAppPart> app;
     calcu::sessions::ListenerId me = 0;
     std::shared_ptr<Files> files;
@@ -69,8 +72,13 @@ struct Rig {
         s.paths = paths.get();
         s.examplesFolder = "examples";
         s.files = files;
-        app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u, {}, {},
-                                   /*start=*/false);
+        calcu::shell::HostSessionSetup host;
+        host.clock = [this] { return now += std::chrono::milliseconds(1); };
+        host.jitterSeed = 59u;
+        host.start = false;
+        host.appLog = &appLog;
+        host.appLogLevel = calcu::applog::AppLogLevel::Debug;
+        app = cu59::makeAppSession(std::move(s), std::move(host));
         me = session().listen(fe, {});
         send(calcu::sessions::kStartCommand);   // the library's start, once, as a host sends it
     }

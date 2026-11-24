@@ -219,17 +219,30 @@ PeripheralDescriptor moduleDescriptor(const MemoryCardDefinition& def) {
     return d;
 }
 
-int addModuleDefinitions(Catalogue& catalogue, const std::string& dir) {
+int addModuleDefinitions(Catalogue& catalogue, const std::string& dir, std::vector<std::string>* problems) {
     int added = 0;
     std::string error;
-    for (const MemoryCardCatalogEntry& e : scanMemoryCardDirectory(dir, &error)) {
+    const std::vector<MemoryCardCatalogEntry> entries = scanMemoryCardDirectory(dir, &error);
+    if (problems && !error.empty()) {   // one line per file the scan passed over, or the folder's
+        std::size_t from = 0;
+        while (from <= error.size()) {
+            const std::size_t end = std::min(error.find('\n', from), error.size());
+            if (end > from) problems->push_back("The module definitions in " + dir + ": " + error.substr(from, end - from));
+            from = end + 1;
+        }
+    }
+    for (const MemoryCardCatalogEntry& e : entries) {
         if (catalogue.peripheral(PeripheralId{e.moduleName})) continue;
         std::vector<std::uint8_t> bytes;
         MemoryCardDefinition def;
         std::string parseError;
-        if (!readWholeFile(e.filePath, &bytes) ||
-            !parseMemoryCardDefinition(std::string(bytes.begin(), bytes.end()), &def, &parseError))
+        if (!readWholeFile(e.filePath, &bytes)) parseError = "it cannot be opened.";
+        else if (!parseMemoryCardDefinition(std::string(bytes.begin(), bytes.end()), &def, &parseError) && parseError.empty())
+            parseError = "it does not parse.";
+        if (!parseError.empty()) {
+            if (problems) problems->push_back("The module definition " + e.filePath + " cannot be read: " + parseError);
             continue;
+        }
         catalogue.addPeripheral(moduleDescriptor(def));
         ++added;
     }

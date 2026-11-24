@@ -15,11 +15,15 @@
 namespace calcu::shell {
 
 // What the page needs of the product beside the models: {name, helpUrl,
-// aboutLabel, aboutLines: [...], aboutLinks: [[label, url]] (only when there
-// is one), presetUploads, nameAndSave: {slotButtons}, items: [{id, label}]}
-// (the page acts on its items by id). Not in it: `version`, `build` (the page
-// has its own), the Name & Save prompts (ModelHost serves them by place).
+// presetUploads, nameAndSave: {slotButtons}, items: [{id, label}]} (the page
+// acts on its items by id). Not in it: `version`, `build` (the page has its
+// own), About and the Name & Save prompts (ModelHost serves them).
 sessions::Value toValue(const ShellProduct&);
+
+// About as the page draws it: {title, name, version, lines: [...], links:
+// [[label, url]], supportHeading, support: [[label, value]], text} (`text`:
+// aboutText, what Copy puts on the clipboard).
+sessions::Value toValue(const AboutModel&);
 
 // {distance, display: {x, y, w, h}, keys: [{name, x, y, w, h}]}, in the
 // map's own units; `display` only when the map has one.

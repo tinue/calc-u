@@ -1,9 +1,25 @@
 #include "shell/ModelHost.hpp"
 #include "shell/BarModel.hpp"
 #include "shell/ValueForms.hpp"
+#include <string>
 #include <utility>
 
 namespace calcu::shell {
+
+void takePageArgs(ModelSetup& setup, const sessions::Value& args) {
+    auto stamp = [&](std::string& field, const char* key) {
+        if (std::string v = read::text(args, key); !v.empty()) field = std::move(v);
+    };
+    stamp(setup.product.version, "version");
+    stamp(setup.product.build, "build");
+    stamp(setup.product.buildTime, "buildTime");
+    setup.host.clear();
+    for (const auto& row : read::elements(args, "host")) {
+        const auto* pair = row.elements();
+        if (!pair || pair->size() != 2 || !(*pair)[0].string() || !(*pair)[1].string()) continue;
+        setup.host.emplace_back(*(*pair)[0].string(), *(*pair)[1].string());
+    }
+}
 
 ModelHost::ModelHost(InputNames names) : names_(std::move(names)) {}
 
@@ -36,6 +52,7 @@ sessions::Value ModelHost::value() const {
                                     {"bar", toValue(bar(inputs_, p, t))},
                                     {"panels", toValue(panels(inputs_, p))},
                                     {"dialog", toValue(dialog(inputs_.settings, inputs_.presetList, setup_->spec))},
+                                    {"about", toValue(about(p, setup_->host))},
                                     {"nameAndSave", nameAndSavePrompts(p)}});
 }
 

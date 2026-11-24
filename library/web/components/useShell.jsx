@@ -8,7 +8,8 @@
 //   (traits: `settings` false: no Settings…; `about` false: no About; the
 //   page is mobile when CALCU_SHELL_MOBILE. shellArgs: the product's own
 //   args of its shell, as its Web part reads them.)
-//   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.loading, s.notice,
+//   s.menus, s.bar, s.panels, s.dialog (the settings rows), s.about (the About
+//   dialog: shell::about with the page's rows, and its Copy `text`), s.loading, s.notice,
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" |
 //   "name-and-save" | null), s.naming (the place Name & Save is open for),
 //   s.nameAndSavePrompts ({place: prompt}, the models' nameAndSave)
@@ -21,7 +22,8 @@
 //   media controls
 //
 // `product` is the page's form of the product's data (`*.shell-product`):
-// its name, help address and About, `product.loadPreset` (optional) in
+// its name, help address, the page's `version`, `build` and `buildTime`
+// (the worker makes About of them), `product.loadPreset` (optional) in
 // place of the shell's Load Preset… (a product that opens the picked files
 // through the session's `open`), `copyScreen`, `nameAndSave` ({slotButtons}:
 // ShellProduct::nameAndSave) and its items' acts by id. The Name & Save
@@ -46,7 +48,7 @@ function calcuShellMobile() {
 }
 const CALCU_SHELL_MOBILE = calcuShellMobile();
 const CALCU_SHELL_WEB_TRAITS = { mobile: CALCU_SHELL_MOBILE, settings: true, about: true };
-const CALCU_SHELL_NO_MODELS = { menus: [], bar: [], panels: [], dialog: [], nameAndSave: {} };
+const CALCU_SHELL_NO_MODELS = { menus: [], bar: [], panels: [], dialog: [], about: null, nameAndSave: {} };
 
 function calcuShellNow() {
   return typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -54,7 +56,10 @@ function calcuShellNow() {
 
 function useCalcuShell(shell, product, traits, shellArgs) {
   const t = Object.assign({}, CALCU_SHELL_WEB_TRAITS, traits || {});
-  const shellKey = JSON.stringify([t, shellArgs || {}]);
+  const host = useShellHostRows();
+  const args = Object.assign({ mobile: !!t.mobile, settings: t.settings !== false, about: t.about !== false,
+    version: product.version || "", build: product.build || "", buildTime: product.buildTime || "", host }, shellArgs || {});
+  const shellKey = JSON.stringify(args);
   const controlState = useTopic(shell, "control-state");
   const busy = useTopic(shell, "busy");
   const runState = useTopic(shell, "run-state");
@@ -71,10 +76,10 @@ function useCalcuShell(shell, product, traits, shellArgs) {
   const loading = React.useRef(null);
   if (!loading.current) loading.current = calcuShellLoading();
 
-  // The worker computes the models for this page's traits.
+  // The worker computes the models for this page's traits, build and rows
+  // of where it runs (sent again when the browser's hints come).
   React.useEffect(() => {
-    if (shell && shell.setShell) shell.setShell(Object.assign({ mobile: !!t.mobile,
-      settings: t.settings !== false, about: t.about !== false }, shellArgs || {}));
+    if (shell && shell.setShell) shell.setShell(args);
   }, [shell, shellKey]);
 
   // Each notice, in order; none lost.
@@ -101,7 +106,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
 
   const inputs = { controlState: controlState || null, busy: busy || null, runState: runState || null,
     romsMissing: romsMissing || null, settings: settings || null, media: media || null };
-  const { menus, bar, panels, dialog } = models;
+  const { menus, bar, panels, dialog, about } = models;
   const nameAndSavePrompts = models.nameAndSave || {};
 
   const sendChecked = (name, args) => {
@@ -159,7 +164,7 @@ function useCalcuShell(shell, product, traits, shellArgs) {
   };
   const current = notices.current.current();
   return {
-    shell, product, traits: t, inputs, menus, bar, panels, dialog, open, naming, nameAndSavePrompts,
+    shell, product, traits: t, inputs, menus, bar, panels, dialog, about, open, naming, nameAndSavePrompts,
     started: !!controlState, romsMissing: romsMissing || null,
     loading: loading.current.shown(calcuShellNow()),
     notice: current,
@@ -176,4 +181,21 @@ function useCalcuShell(shell, product, traits, shellArgs) {
     },
     close: () => setOpen(null),
   };
+}
+
+// About's rows of where the page runs: at once from the user agent string,
+// then from Chromium's client hints when they come (the rows are the last
+// part of the dialog, so nothing above them moves).
+function useShellHostRows() {
+  const [rows, setRows] = React.useState(() => (typeof window === "undefined" ? [] : calcuShellHostRows(window.navigator, null, window.location)));
+  React.useEffect(() => {
+    const hints = typeof window === "undefined" ? null : window.navigator.userAgentData;
+    if (!hints || typeof hints.getHighEntropyValues !== "function") return undefined;
+    let live = true;
+    hints.getHighEntropyValues(["platformVersion", "architecture", "bitness", "model", "fullVersionList"])
+      .then((h) => { if (live) setRows(calcuShellHostRows(window.navigator, h, window.location)); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+  return rows;
 }

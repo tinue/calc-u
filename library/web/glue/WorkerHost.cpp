@@ -186,6 +186,7 @@ void WorkerHost::receive(val message) {
         setup.traits.mobile = shell::read::flag(args, "mobile");
         setup.traits.settings = shell::read::flag(args, "settings", true);
         setup.traits.about = shell::read::flag(args, "about", true);
+        shell::takePageArgs(setup, args);
         models_.set(std::move(setup), listener_.mirror());
         postedModels_ = s::Value();
         postShell();

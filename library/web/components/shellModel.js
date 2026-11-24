@@ -1,8 +1,9 @@
 // The shell's rules that run on the page's own clock and measurements, in
 // plain JS: the same rules as library/shell/ (barFit, paperRowCompact, view, LoadingRule,
-// NoticeQueue, the hit rule, PointerTracker, about), rule by rule. The
-// menus, the bar, the panels and the settings dialog are the C++ models',
-// which the worker serves (topic `web.shell`, shell::ModelHost). No React,
+// NoticeQueue, the hit rule, PointerTracker), rule by rule, and About's rows
+// of where the page runs. The menus, the bar, the panels, the settings
+// dialog and About are the C++ models', which the worker serves (topic
+// `web.shell`, shell::ModelHost). No React,
 // no DOM: loadable by `node --test` (library/web/tests/shell_model.test.js,
 // whose cases carry the C++ cases' names). A classic script of the component
 // set's closure; every top-level name starts with `calcuShell` or `CALCU_SHELL`.
@@ -14,7 +15,7 @@
 //   calcuShellNotices() → {push, refusal, current, close, answer, waiting}; current() is
 //     {seq, text, question, command}, seq numbering the notices queued
 //   calcuShellKeyAt(map, scale, x, y); calcuShellPointer(map, scale) → {down, move, up, releaseAll}
-//   calcuShellAbout(product)
+//   calcuShellHostRows(nav, hints, loc) → [[label, value]]: Page, Browser, OS, Hardware
 //   calcuShellList, calcuShellText, calcuShellAvailability: reading the topics' Values
 
 const CALCU_SHELL_ACTIONS = {
@@ -209,27 +210,6 @@ function calcuShellPointer(map, scale) {
   };
 }
 
-// About (shell::about, shell::aboutText): `host` the page's rows
-// ([label, value]; an empty value is left out) after "Package" and "Built".
-const CALCU_SHELL_SUPPORT_HEADING = "Support Information";
-function calcuShellAbout(product, host) {
-  let title = product.aboutLabel || `About ${product.name}`;
-  if (title.endsWith("…")) title = title.slice(0, -1);
-  const support = [...(product.package ? [["Package", product.package]] : []),
-    ...(product.buildTime ? [["Built", product.buildTime]] : []), ...(host || []).filter((r) => r[1])];
-  return {
-    title, name: product.name,
-    version: `Version ${product.version}${product.build ? ` (${product.build})` : ""}`,
-    lines: product.aboutLines || [], links: product.aboutLinks || [], support,
-  };
-}
-
-function calcuShellAboutText(a) {
-  let out = `${a.name}\n${a.version}\n` + a.lines.map((l) => `${l}\n`).join("");
-  if (a.support.length) out += `\n${CALCU_SHELL_SUPPORT_HEADING}\n` + a.support.map(([l, v]) => `${l}: ${v}\n`).join("");
-  return out;
-}
-
 // Where the page runs: Page (`loc`, the page's location: host and path,
 // where it was loaded from), then what the browser tells: Browser, OS,
 // Hardware. `nav`: the navigator; `hints`: the answer of userAgentData's
@@ -278,6 +258,6 @@ function calcuShellHostRows(nav, hints, loc) {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     calcuShellBarFit, calcuShellPaperRowCompact, calcuShellView, calcuShellLoading, calcuShellNotices, calcuShellKeyAt,
-    calcuShellPointer, calcuShellAbout, calcuShellAboutText, calcuShellHostRows, calcuShellAvailability, CALCU_SHELL_LOADING_MS,
+    calcuShellPointer, calcuShellHostRows, calcuShellAvailability, CALCU_SHELL_LOADING_MS,
   };
 }

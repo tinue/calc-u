@@ -162,7 +162,7 @@ plain object. No message type of a product's own.
 | Direction | Form |
 |---|---|
 | page → worker | `{kind: "listen", args: {services: [name, …]}}` |
-| page → worker | `{kind: "shell", args: {mobile, settings, about, …}}`: the page's traits and the product's own args of its shell (§3.1) |
+| page → worker | `{kind: "shell", args: {mobile, settings, about, version, build, buildTime, host, …}}`: the page's traits, its build, About's rows of where it runs and the product's own args of its shell (§3.1) |
 | page → worker | `{kind: "pace"}`: the worker measures its pace and sends it once a second as the state topic `web.pace` `{ticksPerSecond, busyPercent, longestGapMs}` (the page's `?pace=1` line) |
 | page → worker | `{kind: "command", name, args, call}` |
 | page → worker | `{kind: "request", name, args, call}` |
@@ -210,18 +210,25 @@ gives the session the paths.
 |---|---|---|
 | `web.start` | state | `{state: "running" \| "failed", failure, detail}`: `detail` (may be empty) goes to the app log only |
 | `web.storage` | state | `{mode, sentence}`: §5 |
-| `web.shell` | state | `{menus, bar, panels, dialog, nameAndSave}`: the shell's models for the page's last `shell` message |
+| `web.shell` | state | `{menus, bar, panels, dialog, about, nameAndSave}`: the shell's models for the page's last `shell` message |
 
 The shell's models are the library's (`library/shell/`: `menus`, `bar`,
-`panels`, the settings `dialog`) over the session's topics and the
-`preset-list` reply, in the Value forms of `library/shell/ValueForms.hpp`,
+`panels`, the settings `dialog`, `about`) over the session's topics and the
+`preset-list` reply, in the Value forms of `library/shell/ValueForms.hpp`
+(`about`: `shell::about` with the page's rows, `{title, name, version,
+lines, links, supportHeading, support, text}`, `text` being what Copy puts
+on the clipboard, `shell::aboutText`),
 and `nameAndSave` `{place: prompt}`, the Name & Save dialog's prompt
 (`shell::nameAndSavePrompt`) for each place of the topic `media`;
 the worker computes them anew after each message and call and sends them
 when they changed. The `shell` message names the page's traits — `mobile`
 (true: the mobile bar, no menu bar), `settings` and `about` (false: no
-Settings…, no About; both true when not given) — and the product's own
-args (Calc-U-59: `layout`, `version`, `build`); none comes before it.
+Settings…, no About; both true when not given) — the page's build
+(`version`, `build`, `buildTime`, stamped into the page by its build; an
+empty one keeps the product's), About's rows of where the page runs
+(`host`: `[[label, value]]`, Page, Browser, OS, Hardware; the page sends
+the message again when the browser's client hints come) and the product's
+own args (Calc-U-59: `layout`); none comes before it.
 
 The page's start state is `starting`, then `running` at the first
 `web.start`, or `failed` at `web.start` with `failed`, at an error of

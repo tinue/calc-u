@@ -6,31 +6,43 @@
 using namespace calcu;
 using sessions::Value;
 
-// What the page needs of the product: its texts, the uploads' accept list,
-// Name & Save, the items by id; the About links only when there are.
+// What the page needs of the product: its name and help address, the
+// uploads' accept list, Name & Save, the items by id.
 TEST(shell_product_value_form) {
     shell::ShellProduct p;
     p.name = "Test-Product";
     p.version = "1.0";   // not in the form: the page has its own
     p.helpUrl = "https://example.org/";
-    p.aboutLabel = "About Test…";
-    p.aboutLines = {"one", "two"};
     p.presetUploads = ".tp,.yaml";
     p.items.push_back(shell::ProductItem{shell::MenuGroup::FileMedia, "mount", "Mount…", "t.mount", {}});
     const Value want = Value::object({{"name", "Test-Product"},
                                       {"helpUrl", "https://example.org/"},
-                                      {"aboutLabel", "About Test…"},
-                                      {"aboutLines", Value(Value::Array{"one", "two"})},
                                       {"presetUploads", ".tp,.yaml"},
                                       {"nameAndSave", Value::object({{"slotButtons", false}})},
                                       {"items", Value(Value::Array{Value::object({{"id", "mount"}, {"label", "Mount…"}})})}});
     CHECK_EQ(sessions::toText(shell::toValue(p)), sessions::toText(want));
-    p.aboutLinks = {{"Source", "https://example.org/src"}};
-    CHECK_EQ(sessions::toText(*shell::toValue(p).find("aboutLinks")),
-             sessions::toText(Value(Value::Array{Value(Value::Array{"Source", "https://example.org/src"})})));
     p.nameAndSave.slotButtons = true;
     CHECK_EQ(sessions::toText(*shell::toValue(p).find("nameAndSave")),
              sessions::toText(Value::object({{"slotButtons", true}})));
+}
+
+// About as the page draws it, with the text Copy puts on the clipboard.
+TEST(about_value_form) {
+    shell::ShellProduct p;
+    p.name = "Test-Product";
+    p.version = "1.0";
+    p.aboutLines = {"one"};
+    p.aboutLinks = {{"Source", "https://example.org/src"}};
+    const shell::AboutModel a = shell::about(p, {{"OS", "macOS"}});
+    const Value want = Value::object({{"title", "About Test-Product"},
+                                      {"name", "Test-Product"},
+                                      {"version", "Version 1.0"},
+                                      {"lines", Value(Value::Array{"one"})},
+                                      {"links", Value(Value::Array{Value(Value::Array{"Source", "https://example.org/src"})})},
+                                      {"supportHeading", "Support Information"},
+                                      {"support", Value(Value::Array{Value(Value::Array{"OS", "macOS"})})},
+                                      {"text", shell::aboutText(a)}});
+    CHECK_EQ(sessions::toText(shell::toValue(a)), sessions::toText(want));
 }
 
 // A menu item with every member, its kind, role and shortcut by name.

@@ -165,3 +165,24 @@ TEST(model_host_asks_the_preset_list_at_start_and_after_settings) {
     for (const auto& i : read::elements(file, "items")) examples = examples || read::text(i, "id") == "examples";
     CHECK(examples);
 }
+
+// About is served with the page's build and its rows of where it runs: the
+// page's `shell` args, read by takePageArgs; rows given again replace them.
+TEST(model_host_serves_about_with_the_page_args) {
+    ModelSetup s = setup();
+    s.product.version = "0.0";
+    auto row = [](const char* label, const char* value) { return Value(Value::Array{Value(label), Value(value)}); };
+    takePageArgs(s, Value::object({{"version", "1.2.3"}, {"build", "abc123"}, {"buildTime", "2026-11-24T11:49:08Z"},
+                                   {"host", Value(Value::Array{row("Browser", "Safari 27.2"), row("Hardware", "")})}}));
+    ModelHost h;
+    h.set(s, {});
+    const Value v = h.value();
+    const Value* a = v.find("about");
+    CHECK(a != nullptr);
+    CHECK_EQ(read::text(*a, "version"), std::string("Version 1.2.3 (abc123)"));
+    CHECK_EQ(read::text(*a, "text"), aboutText(about(s.product, s.host)));
+    CHECK_EQ(read::elements(*a, "support").size(), std::size_t{2});   // Built, Browser; the empty Hardware left out
+    takePageArgs(s, Value::object({{"host", Value(Value::Array{row("OS", "macOS")})}}));
+    CHECK_EQ(s.product.version, std::string("1.2.3"));   // not given: kept
+    CHECK(s.host.size() == 1 && s.host[0].first == "OS");
+}

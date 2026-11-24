@@ -10,13 +10,6 @@ const m = require("../components/shellModel.js");
 
 const FIXTURES = path.join(__dirname, "..", "..", "shell", "tests");
 
-// The About texts of library/shell/tests/TestShellPart.hpp's product().
-const product = () => ({
-  name: "Test-Product", version: "1.2.3", build: "abc123", aboutLabel: "",
-  aboutLines: ["A product made for the tests.", "No code of a product."],
-  aboutLinks: [["Source", "https://example.org/source"], ["Privacy", "https://example.org/privacy"]],
-});
-
 test("loading_after_500_ms_at_full_speed", () => {
   const r = m.calcuShellLoading();
   r.busy(true, true, 1000);
@@ -165,36 +158,7 @@ test("no_key_at_down_nothing_on_move", () => {
   assert.equal(describeOut(t.up(1)), "");
 });
 
-// About.
-test("about_shows_product_texts", () => {
-  const p = product();
-  const a = m.calcuShellAbout(p);
-  assert.equal(a.title, "About Test-Product");
-  assert.equal(a.version, "Version 1.2.3 (abc123)");
-  assert.equal(a.lines[0], "A product made for the tests.");
-  assert.equal(a.links[1][1], "https://example.org/privacy");
-  p.aboutLabel = "About Test-Product…";
-  assert.equal(m.calcuShellAbout(p).title, "About Test-Product");
-  p.build = "";
-  assert.equal(m.calcuShellAbout(p).version, "Version 1.2.3");
-});
-
-// The same text as shell::aboutText (help_about_tests.cpp).
-test("about_support_rows_and_copied_text", () => {
-  const p = product();
-  assert.deepEqual(m.calcuShellAbout(p).support, []);
-  assert.equal(m.calcuShellAboutText(m.calcuShellAbout(p)),
-    "Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\nNo code of a product.\n");
-  p.buildTime = "2026-11-24T11:49:08Z";
-  const a = m.calcuShellAbout(p, [["OS", "Darwin arm64 27.2.0"], ["Hardware", ""], ["Browser", "Safari 27.2"]]);
-  assert.equal(a.support.length, 3);
-  assert.equal(m.calcuShellAboutText(a),
-    "Test-Product\nVersion 1.2.3 (abc123)\nA product made for the tests.\nNo code of a product.\n\n" +
-    "Support Information\nBuilt: 2026-11-24T11:49:08Z\nOS: Darwin arm64 27.2.0\nBrowser: Safari 27.2\n");
-  p.package = "DMG";   // first, before Built
-  assert.deepEqual(m.calcuShellAbout(p, []).support.map((r) => r[0]), ["Package", "Built"]);
-});
-
+// About's rows of where the page runs (the worker makes the dialog of them, shell::about).
 test("host_rows_from_the_browser", () => {
   const safari = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15";
   assert.deepEqual(m.calcuShellHostRows({ userAgent: safari }, null), [["Page", ""], ["Browser", "Safari 27.2"], ["OS", "macOS"], ["Hardware", ""]]);

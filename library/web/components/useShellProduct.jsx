@@ -5,8 +5,8 @@
 //     the product's data: `request` (`<prefix>.shell-product`) with
 //     `args`, once per distinct `args` while the session runs, its answer
 //     {product, chrome} kept; `fallback` (the shell's frame with nothing of
-//     the product's) until it came. The product is the answer's with the
-//     page's `version`, `build` and `buildTime`, Copy Screen (`copyScreen`, or null:
+//     the product's) until it came. Either carries the page's `version`,
+//     `build` and `buildTime`; the answer's also Copy Screen (`copyScreen`, or null:
 //     none), Load Preset… (the files picked by the product's
 //     `presetUploads`: the preset with the files it names, through
 //     `openFiles(files, "dialog")`) and the items' acts (`acts`, by id); its
@@ -51,13 +51,12 @@ function useShellProduct(shell, options) {
   const data = answers[key];
   const hasCopyScreen = !!options.copyScreen;
   const product = React.useMemo(() => {
-    if (!data) return options.fallback;
+    const stamp = { version: options.version, build: options.build, buildTime: options.buildTime || "" };
+    if (!data) return { ...options.fallback, ...stamp };
     const p = data.product;
     return {
       ...p,
-      version: options.version,
-      build: options.build,
-      buildTime: options.buildTime || "",
+      ...stamp,
       copyScreen: hasCopyScreen ? () => latest.current.copyScreen() : null,
       loadPreset: async () => {
         const files = await calcuPickFiles(p.presetUploads || "", true);

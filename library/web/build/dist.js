@@ -190,21 +190,17 @@ function stampServiceWorker(dist, { id, core }) {
 // its CHANGELOG entry is open, -dirty with changes not committed; the About
 // and the Settings' version line show it in parentheses.
 function buildId(productDir) {
-  return buildIdScript(productDir, []) || "unknown";
+  try {
+    return execFileSync("cmake", [`-DPRODUCT=${productDir}`, "-P", path.join(WEB, "..", "..", "tools", "build-id.cmake")],
+                        { encoding: "utf8" }).trim() || "unknown";
+  } catch (_) {
+    return "unknown";
+  }
 }
 
 // The time of this build in UTC ("2026-11-24T12:01:37Z"), which About shows as "Built".
 function buildTime() {
   return new Date().toISOString().replace(/\.\d+Z$/, "Z");
-}
-
-function buildIdScript(productDir, options) {
-  try {
-    return execFileSync("cmake", [`-DPRODUCT=${productDir}`, ...options, "-P", path.join(WEB, "..", "..", "tools", "build-id.cmake")],
-                        { encoding: "utf8" }).trim();
-  } catch (_) {
-    return "";
-  }
 }
 
 function gitCommit(dir) {

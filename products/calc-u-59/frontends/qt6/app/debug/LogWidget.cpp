@@ -87,7 +87,7 @@ void LogWidget::refresh() {
     m_trace->setStyleSheet(m_controller.traceRunning() ? QStringLiteral("QPushButton { color: %1; }").arg(ChromeStyle::rgb(cu59::chrome::kOrange)) : QString());
     const char* levels[3] = {"RUN LOG ○", "RUN LOG ●", "RUN LOG ●"};
     int level = static_cast<int>(m_controller.debugLevel());
-    m_level->setText(QLatin1String(levels[level]));
+    m_level->setText(QString::fromUtf8(levels[level]));   // ○ and ● are UTF-8
     m_level->setStyleSheet(level == 0 ? QString()
                                       : QStringLiteral("QPushButton { color: %1; }").arg(ChromeStyle::rgb(level == 1 ? cu59::chrome::kOrange : cu59::chrome::kRed)));
 }

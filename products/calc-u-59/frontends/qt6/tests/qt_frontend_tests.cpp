@@ -12,6 +12,7 @@
 #include "TIMagneticCardKind.hpp"
 #include "debug/CpuInspectorWidget.hpp"
 #include "debug/LiveDebugWidget.hpp"
+#include "debug/LogWidget.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/PaperPanel.hpp"
 #include "qt6/RunControlButtons.hpp"
@@ -23,6 +24,7 @@
 #include <QFile>
 #include <QListWidget>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QToolButton>
 
 using qtfixture::Fixture;
@@ -162,6 +164,23 @@ TEST(calculator_and_cpu_buttons_follow_run_state) {
     CHECK(!calc->stepButton()->isEnabled());
     proc->resumeButton()->click();
     CHECK(f.waitFor([&] { return !f.c().isFrozen(); }));
+}
+
+// The RUN LOG button's circle is the character, not its UTF-8 bytes; each
+// click goes one level on.
+TEST(run_log_button_labels) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    Fixture f;
+    LogWidget log(f.c());
+    f.run(50);
+    QPushButton* level = nullptr;
+    for (QPushButton* b : log.findChildren<QPushButton*>())
+        if (b->text().startsWith(QStringLiteral("RUN LOG"))) level = b;
+    CHECK(level != nullptr);
+    if (!level) return;
+    CHECK_EQ(level->text(), QStringLiteral("RUN LOG ○"));
+    level->click();
+    CHECK(f.waitFor([&] { return level->text() == QStringLiteral("RUN LOG ●"); }));
 }
 
 namespace {

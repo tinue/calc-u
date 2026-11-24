@@ -73,7 +73,7 @@ The shared props, in this order, then the product's own:
 | 5 | `height` | the parent's height (Calc-U-59: from the width) | the component's height in CSS pixels |
 | 6 | `model` | the startup model | the model to start with, by its name as the glossary writes it (`TI-58C`, `PC-1600`) |
 | 7 | `workerUrl` | `calc-engine-worker.js` beside `calc.js` | the worker's script, for a page that serves it from another path (the installed app: `app/engine-worker.js`) |
-| 8 | the product's own | | Calc-U-59: `settings` (default `true`): whether Settings… is offered. Calc-U-1600: none |
+| 8 | the product's own | | Calc-U-59: `settings` (default `true`): whether Settings… is offered; `paperWindow` (default `false`): the full app's paper in its own window (§6). Calc-U-1600: `paperWindow` (the same) |
 
 - Without both `width` and `height` as numbers the component fills its
   parent (Calc-U-1600) or sizes itself from the width (Calc-U-59); a
@@ -311,8 +311,16 @@ share a store.
 ## 6. The installed app
 
 `dist/app/` is an installable offline app: `index.html` mounts the
-product's component with `layout: "auto"` and starts the worker through
-`app/engine-worker.js`. Its service worker (`app/sw.js`, scope `app/`)
+product's component with `layout: "auto"` and `paperWindow: true` and
+starts the worker through `app/engine-worker.js`.
+
+The Web has three kinds of page, each drawn by the same component:
+
+| Kind | Page | Window | Paper in its own window |
+|---|---|---|---|
+| Full app | `dist/app/` in a desktop browser's tab | desktop (menu bar) | yes: the paper panel's button opens a popup window |
+| Demo | the component embedded in another page (the website, `dist/index.html`) | desktop (menu bar) | no: an embed opens no windows of its own |
+| Mobile | the installed app, or a browser asking for the mobile site (`?mobile=1` to try it) | mobile (no menu bar) | no | Its service worker (`app/sw.js`, scope `app/`)
 precaches the app page, `calc.js`, `calc.css`, the workers, the engine,
 the images and every file of `files.json`. Its cache is named
 `<id>-app <scope> <hash>` (`<id>`: `calcu59`, `calc-u-1600`); a new

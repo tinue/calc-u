@@ -1,8 +1,8 @@
 #include "LcdWidget.hpp"
+#include "qt6/FixedFont.hpp"
 
 #include <QPainter>
 #include <QFont>
-#include <QFontDatabase>
 #include <QMouseEvent>
 #include <algorithm>
 
@@ -10,17 +10,9 @@
 
 namespace {
 
-// The platform's own preferred fixed-width font (Consolas on Windows,
-// Menlo/SF Mono on macOS, the desktop's monospace on Linux) rather than a
-// hardcoded family name -- "Menlo" doesn't exist outside macOS and was
-// silently falling back to a much uglier generic monospace (Courier New on
-// Windows). QFontDatabase::systemFont() re-runs font-matching on every
-// call, so the family is resolved once here and reused -- paintPC1500/1600
-// only need to override the size/weight, which are cheap, at 60Hz.
-const QFont& fixedWidthFont() {
-    static const QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-    return font;
-}
+// The platform's fixed-width font (calcu::qt6::fixedFont), resolved once;
+// paintPC1500/1600 only set its size and weight, which are cheap, at 60 Hz.
+const QFont& fixedWidthFont() { return calcu::qt6::fixedFont(); }
 
 // Layout constants and colours: app/LcdLayout.hpp.
 using namespace cu1600::lcd;

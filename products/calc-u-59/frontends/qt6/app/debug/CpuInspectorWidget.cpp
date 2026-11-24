@@ -1,4 +1,5 @@
 #include "CpuInspectorWidget.hpp"
+#include "qt6/FixedFont.hpp"
 #include "ChromeStyle.hpp"
 #include "DebugHeaderRow.hpp"
 #include "DebugText.hpp"
@@ -33,7 +34,7 @@ QWidget* sectionBox(const QString& title, QLabel*& body, QWidget* parent, QWidge
     auto* hrow = new QHBoxLayout(head);
     hrow->setContentsMargins(8, 3, 8, 3);
     auto* t = new QLabel(title, head);
-    t->setStyleSheet(QStringLiteral("color: %1; font: bold 9px Menlo, monospace;").arg(ChromeStyle::rgb(ChromeStyle::text(0.45))));
+    t->setStyleSheet((QStringLiteral("color: %1; font: bold 9px ") + calcu::qt6::fixedFamilyCss() + QStringLiteral(";")).arg(ChromeStyle::rgb(ChromeStyle::text(0.45))));
     hrow->addWidget(t);
     hrow->addStretch(1);
     if (extraHeader) hrow->addWidget(extraHeader);
@@ -99,10 +100,10 @@ CpuInspectorWidget::CpuInspectorWidget(EmulatorController& controller, QWidget* 
     auto* hh = new QHBoxLayout(heatHeader);
     hh->setContentsMargins(0, 0, 0, 0);
     m_hover = new QLabel(heatHeader);
-    m_hover->setStyleSheet(QStringLiteral("color: %1; font: bold 9px Menlo, monospace;").arg(ChromeStyle::rgb(cu59::chrome::kHover)));
+    m_hover->setStyleSheet((QStringLiteral("color: %1; font: bold 9px ") + calcu::qt6::fixedFamilyCss() + QStringLiteral(";")).arg(ChromeStyle::rgb(cu59::chrome::kHover)));
     auto* clr = new QPushButton(QStringLiteral("CLR"), heatHeader);
-    clr->setStyleSheet(QStringLiteral("QPushButton { color: %1; background: transparent; border: none;"
-                                      " font: bold 9px Menlo, monospace; }").arg(ChromeStyle::rgb(ChromeStyle::text(0.45))));
+    clr->setStyleSheet((QStringLiteral("QPushButton { color: %1; background: transparent; border: none;"
+                                       " font: bold 9px ") + calcu::qt6::fixedFamilyCss() + QStringLiteral("; }")).arg(ChromeStyle::rgb(ChromeStyle::text(0.45))));
     connect(clr, &QPushButton::clicked, this, [this] { m_controller.clearHeatmap(); });
     hh->addWidget(m_hover);
     hh->addWidget(clr);
@@ -136,8 +137,7 @@ void CpuInspectorWidget::refreshHeader() { m_header->refresh(baseFontSize()); }
 
 void CpuInspectorWidget::refreshList() {
     const auto& history = m_controller.cpuHistory();
-    QFont mono(QStringLiteral("Menlo"));
-    mono.setStyleHint(QFont::Monospace);
+    QFont mono = calcu::qt6::fixedFont();
     mono.setPixelSize(baseFontSize() + 2);
     QSignalBlocker block(m_list);
     m_list->clear();
@@ -167,7 +167,7 @@ void CpuInspectorWidget::refreshList() {
 
 void CpuInspectorWidget::refreshDetails() {
     const auto& history = m_controller.cpuHistory();
-    const QString font = QStringLiteral("font-family: Menlo, monospace; font-size: %1px;").arg(baseFontSize() + 2);
+    const QString font = (QStringLiteral("font-family: ") + calcu::qt6::fixedFamilyCss() + QStringLiteral("; font-size: %1px;")).arg(baseFontSize() + 2);
     auto set = [&](QLabel* l, const QString& html) { l->setText(QStringLiteral("<div style='%1'>%2</div>").arg(font, html)); };
     if (m_selected < 0 || m_selected >= static_cast<int>(history.size())) {
         set(m_registers, QString());

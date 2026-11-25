@@ -7,7 +7,7 @@
 |---|---|
 | `frontends/qt6/resources/faceplates/pc1500.png`, `pc1500A.png` | the PC-1500 and PC-1500A faceplates (4000 x 1760), LCD off |
 | `frontends/qt6/resources/faceplates/pc1600.png` | the PC-1600 faceplate (4000 x 1777), LCD off |
-| `faceplate/pc1600K.png` | the PC-1600K faceplate (4000 x 1777), LCD off; here until the product has the model |
+| `frontends/qt6/resources/faceplates/pc1600K.png` | the PC-1600K faceplate (4000 x 1777), LCD off |
 | `app/KeyLayout/PC1500KeyLayout.cpp`, `PC1600KeyLayout.cpp` | the key rectangles (`keys.py`; the PC-1500A shares the PC-1500's, the PC-1600K the PC-1600's) |
 
 The Qt and Web frontends both take the images from `frontends/qt6/resources/faceplates/`.

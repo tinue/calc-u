@@ -3,12 +3,16 @@
 # requires-python = ">=3.10,<3.15"
 # dependencies = ["fonttools", "pyoxipng"]
 # ///
-"""Generate the layered, semantic SVG of the PC-1600 faceplate.
+"""Generate the layered, semantic SVG of the PC-1600 or PC-1600K faceplate.
 
 Coordinate system: 4000 x 1777 units; the key wells, bands, bezel and panels were measured on a
 reference drawing of that size. Key caps, colours and printed details follow a 600 dpi scan of
 a PC-1600 (not in the repository), lightened towards the drawing where the scan is too dark.
 Keys, filters and legend placement are shared with build_svg_1500.py.
+The PC-1600K (--model 1600k), the Japanese machine, has the same plate, keys and key wells; its print
+follows three photos of a PC-1600K (not in the repository): the kana and kana marks beside the keys,
+the Japanese captions (teal) of BS, SPACE, the arrow keys and the kana key (カナ for SML), the 漢字 box
+around the last function key (for KB II) and in the logo panel, and ¥ for the backslash.
 Fonts, font metrics, the output buffer, rich text and the rendering are in tools/faceplate/svgkit.py.
 
 Layers (bottom to top); body and print-areas lie in the group brushed-plate, whose filter
@@ -21,7 +25,7 @@ brushes the plate and the print together:
   display     LCD bezel, window, LCD background, dots and status segments (off unless lit)
   keys        key wells, caps and cap labels; data-x/y/w/h = the key well
 
-Usage: build_svg_1600.py [--text LINE1 --text LINE2 ...] [--cursor L,C] [--segments RUN,BATT]
+Usage: build_svg_1600.py [--model 1600|1600k] [--text LINE1 --text LINE2 ...] [--cursor L,C] [--segments RUN,BATT]
                          [--keep-svg] [--no-png] -o out.svg
 Writes the SVG to -o, the PNG next to it (rendered with headless Chrome, losslessly optimised
 with oxipng; the SVG is deleted unless --keep-svg) and <name>-layout.json (key wells, LCD dot geometry, segment boxes).
@@ -36,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "faceplat
 
 import svgkit as B
 import build_svg_1500 as P
-from svgkit import FONT_COND, FONT_LOGO, FONT_SANS, emit, end, layer, rich
+from svgkit import FONT_COND, FONT_JP, FONT_JP_FILE, FONT_LOGO, FONT_SANS, emit, end, layer, rich
 from lcdfont import FONT
 
 W, H = 4000, 1777
@@ -50,6 +54,8 @@ RED = "#b9433a"           # legends on the plate (scan hue ~5-12 deg: redder tha
 ORANGE = "#d4683a"        # legends on the black band (scan hue ~13 deg)
 INK = P.INK
 WHITE = "#ecebe7"         # print on the band
+TEAL = "#3aa595"          # PC-1600K: the Japanese captions and the 漢字 boxes (photos: blue-green)
+KANJI_BOX = "#5cc6bb"     # PC-1600K: the filled 漢字 box around the last function key
 FN_FACE = "#55585a"       # small function keys on the band
 P.LCD_BG = ("#a6b19e", "#9ca895", "#909c8a")   # Calc-U-1600 kP16BackgroundRgb in the middle
 LCD_INK = P.LCD_INK
@@ -58,6 +64,11 @@ P.CAPS.update({
     "grey16": ("#94969a", "#a7a9ac", "#686a6d", "#101010"),   # number block: darker than the plate
 })
 P.M = dict(P.MODELS["1500"], cl=("#c8333b", "#d84a50", "#8a1c22", "#ffffff"))  # brighter CL (scan 211/66/75)
+
+# ---------------------------------------------------------------- models
+MODELS = {"1600": dict(name="Calc-U-1600", logo_fit=825, japanese=False),
+          "1600k": dict(name="Calc-U-1600K", logo_fit=900, japanese=True)}
+M16 = MODELS["1600"]  # selected in main()
 
 # ---------------------------------------------------------------- geometry (PC1600.png)
 PLATE = dict(x=4, y=4, w=3992, h=1769, r=50)
@@ -103,6 +114,11 @@ def seg_x(name):
 
 
 rrect = P.rrect
+
+
+def col(x0, i):
+    """x of the i-th key well of a letter row starting at x0."""
+    return round(x0 + i * 247.3)
 
 
 # ---------------------------------------------------------------- body & prints
@@ -162,7 +178,6 @@ def keys():
     COND = dict(family=FONT_COND, weight=400)
     SANS = dict(family=FONT_SANS, weight=400)
     kw, kh = 178, 130
-    col = lambda x0, i: round(x0 + i * 247.3)
     # top-right cluster
     key("bs", 2699, 663, 176, 102, "grey", "BS", size=62, fit=78, **SANS)
     key("shift2", 2946, 663, 176, 102, "orange", "SHIFT", size=62, fit=125, **COND)
@@ -182,7 +197,10 @@ def keys():
         key(ident, col(390, i), 1349, kw, kh, "black", ch, size=81)
     y, h = 1546, 128
     key("shift", 143, y, kw, h, "orange", "SHIFT", size=68, fit=125, **COND)
-    key("sml", 390, y, kw, h, "grey", "SML", size=68, fit=120, **SANS)
+    if M16["japanese"]:
+        key("sml", 390, y, kw, h, "grey", "カナ", size=62, family=FONT_JP, weight=400)
+    else:
+        key("sml", 390, y, kw, h, "grey", "SML", size=68, fit=120, **SANS)
     key("rsv", 637, y, kw, h, "grey", ("icon", "updown", 56))
     key("rcl", 885, y, kw, h, "grey", "RCL", size=69, fit=111, **SANS)
     key("space", 1132, y, 426, h, "black", "SPACE", size=66, fit=185, **COND)
@@ -236,7 +254,14 @@ def printed_text():
          family=FONT_COND)
     fn_mid = FN_Y + FN_H / 2
     rich(229, fn_mid, "DEF", 50, color=WHITE, weight=400, anchor="end", vcap=True)
-    rich(2223, fn_mid, [("KB", ""), ("II", "")], 50, color=WHITE, weight=400, anchor="end", vcap=True)
+    if M16["japanese"]:
+        # level with the key's top, reaching well past it on the right; 漢字 left of the key
+        x, top = FN_DIV[-1] + 12, FN_Y + 4
+        emit(f'<rect id="kanji-box" x="{x}" y="{top}" width="{FN_X[7] + FN_W + 80 - x}" height="{FN_H + 16}" '
+             f'fill="{KANJI_BOX}"/>')
+        rich((x + FN_X[7]) / 2, top + (FN_H + 16) / 2, "漢字", 46, color=BAND, family=FONT_JP, weight=400, vcap=True)
+    else:
+        rich(2223, fn_mid, [("KB", ""), ("II", "")], 50, color=WHITE, weight=400, anchor="end", vcap=True)
     for i, t in enumerate(['!', '"', '#', '$', '%', '&']):
         cx = FN_X[i + 1] + FN_W / 2
         if t == '"':
@@ -245,18 +270,27 @@ def printed_text():
             above(cx, FN_Y + 4, t, 38 if t == "$" else 42, ORANGE)
     above(FN_X[7] + FN_W / 2, FN_Y + 4, "CLICK", 40, ORANGE)
     # logo panel: silver Calc-U logo, white caption
-    logo = dict(family=FONT_LOGO, weight=700, fit=825, vcap=True)
-    rich(3288, 208, "Calc-U-1600", 160, color="url(#logoLines)", **logo)
-    rich(3288, 208, "Calc-U-1600", 160, color="url(#logoSheen)", **logo)
-    rich(3288, 208, "Calc-U-1600", 160, color="none", style="stroke:#2b2622;stroke-width:2.6;stroke-linejoin:round",
-         **logo)
-    rich(3288, 447, "POCKET COMPUTER", 76, color=WHITE, weight=400, fit=655, vcap=True)
+    logo = dict(family=FONT_LOGO, weight=700, fit=M16["logo_fit"], vcap=True)
+    name = M16["name"]
+    rich(3288, 208, name, 160, color="url(#logoLines)", **logo)
+    rich(3288, 208, name, 160, color="url(#logoSheen)", **logo)
+    rich(3288, 208, name, 160, color="none", style="stroke:#2b2622;stroke-width:2.6;stroke-linejoin:round", **logo)
+    if M16["japanese"]:  # the caption moves left of a framed 漢字
+        rich(3117, 447, "POCKET COMPUTER", 76, color=WHITE, weight=400, fit=655, vcap=True)
+        emit(f'<rect id="logo-kanji" x="3600" y="377" width="274" height="140" fill="none" stroke="{TEAL}" '
+             f'stroke-width="6"/>')
+        rich(3737, 447, "漢字", 112, color=TEAL, family=FONT_JP, weight=400, fit=226, vcap=True)
+    else:
+        rich(3288, 447, "POCKET COMPUTER", 76, color=WHITE, weight=400, fit=655, vcap=True)
     # grey panel
     rich(3311, 663 + 51, "POWER", 53, color=INK, weight=400, vcap=True)
     above(3686 + 177 / 2, 663 + 6, "BREAK", 55, INK)
     # number block legends
     leg = {(0, 0): "\\", (1, 0): "~", (3, 0): "?", (4, 0): "CA", (1, 1): "{", (2, 1): "}", (3, 1): ":",
            (1, 2): "[", (2, 2): "]", (3, 2): ",", (4, 2): "DEL", (2, 3): "@", (3, 3): ";", (4, 3): "INS"}
+    if M16["japanese"]:
+        del leg[0, 0]
+        above_jp(NUM_X[0] + 97, NUM_Y[0], "¥", 50, RED)
     for (i, r), t in leg.items():
         size = {"~": 76, ",": 64, "\\": 56, "@": 50}.get(t, 54 if len(t) == 1 else 50)
         above(NUM_X[i] + 97, NUM_Y[r], t, size, RED)
@@ -276,11 +310,94 @@ def printed_text():
     emit(f'<g id="legend-underscore"><rect x="{cx - 20}" y="{b - 7}" width="40" height="7" fill="{RED}"/>'
          f'<rect x="{cx - 19}" y="{b - 54}" width="38" height="{47 - gap}" fill="none" stroke="{RED}" '
          f'stroke-width="1.6"/></g>')
+    if M16["japanese"]:  # above 9: a character cell with a bar
+        emit(f'<rect x="{NUM_X[2] + 97 - 17}" y="{NUM_Y[0] - LEGEND_GAP - 40}" width="34" height="40" fill="none" '
+             f'stroke="{RED}" stroke-width="2"/><rect x="{NUM_X[2] + 97 - 12}" y="{NUM_Y[0] - LEGEND_GAP - 22.5}" '
+             f'width="24" height="5" fill="{RED}"/>')
     # letter block legends
     above(round(390 + 7 * 247.3) + 89, 1349, "<", 54, RED, fit=46)
     above(round(390 + 8 * 247.3) + 89, 1349, ">", 54, RED, fit=46)
-    above(1132 + 213, 1546, "^", 56, RED)
+    if M16["japanese"]:
+        above(1230, 1546, "^", 56, RED)
+        japanese_print()
+    else:
+        above(1132 + 213, 1546, "^", 56, RED)
     end()
+
+
+# ---------------------------------------------------------------- PC-1600K print
+LETTER_ROWS = [(205, 956, 130, "QWERTYUIOP"), (266, 1152, 130, "ASDFGHJKL"), (390, 1349, 130, "ZXCVBNM()")]
+# beside a key, right of it: kana at the bottom; a dot at the top where SHIFT gives the small kana
+KANA = {"Q": "ヌ", "W": "フ", "E": "ア.", "R": "ウ.", "T": "エ.", "Y": "オ.", "U": "ヤ.", "I": "ユ.", "O": "ヨ.",
+        "P": "ワ", "A": "タ", "S": "テ", "D": "イ.", "F": "ス", "G": "カ", "H": "ン", "J": "ナ", "K": "ニ",
+        "L": "ラ", "Z": "チ", "X": "ト", "C": "シ", "V": "ハ", "B": "キ", "N": "ク", "M": "マ", "(": "ノ",
+        ")": "リ"}
+KANA_SIZE = 40
+
+
+def above_jp(cx, top, text, size, color):
+    """Japanese legend centred on cx whose lowest ink sits LEGEND_GAP above `top`."""
+    low = min(b[1] for _, b in B.glyph_runs(text, FONT_JP_FILE, size) if b)
+    emit(f'<text x="{cx:.1f}" y="{top - LEGEND_GAP + low:.1f}" font-family="{FONT_JP}" font-size="{size}" '
+         f'fill="{color}" text-anchor="middle">{text}</text>')
+
+
+def kana(x, bottom, text, size=KANA_SIZE):
+    """Kana left-aligned at x, its lowest ink on `bottom`."""
+    low = min(b[1] for _, b in B.glyph_runs(text, FONT_JP_FILE, size) if b)
+    emit(f'<text x="{x:.1f}" y="{bottom + low:.1f}" font-family="{FONT_JP}" font-size="{size}" fill="{INK}">'
+         f'{text}</text>')
+
+
+def cell(x, y, mark, line=None):
+    """A kana mark in a hairline character cell (top-left x, y): where the mark sits in the cell.
+    line: the cell holds a bar instead of a glyph, at this fraction of its height."""
+    w, h = 34, 40
+    emit(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="none" stroke="{INK}" stroke-width="2"/>')
+    if line is not None:
+        emit(f'<rect x="{x + 5}" y="{y + h * line - 2.5}" width="{w - 10}" height="5" fill="{INK}"/>')
+    else:
+        emit(f'<text x="{x + w / 2}" y="{y + h * 0.88:.1f}" font-family="{FONT_JP}" font-size="{h}" fill="{INK}" '
+             f'text-anchor="middle">{mark}</text>')
+
+
+def japanese_print():
+    emit('<g id="kana">')
+    for x0, y, h, chars in LETTER_ROWS:
+        for i, ch in enumerate(chars):
+            right = col(x0, i) + 178
+            k = KANA[ch]
+            kana(right + 6, y + h - 14, k[0])
+            if k.endswith("."):
+                emit(f'<circle cx="{right + 22}" cy="{y + 16}" r="5" fill="{INK}"/>')
+    kana(2431 + 178 + 6, 956 + 40, "ヲ")   # P: SHIFT gives ヲ
+    y, h = 1546, 128
+    for x, w, k in [(637, 178, "ツ."), (885, 178, "サ"), (1626, 178, "ソ"), (1873, 178, "ヒ"), (2120, 428, "コ")]:
+        kana(x + w + 6, y + h - 14, k[0])
+        if k.endswith("."):
+            emit(f'<circle cx="{x + w + 22}" cy="{y + 16}" r="5" fill="{INK}"/>')
+    # number block: kana at the bottom right; kana marks in character cells; 「 」 at the top right
+    nw, nh = 194, 144
+    low = {(0, 0): "ホ", (1, 0): "ヘ", (3, 0): "¥", (0, 1): "セ", (0, 2): "レ", (1, 2): "ケ", (2, 2): "ム",
+           (4, 2): "ロ", (0, 3): "ミ", (1, 3): "モ", (2, 3): "ネ", (3, 3): "ル", (4, 3): "メ"}
+    for (i, r), k in low.items():
+        kana(NUM_X[i] + nw + 5, NUM_Y[r] + nh - 16, k)
+    for (i, r) in [(2, 0), (3, 2)]:   # ー
+        cell(NUM_X[i] + nw + 8, NUM_Y[r] + nh - 70, None, line=0.5)
+    cell(NUM_X[1] + nw + 8, NUM_Y[1] + 66, "゛")
+    cell(NUM_X[2] + nw + 8, NUM_Y[1] + 66, "゜")
+    kana(NUM_X[2] + nw + 8, NUM_Y[1] + 44, "「")
+    kana(NUM_X[2] + nw + 8, NUM_Y[2] + 44, "」")
+    for i, mark in [(2, "、"), (3, "。"), (4, "・")]:
+        cell(NUM_X[i] + nw + 8, NUM_Y[3] + 4, mark)
+    emit("</g>")
+    # Japanese captions (teal) and ローマ字 (red)
+    above_jp(2699 + 88, 663, "取消", 50, TEAL)
+    above_jp(390 + 89, 1546, "ローマ字", 44, RED)
+    above_jp(1405, 1546, "無変換", 50, TEAL)
+    for dx, ch in [(-33, "変"), (33, "換")]:   # set wide, as printed
+        above_jp(1626 + 89 + dx, 1546, ch, 50, TEAL)
+    above_jp(1873 + 89, 1546, "前候補", 50, TEAL)
 
 
 # ---------------------------------------------------------------- display
@@ -344,7 +461,9 @@ def dots(lines, cursor, segments):
 
 
 def main():
+    global M16
     ap = argparse.ArgumentParser()
+    ap.add_argument("--model", choices=sorted(MODELS), default="1600")
     ap.add_argument("--text", action="append", help="LCD line (up to 4; repeat the option; default: LCD off)")
     ap.add_argument("--cursor", default="none", help="line,column of the cursor, e.g. 3,13 (default: none)")
     ap.add_argument("--segments", default="", help="lit status segments, e.g. DE,G,RUN,BATT")
@@ -352,6 +471,7 @@ def main():
     ap.add_argument("--no-png", action="store_true", help="write the SVG and layout only")
     ap.add_argument("-o", "--out", required=True, help="SVG path (PNG and layout JSON next to it)")
     a = ap.parse_args()
+    M16 = MODELS[a.model]
     out = a.out
     lines = a.text or []
     cursor = None if a.cursor == "none" else tuple(int(v) for v in a.cursor.split(","))

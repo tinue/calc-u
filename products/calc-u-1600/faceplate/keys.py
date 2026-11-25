@@ -6,7 +6,7 @@ Every key of a faceplate SVG carries its rectangle in the faceplate's pixels
 every `{"<key>", x, y, w, h},` entry in the C++ tables in place, keeping the
 tables' order, comments and key names (the named-key vocabulary).
 
-Usage: keys.py DIR [--check]   (DIR holds pc1500.svg, pc1500a.svg, pc1600.svg; build.sh runs it)
+Usage: keys.py DIR [--check]   (DIR holds pc1500.svg, pc1500a.svg, pc1600.svg, pc1600k.svg; build.sh runs it)
   --check  exit 1 if a table differs from the SVG instead of rewriting it.
 """
 
@@ -25,13 +25,13 @@ SVG_TO_KEY = {
     "minus": "-", "dot": ".", "equal": "=", "plus": "+",
 }
 
-# (SVG, C++ table). The PC-1500A shares the PC-1500 table; the script checks
-# that its SVG has the same rectangles.
+# (SVG, C++ table). The PC-1500A shares the PC-1500 table, the PC-1600K the
+# PC-1600 table; the script checks that their SVGs have the same rectangles.
 TABLES = [
     ("pc1500.svg", "app/KeyLayout/PC1500KeyLayout.cpp"),
     ("pc1600.svg", "app/KeyLayout/PC1600KeyLayout.cpp"),
 ]
-SAME_AS = [("pc1500a.svg", "pc1500.svg")]
+SAME_AS = [("pc1500a.svg", "pc1500.svg"), ("pc1600k.svg", "pc1600.svg")]
 SVG_DIR = Path(".")
 
 ENTRY_RE = re.compile(r'\{"([^"]+)", [\d.]+, [\d.]+, [\d.]+, [\d.]+\},')

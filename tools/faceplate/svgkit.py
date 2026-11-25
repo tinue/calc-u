@@ -8,7 +8,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 HERE = Path(__file__).resolve().parent   # tools/faceplate/: render.sh
-FONTS = HERE / "fonts"                   # TeX Gyre, GUST Font License
+FONTS = HERE / "fonts"                   # TeX Gyre (GUST Font License), Noto Sans JP (OFL)
 
 RED_PRINT = "#a9443a"
 BLACK_PRINT = "#1e1e1e"
@@ -18,11 +18,19 @@ BLACK_PRINT = "#1e1e1e"
 #   Heros Cn ~ Helvetica Condensed  narrow key legends (CAL, BASIC, ...)
 #   Adventor ~ ITC Avant Garde      digits on the brown keys, logo text
 #   Termes   ~ Times italic         math letters x, y, pi ...
+# and Noto Sans JP (SIL Open Font License), a subset of the characters in JAPANESE:
+#   Gothic JP                       the Japanese print of the PC-1600K
 FONT_SANS = "PCHeros, 'Helvetica Neue', Helvetica, sans-serif"
 FONT_COND = "PCHerosCn, 'Helvetica Neue', sans-serif"
 FONT_MATH = "PCTermes, 'Times New Roman', serif"
 FONT_GEO = "PCAdventor, 'Avenir Next', sans-serif"
 FONT_LOGO = FONT_GEO
+FONT_JP = "PCGothicJP, 'Hiragino Sans', sans-serif"
+FONT_JP_FILE = "notosansjp-faceplate.otf"
+# The Japanese characters of the faceplates; fonts/notosansjp-faceplate.otf holds exactly these
+# (pyftsubset NotoSansJP-Regular.otf --text=... --name-IDs='*' --no-hinting --layout-features='').
+JAPANESE = ("アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン"
+            "ー、。・「」゛゜¥無変換前候補取消漢字")
 EMBED = [  # family, file, weight, style
     ("PCHeros", "texgyreheros-regular.otf", 400, "normal"),
     ("PCHeros", "texgyreheros-bold.otf", 700, "normal"),
@@ -31,6 +39,7 @@ EMBED = [  # family, file, weight, style
     ("PCAdventor", "texgyreadventor-bold.otf", 700, "normal"),
     ("PCTermes", "texgyretermes-italic.otf", 400, "italic"),
     ("PCTermes", "texgyretermes-bolditalic.otf", 700, "italic"),
+    ("PCGothicJP", FONT_JP_FILE, 400, "normal"),
 ]
 
 
@@ -44,7 +53,7 @@ def font_faces(families=None):
     fonts, or of the given families only."""
     from fontTools import subset
     from fontTools.ttLib import TTFont
-    text = "".join(chr(c) for c in range(32, 127)) + "ΣσθπΔ′∧÷×∗−–→↔·√x̄ȳ≥"
+    text = "".join(chr(c) for c in range(32, 127)) + "ΣσθπΔ′∧÷×∗−–→↔·√x̄ȳ≥" + JAPANESE
     rules = []
     for fam, fn, wt, st in EMBED:
         if families and fam not in families:

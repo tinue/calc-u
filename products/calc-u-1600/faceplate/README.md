@@ -20,7 +20,7 @@ The Qt and Web frontends both take the images from `frontends/qt6/resources/face
 
 Colours, key caps and printed details follow 600 dpi scans of a PC-1500, a
 PC-1500A and a PC-1600 (not included); the PC-1600K's Japanese print follows
-two photos of one (not included). The brushed aluminium keeps the PNGs
+three photos of one (not included). The brushed aluminium keeps the PNGs
 large (~2.7 MB).
 
 A preview with a lit LCD:

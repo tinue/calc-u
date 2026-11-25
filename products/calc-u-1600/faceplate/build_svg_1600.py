@@ -10,7 +10,7 @@ reference drawing of that size. Key caps, colours and printed details follow a 6
 a PC-1600 (not in the repository), lightened towards the drawing where the scan is too dark.
 Keys, filters and legend placement are shared with build_svg_1500.py.
 The PC-1600K (--model 1600k), the Japanese machine, has the same plate, keys and key wells; its print
-follows two photos of a PC-1600K (not in the repository): the kana and kana marks beside the keys,
+follows three photos of a PC-1600K (not in the repository): the kana and kana marks beside the keys,
 the Japanese captions (teal) of BS, SPACE, the arrow keys and the kana key (カナ for SML), the 漢字 box
 around the last function key (for KB II) and in the logo panel, and ¥ for the backslash.
 Fonts, font metrics, the output buffer, rich text and the rendering are in tools/faceplate/svgkit.py.
@@ -255,10 +255,11 @@ def printed_text():
     fn_mid = FN_Y + FN_H / 2
     rich(229, fn_mid, "DEF", 50, color=WHITE, weight=400, anchor="end", vcap=True)
     if M16["japanese"]:
-        x = FN_DIV[-1] + 16
-        emit(f'<rect id="kanji-box" x="{x}" y="{FN_Y - 10}" width="{FN_X[7] + FN_W + 22 - x}" height="{FN_H + 20}" '
+        # level with the key's top, reaching well past it on the right; 漢字 left of the key
+        x, top = FN_DIV[-1] + 12, FN_Y + 4
+        emit(f'<rect id="kanji-box" x="{x}" y="{top}" width="{FN_X[7] + FN_W + 80 - x}" height="{FN_H + 16}" '
              f'fill="{KANJI_BOX}"/>')
-        rich((x + FN_X[7]) / 2, fn_mid, "漢字", 46, color=BAND, family=FONT_JP, weight=400, vcap=True)
+        rich((x + FN_X[7]) / 2, top + (FN_H + 16) / 2, "漢字", 46, color=BAND, family=FONT_JP, weight=400, vcap=True)
     else:
         rich(2223, fn_mid, [("KB", ""), ("II", "")], 50, color=WHITE, weight=400, anchor="end", vcap=True)
     for i, t in enumerate(['!', '"', '#', '$', '%', '&']):
@@ -267,7 +268,7 @@ def printed_text():
             ticks(cx, FN_Y - LEGEND_GAP + 4, 26, ORANGE, gap=6, width=5)
         else:
             above(cx, FN_Y + 4, t, 38 if t == "$" else 42, ORANGE)
-    above(FN_X[7] + FN_W / 2, FN_Y - 10 if M16["japanese"] else FN_Y + 4, "CLICK", 40, ORANGE)  # K: above the 漢字 box
+    above(FN_X[7] + FN_W / 2, FN_Y + 4, "CLICK", 40, ORANGE)
     # logo panel: silver Calc-U logo, white caption
     logo = dict(family=FONT_LOGO, weight=700, fit=M16["logo_fit"], vcap=True)
     name = M16["name"]
@@ -276,9 +277,9 @@ def printed_text():
     rich(3288, 208, name, 160, color="none", style="stroke:#2b2622;stroke-width:2.6;stroke-linejoin:round", **logo)
     if M16["japanese"]:  # the caption moves left of a framed 漢字
         rich(3117, 447, "POCKET COMPUTER", 76, color=WHITE, weight=400, fit=655, vcap=True)
-        emit(f'<rect id="logo-kanji" x="3586" y="377" width="274" height="140" fill="none" stroke="{TEAL}" '
+        emit(f'<rect id="logo-kanji" x="3600" y="377" width="274" height="140" fill="none" stroke="{TEAL}" '
              f'stroke-width="6"/>')
-        rich(3723, 447, "漢字", 112, color=TEAL, family=FONT_JP, weight=400, fit=226, vcap=True)
+        rich(3737, 447, "漢字", 112, color=TEAL, family=FONT_JP, weight=400, fit=226, vcap=True)
     else:
         rich(3288, 447, "POCKET COMPUTER", 76, color=WHITE, weight=400, fit=655, vcap=True)
     # grey panel

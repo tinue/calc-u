@@ -94,3 +94,17 @@ PC-1600. The MEP provided:
 Calc-U-1600's driver ROM, its protocol to the host and the host side are
 its own work, and no MEP code is included. The MEP rev3 manual served as
 the reference for the public interface.
+
+**superRAM r4, (c) spellbound, 2026.** The bundled module **superRAM r4**
+(`frontends/qt6/resources/cards/superRAMr4.module.yaml`) emulates
+spellbound's 1 MB RAM module for PC-1600 Slot 2. The module definition
+is Calc-U-1600's own; the module, its manuals and its initialisation
+program SRAMINIT.BIN are spellbound's and are not included. SRAMINIT.BIN
+comes with the module.
+
+**Automated tests, with spellbound.** The pytest driver
+(`tools/machine/`, guide `docs/testing/README.md`) was developed together
+with spellbound. The run report (`library/harness/python/report.py`) is
+spellbound's, fitted to the driver, and the example tests in
+`docs/testing/example/` are adapted from spellbound's superRAM r4
+regression suite.

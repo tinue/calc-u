@@ -13,8 +13,8 @@ class PC1600Machine;
 //
 //   machine.debugInspect([&](const PC1600Machine& m) { return inspect::pc1600View(m, v); });
 //
-// Sources: Ref/PC-1600/PC-1600-Work-Area-Map.md (the work area, ADTBL, MEM
-// and STATUS formulas), PC-1600-Memory-Architecture.md (program areas,
+// Sources: Ref/Firmware/PC-1600-Work-Area-Map.md (the work area, ADTBL, MEM
+// and STATUS formulas), Memory/PC-1600-Program-Areas-and-NEW.md (program areas,
 // expansion vs. program memory vs. RAM disk), PC-1600-Filesystem.md §4-5
 // (RAM-disk layout and boot sector); names as in the ROM disassembly's
 // symbol tables.

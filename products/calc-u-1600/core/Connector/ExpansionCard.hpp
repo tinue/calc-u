@@ -32,7 +32,7 @@ struct PinState {
     //   pin[2]  PC-1500 PU        / PC-1600 VCC (TRM: PVIN; measured tied to VCC, left low)
     //   pin[3]  PC-1500 PV        / PC-1600 PU
     //   (PC-1500 as measured; the TRM prints 2 = PV, 3 = PU.
-    //   Ref/Shared/Expansion-Connectors.md §2.2b.)
+    //   Ref/Expansion/PC-1500-Connectors.md §2.2b.)
     //   pin[4]  PC-1500 Y0 (CS &0000-&3FFF) / PC-1600 RAM2 (Slot 1) or RAM1 (Slot 2) CS
     //   pin[5]  PC-1500 S4        / PC-1600 PVOUT
     //   pin[6]  PC-1500 DME0      / PC-1600 MREQ

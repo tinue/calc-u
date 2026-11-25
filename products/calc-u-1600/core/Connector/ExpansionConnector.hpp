@@ -50,7 +50,7 @@ private:
     PC1500Variant m_variant;
     CardChain<ExpansionCard, PinState> m_card; // a chain of one: the 40-pin plug takes one module
 
-    // Per-variant S-block -> physical-pin routing (Ref/Shared/Expansion-Connectors.md
+    // Per-variant S-block -> physical-pin routing (Ref/Expansion/PC-1500-Connectors.md
     // §3.1). PC-1500: pins 16/17/18/5 carry S1/S2/S3/S4. PC-1500A: the same
     // four pins carry S3/S4/S5/-- (pin 5 dead). S5 never reaches the
     // PC-1500's 40-pin connector at all; S1/S2 never reach the PC-1500A's.

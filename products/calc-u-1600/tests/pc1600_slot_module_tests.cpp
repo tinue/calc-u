@@ -47,7 +47,7 @@ uint16_t rd16(PC1600Machine& m, uint16_t a) {
 // The start of the S0 program area: F029H (the base page the boot ROM's
 // memory sizing sets) : C5H, the first byte after the 197-byte reserve --
 // C0C5H stock, lower by what a slot module adds to S0.
-// Ref/PC-1600/PC-1600-Work-Area-Map.md (F029H, and INIT's `(F029H AND
+// Ref/Firmware/PC-1600-Work-Area-Map.md (F029H, and INIT's `(F029H AND
 // 7FH):C5H`). Not F5CFH: it is a Z-80 stack slot that the half-second
 // sub-CPU interrupt routine overwrites.
 uint16_t programStart(PC1600Machine& m) {
@@ -233,7 +233,7 @@ TEST(test_boot_with_ce155_in_slot1_is_stable) {
 
 // The boot ROM's own memory sizing must credit the CE-155 its full 8KB:
 // with the module the BASIC RAM base drops from C0C5H to A0C5H (the
-// documented CE-159 figure -- Ref/PC-1600/PC-1600-Memory-Architecture.md), i.e. every
+// documented CE-159 figure -- Ref/Memory/PC-1600-Program-Areas-and-NEW.md), i.e. every
 // RAM-base/size work-area pointer moves by exactly 8192.
 TEST(test_ce155_contributes_full_8k_to_mem) {
     auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce155.module.yaml");
@@ -273,7 +273,7 @@ TEST(test_ce151_fills_b000_bfff_in_slot1) {
 }
 
 // A CE-161 fills the whole 8000-BFFF page in either slot: the boot ROM
-// credits +16384 (MEM 11834 + 16384, Ref/PC-1600/PC-1600-Memory-Architecture.md),
+// credits +16384 (MEM 11834 + 16384, Ref/Memory/PC-1600-Program-Areas-and-NEW.md),
 // BASIC RAM base C0C5H -> 80C5H.
 TEST(test_ce161_contributes_full_16k_in_both_slots) {
     auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce161.module.yaml"),

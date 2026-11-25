@@ -60,7 +60,7 @@ obligations.
 
 ## PC-1600 LH-5803 / SC-7852 interface
 
-Background: Ref/PC-1600/PC-1600-CPU-LH5803-Compat.md §2a and §6.1,
+Background: Ref/CPU/PC-1600-LH5803.md §2a and §6.1,
 docs/developer/PC1600-Core-Limitations.md (LH5803 section).
 
 - **9400H trap decode (LHNMIO, SC-7852 pin 92).** Modelled as the opcode
@@ -121,7 +121,7 @@ docs/developer/PC1600-Core-Limitations.md (LH5803 section).
 ## PC-1600 loading
 
 - **The open questions of the load/save matrix**
-  ([Ref/PC-1600/PC-1600-Load-Save-Matrix.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-Load-Save-Matrix.md) §6), to be discussed:
+  ([Ref/Storage/PC-1600-Load-Save-Matrix.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Storage/PC-1600-Load-Save-Matrix.md) §6), to be discussed:
   `INPUT#-1` in MODE 1 through the CE-1600P (the ROM allows it,
   the TRM doesn't); `SAVE`/`LOAD "CAS:"` in MODE 1; CE-150/CE-158
   `PRINT#`/`INPUT#` in MODE 0.
@@ -203,8 +203,8 @@ per machine; on the PC-1600 both CPUs drive it (`PC1600BusDrive`).
     research.
 
 - **Connector signals not emulated (besides DME0/MREQ and PVIN above
-  and the hardware questions below).** Source: Ref/Shared/Expansion-Connectors.md
-  §2.1, §2.2, §4.0-4.3. Power, ground, NC and the unused PB0/PB1/PC7 are
+  and the hardware questions below).** Source: Ref/Expansion/PC-1500-Connectors.md
+  §2.1, §2.2 and Ref/Expansion/PC-1600-Connectors.md §4.0-4.3. Power, ground, NC and the unused PB0/PB1/PC7 are
   left out; RD/WR, R/W and OD are implicit in the read/write calls. None
   of these is used by a bundled card or by the firmware paths we run, so
   nothing breaks today; each would matter for a card that uses it.
@@ -236,7 +236,7 @@ per machine; on the PC-1600 both CPUs drive it (`PC1600BusDrive`).
     cycle; every card access takes the CPU's normal cycle. Only affects
     timing (a slow peripheral, cycle-exact measurements). On the PC-1500,
     WEX together with S6 also forwards a peripheral's interrupt to the I/O
-    port (PC-1500-Address-Decoding.md, S6 · WEX); not modelled either.
+    port (Memory/PC-1500-Address-Decoding.md, S6 · WEX); not modelled either.
   - **PC-1600 RSTE** (60-pin 13): an external reset line, direction and
     use not documented in the research. Not modelled.
   - **BFO / φOS** (60-pin 50/51, both machines): the VCC-on output and the
@@ -260,7 +260,7 @@ per machine; on the PC-1600 both CPUs drive it (`PC1600BusDrive`).
 - DME0 (56) on Z-80 cycles, M1 (10) on memory cycles, PT/PU/PVOUT on I/O
   cycles: not documented. A logic probe on the 60-pin plug while stepping
   Port 31H through the page-1 banks would also confirm the PT/PU/PVOUT
-  bank decode (Ref/PC-1600/PC-1600-Expansion-Bus.md §1).
+  bank decode (Ref/Expansion/PC-1600-Expansion-Bus.md §1).
 - The PU drive handover between the SC7852 and the LH5803 (one shared line)
   is not measured.
 
@@ -359,7 +359,7 @@ See docs/developer/App-Layer.md and Web-Client.md.
   BASIC. Then drive `PiezoSampler` from a modelled F output
   (`PC1600SubCpu`, `PC1600Memory::updateBuzzerLine()`).
 - **Sub-CPU commands still unnamed** (IOCS 0CH–0FH, 1BH, 1FH, 26H, what
-  1CH/1DH mean, the LH-5803's DCH): see [Ref/PC-1600/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-SubCPU-LU57813P.md) §8.
+  1CH/1DH mean, the LH-5803's DCH): see [Ref/CPU/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/CPU/PC-1600-SubCPU-LU57813P.md) §8.
   Known from the ROM: 1EH is the port-mode select (F12CH b0 analog input,
   b1 external keyboard; `ON ADIN`, `KEYSTAT`), 16H/17H are the external
   keyboard, 1CH/1DH come from `SINIT`. The rest have no caller in the

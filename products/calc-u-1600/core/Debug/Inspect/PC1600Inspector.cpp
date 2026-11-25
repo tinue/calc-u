@@ -137,7 +137,7 @@ std::string decodeMtb(uint8_t v) {
 }
 
 // Addresses and names from the ROM disassembly's symbol tables and
-// Ref/PC-1600/PC-1600-Work-Area-Map.md (§3.2 display, §3.5 BASIC, §3.9
+// Ref/Firmware/PC-1600-Work-Area-Map.md (§3.2 display, §3.5 BASIC, §3.9
 // timer, §3.12 logical banks, §3.13/§3.15 ports, §3.18 RAM disk, §4 ADTBL).
 const std::vector<Group>& pc1600Pointers() {
     static const std::vector<Group> groups = {

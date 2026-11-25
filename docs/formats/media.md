@@ -174,8 +174,8 @@ one at a time. The file holds the raw bytes of both sides and nothing
 else. It knows nothing about files: the filesystem inside a side is
 Sharp's, which the CE-1600P ROM reads as on real hardware. The
 filesystem inside a side is described in the research repository:
-[PC-1600-Filesystem.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-Filesystem.md) §5 and
-[PC-1600-Peripherals-Hardware.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-Peripherals-Hardware.md) §2.
+[PC-1600-Filesystem.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Storage/PC-1600-Filesystem.md) §5 and
+[PC-1600-Floppy-CE-1600F.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Storage/PC-1600-Floppy-CE-1600F.md) §2.
 
 ### 2.1 Keys
 

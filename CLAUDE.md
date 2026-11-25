@@ -164,6 +164,15 @@ view, `barFit`, "Loading…", notices, the pointer).
   `SC61860`, `pc1500-build`) and the research repository
   `~/Development/ti59-research`. Don't invent facts
   (sizes, behaviour, limits); ask.
+- A new PC-1500/1500A/1600 hardware or firmware fact found here (a
+  measurement, a ROM reading, an observation in the emulator) goes into
+  the research repository `~/Development/sharp/Sharp1500-1600-Ref`, by
+  its `CONVENTIONS.md`, and is cited here as `Ref/<path>`. It never lives
+  only in agent memory: memory keeps how the emulator uses a fact, with
+  the pointer. That repository is public; material not for publication
+  (the superRAM r4 manuals, SRAMINIT/SRAMTEST, spellbound's test suite)
+  stays in the private `~/Development/sharp/pc1600`, and Calc-U holds
+  only the coded module and the acknowledgment.
 - Agent knowledge follows the code: a rename also changes the skills,
   `CLAUDE.md` files and memory that use the old name.
 - The code and these rules are the current state. Earlier decisions are

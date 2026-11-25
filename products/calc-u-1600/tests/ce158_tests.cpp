@@ -468,7 +468,7 @@ TEST(test_pc1600_rom_mode1_rinkey) {
 // = 1 -- the CE-158 high bank's display shift, 93F9H-9439H -- raises its
 // NMI; the LH5803 ROM's handler (C440H) runs a copy of the shift, redraws
 // the LCD through ME1 A058H/A059H, acknowledges at port 36H and resumes at
-// 943AH. Ref/PC-1600/PC-1600-CPU-LH5803-Compat.md §6.1.
+// 943AH. Ref/CPU/PC-1600-LH5803.md §6.1.
 TEST(test_pc1600_lhnmio_trap_runs_ce158_shift) {
     if (!havePC1600Roms(__func__)) return;
     PC1600Machine m;

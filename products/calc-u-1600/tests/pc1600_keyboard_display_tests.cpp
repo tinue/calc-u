@@ -49,7 +49,7 @@ TEST(test_keyboard_rsv_matrix_position) {
 
 TEST(test_keyboard_scan_single_strobe) {
     PC1600Keyboard kb;
-    // '5' is KS0 bit1 (Ref/PC-1600/PC-1600-Keyboard.md §5).
+    // '5' is KS0 bit1 (Ref/Keyboard/PC-1600-Keyboard.md §5).
     kb.setKeyState(PC1600Keyboard::Key::Digit5, true);
     // Strobe only KS0 (bit0 low -> active), rest high (inactive).
     uint8_t sense = kb.scan(0xFE, false);
@@ -338,7 +338,7 @@ TEST(test_display_status_symbols_wired_to_ic3_column63) {
 }
 
 // A "display off" command (0x3E) to IC3 must also blank the status-symbol
-// strip -- those segments hang off IC3 (Ref/PC-1600/PC-1600-Display-HD61202.md §2), so
+// strip -- those segments hang off IC3 (Ref/Display/PC-1600-Display-Hardware.md §2), so
 // the ROM's OFF-key / auto-power-off power-down should not leave DEG/RUN/
 // BUSY frozen on the glass. Turning the display back on recomputes from the
 // retained pixel RAM.
@@ -884,7 +884,7 @@ TEST(test_memory_clock_enable_via_port37_write) {
 
 // The GUI/typer's PC-1600 digit-row SHIFT table must agree with the ROM's
 // own SHIFT-code table (SFTCDT, bank 6 @ 953FH, indexed by key code - 08H;
-// Ref/PC-1600/PC-1600-Keyboard.md §7): '_' is SHIFT + ".", and 9 has no
+// Ref/Keyboard/PC-1600-Keyboard.md §7): '_' is SHIFT + ".", and 9 has no
 // SHIFT character.
 TEST(test_digit_row_shift_table_matches_rom_sftcdt) {
     std::ifstream in("roms/PC1600-P2-B6-new.bin", std::ios::binary);

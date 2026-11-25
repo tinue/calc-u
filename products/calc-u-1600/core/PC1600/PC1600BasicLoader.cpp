@@ -149,7 +149,7 @@ bool pc1600ReadBasicRecords(const sharp::LoaderMemory& machine, std::vector<uint
 // in whatever bank is mapped (internal RAM directly, a module through its
 // slot's pins in the segment's bank); the pointers are then left exactly as
 // the ROM's own LOAD leaves them (LOADEND, rom3b 70E1H --
-// Ref/PC-1600/PC-1600-Work-Area-Map.md §3.5 / §4.5).
+// Ref/Firmware/PC-1600-Work-Area-Map.md §3.5 / §4.5).
 BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& machine, const std::vector<uint8_t>& payload) {
     const int title = machine.programArea();
     pc1600::PlacementInput in;

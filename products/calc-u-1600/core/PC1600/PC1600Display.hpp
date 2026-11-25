@@ -9,7 +9,7 @@
 // ── PC-1600 LCD (1x HD61203 + 2x HD61102) ────────────────────────────────
 //
 // Model of the LF7204E panel per
-// Ref/PC-1600/PC-1600-Display-HD61202.md: 156x32 graphics
+// Ref/Display/PC-1600-Display-Hardware.md: 156x32 graphics
 // dots split across two HD61102 column-driver chips (IC2/IC3), standard
 // HD61102 register model (command vs. data selected by which port-number
 // offset within a 4-port block is addressed, rather than a dedicated D/I

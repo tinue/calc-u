@@ -11,7 +11,7 @@
 // PC-1600 header, or headerless bytes -- or a cassette WAV, which it decodes
 // (sde_wav_decode) and then describes as the file on the tape. Every loader builds on it --
 // machinecode::readFile() and basic::readBasicProgram(). Header layouts:
-// Ref/Shared/Data-Formats/Binary-Exchange-Formats.md §2 / §3.
+// Ref/Data-Formats/Binary-Exchange-Formats.md §2 / §3.
 //
 // No CPU guessing:
 // the library's raw-lh5801 / raw-z80 guess for headerless code never picks

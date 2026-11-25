@@ -16,7 +16,7 @@ namespace PC1600BusDrive {
 
 /// An LH5803 cycle (ELH̄ asserted).
 /// - PU (15) is one line shared with the SC7852's PU output; the LH5803's PV
-///   leaves through PVIN -> PVOUT (16). Ref/Shared/Expansion-Connectors.md
+///   leaves through PVIN -> PVOUT (16). Ref/Expansion/PC-1600-Connectors.md
 ///   §2.2b.
 /// - ME0 is MREQ (49). DME0 (56) is asserted too: the TRM names the contact
 ///   DME0 like the PC-1500's, and the PC-1500 peripherals (CE-150, CE-158)

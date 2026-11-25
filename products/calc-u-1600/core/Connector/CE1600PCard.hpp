@@ -12,7 +12,7 @@
 // ── CE-1600P plotter, attached to the PC-1600's 60-pin system bus ───────
 //
 // This card claims (decoding the 60-pin contacts like the LR38045 gate
-// array, Ref/PC-1600/PC-1600-Peripherals-Hardware.md §1.2.2; nothing while
+// array, Ref/Peripherals/PC-1600-CE-1600P-Printer-Plotter.md §1.2.2; nothing while
 // ELH̄ is asserted, see Sc7852Decode):
 //   - The ROM select CSNO: MREQ, PT high, PU low, 4000-7FFF -- banks 4/5,
 //     PVOUT picks the half -- both 16 KB halves of the new or old ROM version
@@ -21,8 +21,8 @@
 //   - I/O port 0x82 write: Z-motor phase (low nibble) -- pen lift +
 //     color-turret rotation; b4/b5 RMT-ON/RMT-OFF pulses for the latching
 //     remote relay of the cassette recorder; b7 CMT-in enable. A read
-//     returns the latch (the ROM read-modify-writes it; Ref/PC-1600/
-//     PC-1600-Peripherals-Hardware.md §1.2.2).
+//     returns the latch (the ROM read-modify-writes it; Ref/
+//     Peripherals/PC-1600-CE-1600P-Printer-Plotter.md §1.2.2).
 //   - I/O port 0x83 write: X-motor phase (low nibble) / Y-motor phase
 //     (high nibble).
 //   - I/O port 0x81 read: bit5 = pen at left/home (penX() <= 0), bit7 =

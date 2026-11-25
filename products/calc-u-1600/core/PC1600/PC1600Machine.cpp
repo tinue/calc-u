@@ -614,7 +614,7 @@ int PC1600Machine::stepLocked(uint64_t* tstates) {
     // 9400H-9403H itself. The Service Manual says "94**H"; the CE-158 runs
     // on through 943AH-94xxH with the trap re-armed, so only the 9400H
     // fetch is decoded here (that and whether port 30H b0 gates the trap
-    // are open). Ref/PC-1600/PC-1600-CPU-LH5803-Compat.md §6.1.
+    // are open). Ref/CPU/PC-1600-LH5803.md §6.1.
     if (m_lh5803.pc() == 0x9400 && m_lh5803.pu() && m_lh5803.pv() && !m_lh5803.halted() &&
         !m_z80Mem.lhNmiLatched()) {
         m_z80Mem.latchLhNmi();

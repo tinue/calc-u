@@ -169,7 +169,7 @@ private:
         return PC1600BusDrive::lh5803Pins(addr, forWrite, me1, m_pu, m_pv);
     }
 
-    /// The SC7852's LHA90 pin (Ref/PC-1600/PC-1600-CPU-SC7852-Z80.md,
+    /// The SC7852's LHA90 pin (Ref/CPU/PC-1600-SC7852-Pinout-and-Control-Regs.md,
     /// pin 38) is forced high while the LH5803 accesses 7400H-744FH or
     /// 7500H-754FH, so those land on 7600H-764FH / 7700H-774FH -- the
     /// PC-1500's display-RAM aliases. Confirmed on a real PC-1600: an XPOKE

@@ -32,13 +32,13 @@
 // Bus decode (60-pin contacts, isRomRead() / isLh5810()): the ROM answers reads
 // with DME0 asserted, PV (16) low and A000-BFFF; the LH5810 answers ME1
 // (59; IOE on the PC-1600, the LH5803's ME1 strobe) at B008-B00F.
-// Ref/PC-1500/Peripherals/CE-150-Hardware.md §3. Nothing else is decoded,
+// Ref/Peripherals/PC-1500-CE-150-Hardware.md §3. Nothing else is decoded,
 // so the card is silent on PC-1600 Z-80 cycles, which assert neither.
 //
 // Cassette: the bit stream is the main unit's (its LH5811 SDO drives
 // CMTOUT, its PB2 reads CMTIN); the CE-150 conditions it to and from the
 // MIC / EAR jacks and switches the recorder's motor. That's two latching
-// REMOTE relays pulsed on port A (Ref/PC-1500/Peripherals/CE-150-Hardware.md
+// REMOTE relays pulsed on port A (Ref/Peripherals/PC-1500-CE-150-Hardware.md
 // §5; ROM REMOTE_PULSE &BF28): PA1 / PA2 REMOTE 0 on / off, PA3 / PA4
 // REMOTE 1 on / off. The recorder (connectRecorder()) runs while either
 // relay is closed -- one recorder, plugged into whichever jack the command

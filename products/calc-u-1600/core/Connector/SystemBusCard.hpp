@@ -8,7 +8,7 @@
 // The PC-1500/1500A and the PC-1600 have the same 60-pin plug. They agree on
 // every signal both CPUs have (address, data, PU/PV, INHIBIT, CMTIN/CMTOUT,
 // DME0, BFO/φOS) and differ only where the CPUs do
-// (Ref/Shared/Expansion-Connectors.md §2.2a, §4.0). A card decodes the
+// (Ref/Expansion/PC-1500-Connectors.md §2.2a, Ref/Expansion/PC-1600-Connectors.md §4.0). A card decodes the
 // contacts, never the host: each host drives every contact with what its own
 // CPU (or, on the PC-1600, the SC7852 gate array) puts there
 // (PC1500SignalDecode::systemBusPins, PC1600BusDrive). The same card
@@ -45,7 +45,7 @@ struct SystemBusPins {
 /// How the cards built for the PC-1600's SC7852 (CE-1600P, CE-1600F, a
 /// page-1 ROM module) read the contacts. They ignore every cycle while ELH̄
 /// is asserted: the CE-1600P gate array qualifies its ROM select CSNO with
-/// ELH (Ref/PC-1600/PC-1600-Peripherals-Hardware.md §1.2.2); that its I/O
+/// ELH (Ref/Peripherals/PC-1600-CE-1600P-Printer-Plotter.md §1.2.2); that its I/O
 /// decode does the same is assumed (TODO.md, "Expansion connectors").
 namespace Sc7852Decode {
 /// A Z-80 memory cycle in page 1 (4000-7FFF), where peripheral ROMs sit.

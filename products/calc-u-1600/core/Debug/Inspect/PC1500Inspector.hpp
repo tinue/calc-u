@@ -12,8 +12,8 @@ class PC1500Machine;
 //
 //   machine.debugInspect([&](const PC1500Machine& m) { return inspect::pc1500View(m, v); });
 //
-// Sources: Ref/PC-1500/Memory-Architecture/PC-1500-BASIC-Pointers.md and
-// PC-1500-Address-Decoding.md; names as in the ROM disassembly's
+// Sources: Ref/Firmware/PC-1500-BASIC-Pointers.md and
+// Memory/PC-1500-Address-Decoding.md; names as in the ROM disassembly's
 // PC-1500.lib, CE-150.lib and CE-158.lib.
 namespace inspect {
 

@@ -24,7 +24,7 @@
 //
 // Resolves each of the SC7852's four 16KB pages against a PC1600Bank's
 // current register state, per the "Memory Map by Bank" table in
-// Ref/PC-1600/PC-1600-Memory-Bank-Switching.md.
+// Ref/Memory/PC-1600-Bank-Switching.md.
 //
 // Pages (Z-80 address space):
 //   Page A  0000-3FFF  system ROM (CS001), bank 0 only; a bank 1 here is
@@ -61,7 +61,7 @@
 class PC1600Memory : public SC7852Bus {
 public:
     // Firmware gateway routines (always in page A, Bank 0) —
-    // Ref/PC-1600/PC-1600-Memory-Bank-Switching.md Part 5.
+    // Ref/Memory/PC-1600-Gate-Array-and-Chip-Selects.md Part 5.
     static constexpr uint16_t kMemoryChk = 0x018D;
     static constexpr uint16_t kBankSet   = 0x0190;
     static constexpr uint16_t kSlot1Map  = 0x0196;
@@ -114,7 +114,7 @@ public:
     /// Sets/clears the ON key's live state (not part of the scan matrix --
     /// see PC1600Keyboard's class comment). A press transition sets IF
     /// register (port 1BH) bit 1, per
-    /// Ref/PC-1600/PC-1600-Keyboard.md §8 -- confirmed distinct from the PC-1500's own
+    /// Ref/Keyboard/PC-1600-Keyboard.md §8 -- confirmed distinct from the PC-1500's own
     /// ON-key wiring in bit position only, same latch-on-press-edge idea.
     /// Returns true on a press (rising) edge -- the caller
     /// (PC1600Machine::setOnKeyPressed) uses that to resume whichever CPU
@@ -156,7 +156,7 @@ public:
     /// edge only, and `readIO()`'s own read-clears-cause convention.
     /// Stored in `m_pbIn` (the live PB *pin* levels), NOT in `m_opb` (the
     /// output latch): PB5 is an input pin, so per §2.4 of
-    /// Ref/PC-1600/PC-1600-IO-Ports.md a read of 1FH must return its pin level, not
+    /// Ref/IO-Ports/PC-1600-IO-Ports.md a read of 1FH must return its pin level, not
     /// whatever the CPU last wrote to the port. Keeping the two apart
     /// means a plain `OUT (1FH),A` cannot forge an input pin's level, even
     /// though the ROM only ever touches OPB through a read-modify-write
@@ -202,7 +202,7 @@ public:
     /// (the CE-158 high bank's display shift, which the LH5803 ROM's NMI
     /// handler at C440H replaces), cleared by any port 36H write -- the
     /// handler's `ANI #(A036H),00H` acknowledge.
-    /// Ref/PC-1600/PC-1600-CPU-LH5803-Compat.md §6.1.
+    /// Ref/CPU/PC-1600-LH5803.md §6.1.
     bool lhNmiLatched() const { return m_lhNmiLatch; }
     void latchLhNmi() { m_lhNmiLatch = true; }
 
@@ -543,7 +543,7 @@ private:
     /// **PB3 starts high.** Pin 78 (PCSTB) is "reset → input mode, current
     /// state latched in the PB3 flip-flop (externally pulled up on the
     /// PC-1600) ... not used on the production PC-1600"
-    /// (Ref/PC-1600/PC-1600-CPU-SC7852-Z80.md §6). Nothing ever drives it low on a
+    /// (Ref/CPU/PC-1600-SC7852-Pinout-and-Control-Regs.md §6). Nothing ever drives it low on a
     /// production machine, so the flip-flop latches the pull-up at reset
     /// and PB3 reads 1 forever after.
     ///
@@ -619,7 +619,7 @@ private:
     /// SLOT2MAP gate-array remap (Port 3CH b5:b4, PC1600Bank::slot2MapMode):
     /// the firmware can make the Slot 2 RAM chip-select assert for a bank-1
     /// access *outside* the normal page-C window -- the "(S2:) at Bank 1"
-    /// path (Ref/PC-1600/PC-1600-Memory-Bank-Switching.md Part 1; SLOT2MAP ROM routine
+    /// path (Ref/Memory/PC-1600-Gate-Array-and-Chip-Selects.md Part 1; SLOT2MAP ROM routine
     /// PC1600-P0-B0-new.bin 0A6DH). Modelled as an effective-address rewrite feeding
     /// the ordinary Slot 2 decode. Returns true when `addr` is currently so
     /// remapped, filling `*pvoutHigh` (false/true = low/high 16 KB half of

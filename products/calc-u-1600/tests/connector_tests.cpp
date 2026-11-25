@@ -78,7 +78,7 @@ TEST(test_regression_no_card_attached) {
 }
 
 TEST(test_expansion_connector_y0_subrange_dispatch) {
-    // Mirrors CE-155's own decode shape (Ref/PC-1500/Memory-Architecture/PC-1500-Address-Decoding.md §3.2):
+    // Mirrors CE-155's own decode shape (Ref/Expansion/PC-1500A-Rewiring.md §3.2):
     // Y0 AND AD11-AD13=111, i.e. the top 2KB of the 16KB Y0 window.
     PC1500Machine machine(PC1500Variant::PC1500A);
     StubCard card = makeReadStub(0x42, [](const PinState& p) {
@@ -96,7 +96,7 @@ TEST(test_expansion_connector_y0_subrange_dispatch) {
 }
 
 TEST(test_expansion_connector_variant_routing) {
-    // Ref/Shared/Expansion-Connectors.md §3.2: S5 (&6800-&6FFF) never reaches the
+    // Ref/Expansion/PC-1500-Connectors.md §3.2: S5 (&6800-&6FFF) never reaches the
     // PC-1500's 40-pin connector at all -- no physical wire exists for it,
     // regardless of what the attached card wants to react to. On the
     // PC-1500A, the same named S5 block IS routed (via pin 18). This is
@@ -116,7 +116,7 @@ TEST(test_expansion_connector_variant_routing) {
 }
 
 TEST(test_expansion_connector_pu_pv_gating) {
-    // Ref/PC-1500/Memory-Architecture/PU-PV-Signals.md §4: PV/PU select which peripheral ROM table is
+    // Ref/CPU/LH5801-PU-PV-Signals.md §4: PV/PU select which peripheral ROM table is
     // visible in Y2 (&8000-&BFFF). A card gated on "PU=1, PV=0" should only
     // respond in exactly that state.
     PC1500Machine machine(PC1500Variant::PC1500A);
@@ -135,7 +135,7 @@ TEST(test_expansion_connector_pu_pv_gating) {
 
 TEST(test_systembus_me1_access) {
     // Only the 60-pin connector's DME1/ME1 pins expose ME1-space access at
-    // all (Ref/Shared/Expansion-Connectors.md §2.2) -- ExpansionConnector has no
+    // all (Ref/Expansion/PC-1500-Connectors.md §2.2) -- ExpansionConnector has no
     // equivalent method. 0x2000 is outside the LH5811 I/O-chip's own
     // decode window (addr & 0x3000 == 0x3000), so without a card it is
     // open bus.
@@ -153,7 +153,7 @@ TEST(test_systembus_me1_access) {
 TEST(test_systembus_daisy_chain) {
     // Models a CE-150-alike and a CE-158-alike sharing the 60-pin chain,
     // each claiming its own Y2 sub-range without conflicting -- see
-    // Ref/Shared/Expansion-Connectors.md §2.2's note that the CE-150's 64-pin rear
+    // Ref/Expansion/PC-1500-Connectors.md §2.2's note that the CE-150's 64-pin rear
     // connector lets a second peripheral (typically a CE-158) chain behind
     // it. The 40-pin connector has no equivalent (single slot only).
     PC1500Machine machine(PC1500Variant::PC1500A);

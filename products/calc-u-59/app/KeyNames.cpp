@@ -19,7 +19,7 @@ const char* const kMnemonics[100] = {
     // Function row 4 (50–59)
     "IxI", "BST", "EE", "(", ")", "÷", "DEL", "ENG", "FIX", "INT",
     // Function row 5 (60–69)
-    "DEG", "GTO", "PG*", "EX*", "PD*", "|x|", "PAU", "EQ", "NOP", "OP",
+    "DEG", "GTO", "PG*", "EX*", "PD*", "×", "PAU", "EQ", "NOP", "OP",
     // Function row 6 (70–79)
     "RAD", "SBR", "ST*", "RC*", "SM*", "-", "LBL", "GE", "∑+", "x̄",
     // Function row 7 (80–89)

@@ -16,6 +16,7 @@
 - **Printer window:** on the desktop and in the Web app on a computer, the button at the right of the paper's header moves the paper into a window of its own and back; the INSPECTOR takes the room, and the window comes back where you left it. The main window also comes back at its place, not only its size.
 - **Control bar and menus:** on the PC-1600 a printer picker and a CE-158 button; every bar ends with More (⋯), which holds every menu item; Reset All is Cold boot. On a phone the installed Web app shows the paper in portrait and the calculator in landscape.
 - **Windows and Linux:** the installer shows the licence and offers to start Calc-U-1600 when it is done; on Linux the AppImage and an install bring the presets' file type (MIME), so a desktop that integrates the app opens them with Calc-U-1600.
+- **Host drive `S3:`:** behaves like the MEP r4 where the two differed: the prompt is `S3:>` at the top folder and `...` with the end of a long path, `CDIR ".."` at the top is error 152, `\` separates folders like `/`, directory mode ends after a listing, file dates carry their real year, and renaming a file to its own name or to a folder's is error 151.
 - **For developers:** automated tests with pytest (`tools/machine/`, `docs/testing/README.md`), developed together with spellbound.
 
 ### Fixed

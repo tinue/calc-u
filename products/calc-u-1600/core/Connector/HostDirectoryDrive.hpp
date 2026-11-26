@@ -36,9 +36,9 @@
 // "`@#$%^&()-_{}'"), upper-cased. Long names and dotfiles are not shown.
 // Subdirectories with such names are reachable the MEP rev3 way: a current
 // directory (CDIR) that every file call works in, and a directory mode in
-// which SEARCH FIRST/NEXT list subdirectories (help/09-host-drive.md). The year is not part of the PC-1600 clock: directory entries
-// carry year 1986 like the ROM's own FATTIME; the host file keeps its real
-// time stamp (the OS writes it on every change).
+// which SEARCH FIRST/NEXT list subdirectories (help/09-host-drive.md).
+// Directory entries carry the host file's real date and time, as the MEP
+// does (the ROM's own FATTIME has no year to give and writes 1986).
 //
 // Stateless file I/O: every READ/WRITE opens the host file, transfers one
 // 256-byte record at FCB record number * 256 and closes it again, so a
@@ -122,7 +122,7 @@ public:
     /// directory with the calculator's power. NEW and boot keep it.
     void reset(uint8_t function) {
         m_searches.clear();
-        m_listDirectories = false;
+        m_listMode = kListFiles;
         if (function == kResetPowerOn || function == kResetResume || function == kResetReset) m_cwd.clear();
     }
 
@@ -131,20 +131,27 @@ public:
     // CDIR / LDIR statements, which our ROM also has) navigates with them.
 
     /// DIRMODE (true) / FILEMODE (false): what SEARCH FIRST/NEXT list.
-    void setListDirectories(bool on) { m_listDirectories = on; }
+    /// Directory mode also ends by itself, as on the MEP: once a SEARCH
+    /// NEXT has run in it, the next call that is not SEARCH NEXT (a file
+    /// call or CDIR) runs in file mode again. Software written for the MEP
+    /// lists the folders and goes on without calling FILEMODE.
+    void setListDirectories(bool on) { m_listMode = on ? kListDirectories : kListFiles; }
 
     /// The current directory below the mounted folder, as host names.
     const std::vector<std::string>& currentDirectory() const { return m_cwd; }
 
     /// CDIR: UNIX-style `path` -- "/" starts at the root, "." stays, ".."
-    /// goes up (and stays at the root), components are visible 8.3
-    /// subdirectories matched without regard to case. On success the
-    /// payload is the kPromptSize-byte prompt ("S3:/DEV/ASM>", CR, spaces);
-    /// on failure the current directory is unchanged (01H, ERL 98H).
-    Response changeDirectory(const std::string& path) {
+    /// goes up, components are visible 8.3 subdirectories matched without
+    /// regard to case; a backslash separates like "/", as on the MEP. On
+    /// success the payload is the kPromptSize-byte prompt ("S3:/DEV/ASM>",
+    /// CR, spaces); on failure (an unknown folder, or ".." at the root, as
+    /// on the MEP) the current directory is unchanged (01H, ERL 98H).
+    Response changeDirectory(std::string path) {
         Response r;
+        endDirectoryListing();
         std::error_code ec;
         if (!mounted() || !std::filesystem::is_directory(m_dir, ec)) return fail(r, kErlNoMedia);
+        std::replace(path.begin(), path.end(), '\\', '/');
         std::vector<std::string> cwd = path.empty() || path[0] != '/' ? m_cwd : std::vector<std::string>{};
         size_t pos = 0;
         while (pos <= path.size()) {
@@ -153,7 +160,8 @@ public:
             pos = slash + 1;
             if (part.empty() || part == ".") continue;
             if (part == "..") {
-                if (!cwd.empty()) cwd.pop_back();
+                if (cwd.empty()) return fail(r, kErlNotFound);
+                cwd.pop_back();
                 continue;
             }
             const std::string name = toFcbName(part);
@@ -176,6 +184,11 @@ public:
         r.bc = req.function;     // registers a call doesn't define: C = function,
         r.de = req.fcbAddress;   // DE = FCB, as the caller passed them
         if (req.function >= 0x80) return r;  // disk IOCS: not a file call, ignored like FDBADFN
+        if (req.function == kSearchNext) {
+            if (m_listMode == kListDirectories) m_listMode = kListDirectoriesEnding;
+        } else {
+            endDirectoryListing();
+        }
         std::error_code ec;
         if (!mounted() || !std::filesystem::is_directory(m_dir, ec)) return fail(r, kErlNoMedia);
         // The current directory vanished on the host: nothing may land in
@@ -237,8 +250,8 @@ public:
         return true;
     }
 
-    /// The date/time words of a directory entry (+16H time, +18H date);
-    /// the year field is always 6 (1986), like the ROM's FATTIME.
+    /// The date/time words of a directory entry (+16H time, +18H date),
+    /// FAT style: the year counts from 1980 (0..127).
     static void packTimestamp(std::time_t t, uint16_t& time, uint16_t& date) {
         std::tm tm{};
 #if defined(_WIN32)
@@ -247,7 +260,8 @@ public:
         localtime_r(&t, &tm);
 #endif
         time = static_cast<uint16_t>((tm.tm_hour << 11) | (tm.tm_min << 5) | (tm.tm_sec / 2));
-        date = static_cast<uint16_t>((6 << 9) | ((tm.tm_mon + 1) << 5) | tm.tm_mday);
+        const int year = std::clamp(tm.tm_year + 1900 - 1980, 0, 127);
+        date = static_cast<uint16_t>((year << 9) | ((tm.tm_mon + 1) << 5) | tm.tm_mday);
     }
 
     /// The machine state (Machine/StateRecords.hpp): the
@@ -256,7 +270,9 @@ public:
     /// host's, not the state's.
     template <class Io>
     void stateIo(Io& io) {
-        io(m_cwd)(m_listDirectories);
+        io(m_cwd)(m_listMode);
+        if constexpr (Io::kRestoring)
+            if (m_listMode > kListDirectoriesEnding) m_listMode = kListFiles;
         std::uint64_t searches = m_searches.size();
         io(searches);
         if constexpr (Io::kRestoring) {
@@ -389,15 +405,18 @@ private:
     /// The host folder file calls work in.
     std::filesystem::path here() const { return pathOf(m_cwd); }
 
-    /// "S3:/DEV/ASM>" in the 8.3 spelling; one that does not fit keeps the
-    /// end of the path ("S3:../ASM>"). The MEP has the stick's volume name
-    /// in front, which the manual asks to be "S3".
+    /// The MEP's prompt: "S3:>" at the root, "S3:/DEV/ASM>" below it, in
+    /// the 8.3 spelling. One longer than 26 characters is "..." and the
+    /// last 22 characters of the path, without the drive ("...EV/ASM>").
+    /// The MEP has the stick's volume name in front, which the manual asks
+    /// to be "S3".
     std::string promptText() const {
-        std::string path = "/";
-        for (size_t i = 0; i < m_cwd.size(); ++i) path += (i ? "/" : "") + toHostName(toFcbName(m_cwd[i]));
-        const size_t room = kPromptSize - 1 - std::string("S3:>").size();
-        if (path.size() > room) path = ".." + path.substr(path.size() - (room - 2));
-        return "S3:" + path + ">";
+        std::string path;
+        for (const auto& part : m_cwd) path += "/" + toHostName(toFcbName(part));
+        const std::string prompt = "S3:" + path + ">";
+        constexpr size_t kTail = kPromptSize - 1 - 3 - 1;  // "..." + tail + ">"
+        if (prompt.size() < kPromptSize) return prompt;
+        return "..." + path.substr(path.size() - kTail) + ">";
     }
 
     /// Every file (or, with `directories`, every subdirectory) of `dir` the
@@ -622,7 +641,7 @@ private:
 
     Response& doSearchFirst(const Request& req, Response& r) {
         Search s;
-        s.entries = find(fcbName(req.fcb, kFcbName), m_listDirectories);
+        s.entries = find(fcbName(req.fcb, kFcbName), m_listMode != kListFiles);
         m_searches[req.fcbAddress] = std::move(s);
         return nextEntry(req, r);
     }
@@ -662,7 +681,8 @@ private:
     }
 
     // All matching files; '?' in the new name keeps the old character; a
-    // new name that already exists stops with 97H (FDRENAME 4E2CH).
+    // new name that already exists stops with 97H, the file's own name too
+    // (FDRENAME 4E2CH finds the file itself), and so does a folder's.
     Response& doRename(const Request& req, Response& r) {
         const std::string pattern = fcbName(req.fcb, kFcbName);
         const std::string target = fcbName(req.fcb, kFcbNewName);
@@ -675,7 +695,8 @@ private:
             for (size_t i = 0; i < 11; ++i)
                 if (name[i] == '?') name[i] = e.fcbName[i];
             Entry existing;
-            if (name != e.fcbName && findOne(name, existing)) return fail(r, kErlExists);
+            if (findOne(name, existing) || findIn(listing(here(), true), name, existing))
+                return fail(r, kErlExists);
             std::error_code ec;
             std::filesystem::rename(e.path, here() / toHostName(name), ec);
             if (ec) return fail(r, kErlIo);
@@ -734,5 +755,12 @@ private:
     std::filesystem::path m_dir;
     std::vector<std::string> m_cwd;  // host names below m_dir (CDIR)
     std::map<uint16_t, Search> m_searches;
-    bool m_listDirectories = false;
+    // What SEARCH FIRST/NEXT list; "ending" is directory mode after a
+    // SEARCH NEXT, which the next other call ends (setListDirectories).
+    enum ListMode : uint8_t { kListFiles = 0, kListDirectories = 1, kListDirectoriesEnding = 2 };
+    ListMode m_listMode = kListFiles;
+
+    void endDirectoryListing() {
+        if (m_listMode == kListDirectoriesEnding) m_listMode = kListFiles;
+    }
 };

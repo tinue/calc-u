@@ -12,7 +12,7 @@ In short:
 - **Names:** only 8.3 names the PC-1600 accepts are shown, in capitals.
   Longer names stay hidden and are never touched.
 - **Subfolders:** as on a MEP USB drive, `CDIR "GAMES"` changes the current
-  folder (`CDIR ".."` goes up, `CDIR "/"` to the top) and `LDIR` lists the
+  folder (`CDIR ".."` goes up, `CDIR "/"` to the top; `\` works like `/`) and `LDIR` lists the
   subfolders. All file commands work in the current folder. Switching the
   calculator off returns to the top.
 - **MEP programs:** tools written for the MEP module, such as FILEX, work on
@@ -40,7 +40,7 @@ so MEP programs such as FILEX work on it. The MEP is credited in
 | `KILL`, `NAME`, `COPY`, `SET "…","P"` / `"I"` / `" "` | Wildcards work as on the RAM disk: every matching file, protected ones skipped (error 159) |
 | `DSKF("S3:")` | The host volume's free space, capped at 2 147 450 880 bytes, the most DSKF can compute |
 | `INIT "S3:"` | Refused: a format must never wipe a host folder |
-| `CDIR "path"` | Changes the current directory and shows the prompt, e.g. `S3:/DEV/ASM>`. `/` starts at the top folder, `..` goes up, `.` stays |
+| `CDIR "path"` | Changes the current directory and shows the prompt, e.g. `S3:/DEV/ASM>`, `S3:>` at the top. `/` (or `\`) starts at the top folder, `..` goes up, `.` stays. A folder that isn't there, or `..` at the top, is error 152 and the directory stays. A prompt longer than 26 characters shows `...` and the end of the path |
 | `LDIR` | Lists the subdirectories of the current directory, in the FILES format |
 
 Nothing is converted on the way. A text file written on the computer needs
@@ -70,10 +70,8 @@ letters, digits and ``` `@#$%^&()-_{}' ```.
   clears it, and SET " " sets it again.
 - **I** (invisible) is the macOS hidden flag (`chflags hidden`). On other
   systems it is never set.
-- **Directory dates** are the host modification time in local time, with the
-  **year fixed at 1986**. That is year field 6, which the ROM's own FATTIME
-  writes because the PC-1600 clock has no year. FILES shows only mm/dd
-  hh:mm.
+- **Directory dates** are the host modification time in local time, the
+  year included, as on the MEP. FILES shows only mm/dd hh:mm.
 - **On the host side** the file keeps its real time stamp. The OS writes it
   on every change, from the computer's clock.
 

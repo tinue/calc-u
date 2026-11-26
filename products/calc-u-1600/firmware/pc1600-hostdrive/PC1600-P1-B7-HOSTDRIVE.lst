@@ -1,6 +1,6 @@
                         ; --------------------------------------
                         ; zasm: assemble "hostdrive.asm"
-                        ; date: 2026-09-29 12:50:55
+                        ; date: 2026-11-26 16:54:13
                         ; --------------------------------------
 
 
@@ -9,7 +9,7 @@
                         ; (4000H-7FFFH). Original work, part of Calc-U-1600.
                         ;
                         ; Build: tools/build_hostdrive_rom.sh (zasm) -> PC1600-P1-B7-HOSTDRIVE.bin,
-                        ; committed next to this file. docs/PC1600-Host-Drive.md has the design.
+                        ; committed next to this file. help/09-host-drive.md has the design.
                         ;
                         ; OVERVIEW
                         ; A ROM module (ID 43H,16H) that makes a directory on the host computer a
@@ -199,9 +199,10 @@ F098:                   TOKFILES:   equ 0F098H  ; built-in FILES statement (bank
                         ; MEP fixed entry 4020H: change the directory
                         ;
                         ;   Entry parameters: DE = path ("/" root, ".", "..", relative), B = length
-                        ; Modified registers: AF, BC, HL; MEPPROMPT = "S3:/path>" + CR on success
-                        ;   Error conditions: CY, A = IOCS status, ERL set (no such directory:
-                        ;                     01H, 98H file not found)
+                        ; Modified registers: AF, BC, HL; MEPPROMPT = "S3:/path>" ("S3:>" at the
+                        ;                     root) + CR on success
+                        ;   Error conditions: CY, A = IOCS status, ERL set (no such directory, or
+                        ;                     ".." at the root: 01H, 98H file not found)
                         ;------------------------------------------------------------------------------
 40B5:                   HDCDIR:
 40B5: 3EFC     [ 7]     	ld a,HDCDIRCMD
@@ -501,14 +502,14 @@ F098:                   TOKFILES:   equ 0F098H  ; built-in FILES statement (bank
 
 ; +++ global symbols +++
 
-CMDCDIR    = $40DA = 16602          hostdrive.asm:221
-CMDCDIROK  = $4110 = 16656          hostdrive.asm:251
-CMDERR01   = $4130 = 16688          hostdrive.asm:269
-CMDERR07   = $4134 = 16692          hostdrive.asm:273
-CMDERR12   = $4138 = 16696          hostdrive.asm:277
-CMDLDIR    = $413C = 16700          hostdrive.asm:296
-CMDLDIRRET = $419A = 16794          hostdrive.asm:343
-CMDNEXTROW = $411F = 16671          hostdrive.asm:259
+CMDCDIR    = $40DA = 16602          hostdrive.asm:222
+CMDCDIROK  = $4110 = 16656          hostdrive.asm:252
+CMDERR01   = $4130 = 16688          hostdrive.asm:270
+CMDERR07   = $4134 = 16692          hostdrive.asm:274
+CMDERR12   = $4138 = 16696          hostdrive.asm:278
+CMDLDIR    = $413C = 16700          hostdrive.asm:297
+CMDLDIRRET = $419A = 16794          hostdrive.asm:344
+CMDNEXTROW = $411F = 16671          hostdrive.asm:260
 COMMADR    = $02BC =   700          hostdrive.asm:74
 CRSRPOS    = $0118 =   280          hostdrive.asm:70
 CRSRSET    = $0115 =   277          hostdrive.asm:69
@@ -518,27 +519,27 @@ EOCHK2     = $025C =   604          hostdrive.asm:72
 ERL        = $F89B = 63643          hostdrive.asm:56
 EXPRESS    = $0274 =   628          hostdrive.asm:73
 FCBHDRLEN  = $0039 =    57          hostdrive.asm:52
-HDCDIR     = $40B5 = 16565          hostdrive.asm:184
+HDCDIR     = $40B5 = 16565          hostdrive.asm:185
 HDCDIRCMD  = $00FC =   252          hostdrive.asm:51
-HDCDIRERR  = $40D8 = 16600          hostdrive.asm:206
-HDCDIRST   = $40C4 = 16580          hostdrive.asm:194
+HDCDIRERR  = $40D8 = 16600          hostdrive.asm:207
+HDCDIRST   = $40C4 = 16580          hostdrive.asm:195
 HDDEVTAB   = $4029 = 16425          hostdrive.asm:107
 HDDIRCMD   = $00FE =   254          hostdrive.asm:49
-HDDIRMODE  = $41D4 = 16852          hostdrive.asm:398
-HDFILE     = $41DE = 16862          hostdrive.asm:419
+HDDIRMODE  = $41D4 = 16852          hostdrive.asm:399
+HDFILE     = $41DE = 16862          hostdrive.asm:420
 HDFILECMD  = $00FD =   253          hostdrive.asm:50
-HDFILEMODE = $41D8 = 16856          hostdrive.asm:401
-HDMODE     = $41DA = 16858          hostdrive.asm:403
+HDFILEMODE = $41D8 = 16856          hostdrive.asm:402
+HDMODE     = $41DA = 16858          hostdrive.asm:404
 HDNOAUTO   = $40B2 = 16562          hostdrive.asm:170
-HDREGS     = $421A = 16922          hostdrive.asm:452
-HDREPLY    = $4201 = 16897          hostdrive.asm:438
+HDREGS     = $421A = 16922          hostdrive.asm:453
+HDREPLY    = $4201 = 16897          hostdrive.asm:439
 HDRESET    = $40A2 = 16546          hostdrive.asm:151
 HDRESETCMD = $00FF =   255          hostdrive.asm:48
 HDRESETCY  = $40B0 = 16560          hostdrive.asm:161
-HDSETDMA   = $422B = 16939          hostdrive.asm:465
+HDSETDMA   = $422B = 16939          hostdrive.asm:466
 HDTOKTAB   = $404F = 16463          hostdrive.asm:123
-LDIRTEXT   = $41CE = 16846          hostdrive.asm:382
-LDIRTRAMP  = $41AF = 16815          hostdrive.asm:360
+LDIRTEXT   = $41CE = 16846          hostdrive.asm:383
+LDIRTRAMP  = $41AF = 16815          hostdrive.asm:361
 MEPPROMPT  = $FB10 = 64272          hostdrive.asm:62
 MODID      = $4000 = 16384          hostdrive.asm:85 (unused)
 PORT3D_M   = $F07D = 61565          hostdrive.asm:58
@@ -552,18 +553,18 @@ P_ROMSEL   = $003D =    61          hostdrive.asm:66
 TOKCDIR    = $4085 = 16517          hostdrive.asm:130
 TOKFILES   = $F098 = 61592          hostdrive.asm:76
 TOKLDIR    = $4090 = 16528          hostdrive.asm:135
-TRAMPLEN   = $0025 =    37          hostdrive.asm:384
-TRBANK     = $0007 =     7          hostdrive.asm:385
-TRBANKI    = $41B5 = 16821          hostdrive.asm:364
-TRCALL     = $000F =    15          hostdrive.asm:387
-TRCALLI    = $41BD = 16829          hostdrive.asm:370
-TROLD3D    = $0013 =    19          hostdrive.asm:388
-TROLD3DI   = $41C1 = 16833          hostdrive.asm:373
-TROLDBANK  = $001A =    26          hostdrive.asm:389
-TROLDBANKI = $41C8 = 16840          hostdrive.asm:377
-TRTEXT     = $001F =    31          hostdrive.asm:390
-TRTEXTI    = $41B9 = 16825          hostdrive.asm:367
-TRTEXTP    = $000B =    11          hostdrive.asm:386
+TRAMPLEN   = $0025 =    37          hostdrive.asm:385
+TRBANK     = $0007 =     7          hostdrive.asm:386
+TRBANKI    = $41B5 = 16821          hostdrive.asm:365
+TRCALL     = $000F =    15          hostdrive.asm:388
+TRCALLI    = $41BD = 16829          hostdrive.asm:371
+TROLD3D    = $0013 =    19          hostdrive.asm:389
+TROLD3DI   = $41C1 = 16833          hostdrive.asm:374
+TROLDBANK  = $001A =    26          hostdrive.asm:390
+TROLDBANKI = $41C8 = 16840          hostdrive.asm:378
+TRTEXT     = $001F =    31          hostdrive.asm:391
+TRTEXTI    = $41B9 = 16825          hostdrive.asm:368
+TRTEXTP    = $000B =    11          hostdrive.asm:387
 UPSCRL     = $012D =   301          hostdrive.asm:71
 XX_STRAD   = $FA05 = 64005          hostdrive.asm:60
 XX_STRLEN  = $FA07 = 64007          hostdrive.asm:61
@@ -572,5 +573,5 @@ _end       = $8000 = 32768          hostdrive.asm:78 (unused)
 _size      = $4000 = 16384          hostdrive.asm:78 (unused)
 
 
-total time: 0.0014 sec.
+total time: 0.0023 sec.
 no errors

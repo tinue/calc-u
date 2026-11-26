@@ -58,8 +58,8 @@ MEP rev3 manual and ROM, so its software runs unchanged:
 
 | Entry | MEP name | ROM → host | Behaviour |
 |---|---|---|---|
-| 4020H | CDIR (DE = path, B = length) | `OUT (91H)` FCH, length, path; `IN` status, ERL, then 27 prompt bytes on success | UNIX-style path: `/` absolute, `..` up (the top folder stays the top), `.` stays; components match visible 8.3 folders in any case. The prompt `S3:/DEV/ASM>` + CR goes to FB10H, the MEP's buffer. A prompt longer than 26 characters keeps the end (`S3:../ASM>`). An unknown folder gives CY, 01H, ERL 98H and leaves the directory unchanged |
-| 4023H | DIRMODE | `OUT (91H)` FEH | SEARCH FIRST/NEXT list the subdirectories, sorted, without `.`/`..` |
+| 4020H | CDIR (DE = path, B = length) | `OUT (91H)` FCH, length, path; `IN` status, ERL, then 27 prompt bytes on success | UNIX-style path: `/` absolute (`\` too), `..` up, `.` stays; components match visible 8.3 folders in any case. The prompt `S3:/DEV/ASM>` (`S3:>` at the top) + CR goes to FB10H, the MEP's buffer. A prompt longer than 26 characters is `...`, the last 22 characters of the path and `>`, without the drive, as on the MEP. An unknown folder, or `..` at the top, gives CY, 01H, ERL 98H and leaves the directory unchanged |
+| 4023H | DIRMODE | `OUT (91H)` FEH | SEARCH FIRST/NEXT list the subdirectories, sorted, without `.`/`..`. As on the MEP, once a SEARCH NEXT ran, the next other call (a file call, CDIR) ends it |
 | 4026H | FILEMODE | `OUT (91H)` FDH | SEARCH FIRST/NEXT list files again (the default) |
 
 - **Directory-mode entries** carry attribute 00H, size 0 and the folder's
@@ -93,7 +93,7 @@ MEP rev3 manual and ROM, so its software runs unchanged:
 | 14H | READ | Record FCB+30H (7 bits) + FCB+31H/32H × 128. Past the end: status 04H, ERL A2H |
 | 15H | WRITE | A whole 256-byte record; the file ends after it |
 | 16H | CREATE | Truncates or creates; a protected file gives 9FH |
-| 17H | RENAME | New name at FCB+29H; '?' keeps the old character. An existing target gives 97H |
+| 17H | RENAME | New name at FCB+29H; '?' keeps the old character. A target that exists gives 97H: a file, the file's own name (FDRENAME finds the file itself) or a folder |
 | 1BH | GET ALLOC | BC = 512, E = 64, HL = free clusters (≤ FFFFH) |
 | 1EH | SET ATTRB | Bits 01H/02H as above |
 | 23H | GET LENGTH | DE:HL = records of FCB+2EH bytes |

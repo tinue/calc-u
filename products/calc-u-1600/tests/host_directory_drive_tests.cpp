@@ -70,7 +70,7 @@ TEST(test_name_mapping) {
     CHECK(Drive::toHostName("MAKEFILE   ") == "MAKEFILE");
 }
 
-TEST(test_timestamp_has_no_real_year) {
+TEST(test_timestamp_counts_years_from_1980) {
     std::tm tm{};
     tm.tm_year = 2026 - 1900;
     tm.tm_mon = 8;   // September
@@ -82,7 +82,10 @@ TEST(test_timestamp_has_no_real_year) {
     uint16_t time = 0, date = 0;
     Drive::packTimestamp(std::mktime(&tm), time, date);
     CHECK(time == ((14 << 11) | (35 << 5) | 21));
-    CHECK(date == ((6 << 9) | (9 << 5) | 29));
+    CHECK(date == ((46 << 9) | (9 << 5) | 29));
+    tm.tm_year = 1975 - 1900;  // before FAT's 1980: year field 0
+    Drive::packTimestamp(std::mktime(&tm), time, date);
+    CHECK((date >> 9) == 0);
 }
 
 TEST(test_no_directory_is_no_media) {
@@ -123,7 +126,10 @@ TEST(test_directory_entry_fields) {
     if (r.payload.size() == Drive::kDirEntrySize) {
         CHECK(std::memcmp(r.payload.data(), "DATA    TXT", 11) == 0);
         CHECK(r.payload[0x0B] == Drive::kAttrArchive);
-        CHECK((r.payload[0x19] >> 1) == 6);  // year field: 1986
+        std::tm now{};
+        const std::time_t t = std::time(nullptr);
+        localtime_r(&t, &now);
+        CHECK((r.payload[0x19] >> 1) == now.tm_year + 1900 - 1980);  // the file's real year
         const uint32_t size = r.payload[0x1C] | (r.payload[0x1D] << 8) | (r.payload[0x1E] << 16);
         CHECK(size == 70000);
     }
@@ -331,6 +337,15 @@ TEST(test_rename) {
     CHECK(!fs::exists(dir.path() / "old.bas"));
     CHECK(calcu::testing::readText(dir.path() / "NEW.BAS") == "1");
     CHECK(drive.execute(req).erl == Drive::kErlNotFound);
+
+    // Its own name and a folder's are taken too (FDRENAME finds the file itself).
+    fs::create_directories(dir.path() / "FOLDER");
+    auto same = request(Drive::kRename, "NEW     BAS");
+    std::memcpy(&same.fcb[Drive::kFcbNewName], "NEW     BAS", 11);
+    CHECK(drive.execute(same).erl == Drive::kErlExists);
+    std::memcpy(&same.fcb[Drive::kFcbNewName], "FOLDER     ", 11);
+    CHECK(drive.execute(same).erl == Drive::kErlExists);
+    CHECK(fs::exists(dir.path() / "NEW.BAS"));
 }
 
 TEST(test_get_alloc_fits_dskf) {
@@ -385,9 +400,9 @@ TEST(test_change_directory_paths) {
     drive.setDirectory(dir.path());
 
     auto r = drive.changeDirectory(".");
-    CHECK(r.status == 0 && promptOf(r) == "S3:/>");
+    CHECK(r.status == 0 && promptOf(r) == "S3:>");
     CHECK(r.payload.size() == Drive::kPromptSize);
-    CHECK(r.payload[5] == 0x0D);
+    CHECK(r.payload[4] == 0x0D);
     r = drive.changeDirectory("dev");  // relative, any case
     CHECK(r.status == 0 && promptOf(r) == "S3:/DEV>");
     r = drive.changeDirectory("../GAMES");
@@ -397,10 +412,22 @@ TEST(test_change_directory_paths) {
     CHECK(drive.currentDirectory() == (std::vector<std::string>{"Dev", "asm"}));
     r = drive.changeDirectory("..");
     CHECK(r.status == 0 && promptOf(r) == "S3:/DEV>");
-    r = drive.changeDirectory("../../..");  // stays at the root
-    CHECK(r.status == 0 && promptOf(r) == "S3:/>");
+    r = drive.changeDirectory("\\DEV\\ASM");  // backslash separates too
+    CHECK(r.status == 0 && promptOf(r) == "S3:/DEV/ASM>");
+    r = drive.changeDirectory("../..");
+    CHECK(r.status == 0 && promptOf(r) == "S3:>");
     r = drive.changeDirectory("");
-    CHECK(r.status == 0 && promptOf(r) == "S3:/>");
+    CHECK(r.status == 0 && promptOf(r) == "S3:>");
+
+    // Above the root is an error, as on the MEP: a program goes up until it fails.
+    for (const char* up : {"..", "/..", "/DEV/../.."}) {
+        r = drive.changeDirectory(up);
+        CHECK(r.status == 0x01 && r.erl == Drive::kErlNotFound);
+    }
+    CHECK(drive.changeDirectory("DEV/ASM").status == 0);
+    CHECK(drive.changeDirectory("../../..").erl == Drive::kErlNotFound);
+    CHECK(drive.currentDirectory() == (std::vector<std::string>{"Dev", "asm"}));
+    CHECK(drive.changeDirectory("/").status == 0);
 
     // Only visible 8.3 folders: a failure leaves the directory unchanged.
     CHECK(drive.changeDirectory("GAMES").status == 0);
@@ -428,14 +455,15 @@ TEST(test_change_directory_skips_symlinks) {
 TEST(test_long_prompt_keeps_the_end) {
     TempDir dir;
     fs::create_directories(dir.path() / "AAAAAAAA" / "BBBBBBBB" / "CCCCCCCC" / "DDDDDDDD");
+    fs::create_directories(dir.path() / "AAAAAAAA" / "BBBBBBBB" / "CCC");
     Drive drive;
     drive.setDirectory(dir.path());
-    const auto r = drive.changeDirectory("/AAAAAAAA/BBBBBBBB/CCCCCCCC/DDDDDDDD");
+    auto r = drive.changeDirectory("/AAAAAAAA/BBBBBBBB/CCC");  // 26 characters: fits
+    CHECK(r.status == 0 && promptOf(r) == "S3:/AAAAAAAA/BBBBBBBB/CCC>");
+    r = drive.changeDirectory("/AAAAAAAA/BBBBBBBB/CCCCCCCC/DDDDDDDD");
     CHECK(r.status == 0);
-    const std::string p = promptOf(r);
-    CHECK(p.size() == 26);
-    CHECK(p.rfind("S3:..", 0) == 0);
-    CHECK(p.substr(p.size() - 10) == "/DDDDDDDD>");
+    // The MEP's form: "...", the last 22 characters of the path, no drive.
+    CHECK(promptOf(r) == "...BBBB/CCCCCCCC/DDDDDDDD>");
 }
 
 TEST(test_files_live_in_the_current_directory) {
@@ -486,14 +514,40 @@ TEST(test_directory_mode_lists_subdirectories) {
     Drive drive;
     drive.setDirectory(dir.path());
     drive.setListDirectories(true);
-    CHECK(listNames(drive, "???????????") == (std::vector<std::string>{"ALPHA   V1 ", "ZETA       "}));
     auto r = drive.execute(request(Drive::kSearchFirst, "???????????"));
     CHECK(r.payload.size() == Drive::kDirEntrySize);
     CHECK(r.payload[0x0B] == Drive::kAttrDirectory);
     CHECK(r.payload[0x1C] == 0 && r.payload[0x1D] == 0);
+    // Without a SEARCH NEXT, directory mode stays.
+    CHECK(listNames(drive, "???????????") == (std::vector<std::string>{"ALPHA   V1 ", "ZETA       "}));
+    drive.setListDirectories(true);
     CHECK(listNames(drive, "Z??????????") == std::vector<std::string>{"ZETA       "});
     drive.setListDirectories(false);
     CHECK(listNames(drive, "???????????") == std::vector<std::string>{"A       TXT"});
+}
+
+// As on the MEP: after a SEARCH NEXT, the next other call ends directory
+// mode, so MEP software that never calls FILEMODE gets files again.
+TEST(test_directory_mode_ends_after_search_next) {
+    TempDir dir;
+    calcu::testing::writeText(dir.path() / "A.TXT", "a");
+    fs::create_directories(dir.path() / "D1");
+    fs::create_directories(dir.path() / "D2");
+    Drive drive;
+    drive.setDirectory(dir.path());
+    drive.setListDirectories(true);
+    CHECK(listNames(drive, "???????????") == (std::vector<std::string>{"D1         ", "D2         "}));
+    CHECK(listNames(drive, "???????????") == std::vector<std::string>{"A       TXT"});
+
+    drive.setListDirectories(true);
+    CHECK(listNames(drive, "???????????").size() == 2);
+    CHECK(drive.execute(request(Drive::kOpen, "A       TXT")).status == 0);  // a file call ends it
+    CHECK(listNames(drive, "???????????") == std::vector<std::string>{"A       TXT"});
+
+    drive.setListDirectories(true);
+    CHECK(listNames(drive, "???????????").size() == 2);
+    CHECK(drive.changeDirectory("D1").status == 0);  // CDIR ends it too
+    CHECK(listNames(drive, "???????????").empty());
 }
 
 TEST(test_reset_functions) {
@@ -548,7 +602,7 @@ TEST(test_card_mep_commands) {
     CHECK(status == 0x01 && erl == Drive::kErlNotFound);
     CHECK(in() == 0xFF);  // no prompt after an error
     cdir("..", status, erl, prompt);
-    CHECK(status == 0 && prompt.rfind("S3:/>\r", 0) == 0);
+    CHECK(status == 0 && prompt.rfind("S3:>\r", 0) == 0);
 
     out(PC1600HostDriveCard::kCommandPort, PC1600HostDriveCard::kDirModeCommand);
     CHECK(listNames(card.drive(), "???????????") == std::vector<std::string>{"DOCS       "});

@@ -177,9 +177,10 @@ HDNOAUTO:
 ; MEP fixed entry 4020H: change the directory
 ;
 ;   Entry parameters: DE = path ("/" root, ".", "..", relative), B = length
-; Modified registers: AF, BC, HL; MEPPROMPT = "S3:/path>" + CR on success
-;   Error conditions: CY, A = IOCS status, ERL set (no such directory:
-;                     01H, 98H file not found)
+; Modified registers: AF, BC, HL; MEPPROMPT = "S3:/path>" ("S3:>" at the
+;                     root) + CR on success
+;   Error conditions: CY, A = IOCS status, ERL set (no such directory, or
+;                     ".." at the root: 01H, 98H file not found)
 ;------------------------------------------------------------------------------
 HDCDIR:
 	ld a,HDCDIRCMD

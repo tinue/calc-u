@@ -260,8 +260,8 @@ TEST(test_mep_fixed_entries) {
     CHECK(m.memory().peek(0xC102) == 0x98);
     // The prompt of the successful CDIR "/" in the MEP's buffer FB10H.
     std::string prompt;
-    for (uint16_t a = 0xFB10; a < 0xFB16; ++a) prompt += static_cast<char>(m.memory().peek(a));
-    CHECK(prompt == "S3:/>\r");
+    for (uint16_t a = 0xFB10; a < 0xFB15; ++a) prompt += static_cast<char>(m.memory().peek(a));
+    CHECK(prompt == "S3:>\r");
     // Still alive: BASIC runs and the drive works.
     CHECK(errorOf(m, dir.path(), "OPEN \"S3:X.TXT\" FOR OUTPUT AS #1:CLOSE #1") == 0);
 }

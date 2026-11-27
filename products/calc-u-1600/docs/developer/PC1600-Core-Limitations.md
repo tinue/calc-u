@@ -110,7 +110,7 @@ entry when a primary source or a ROM trace disagrees with it.
 `core/PC1600/TC8576F.*`, `core/Serial/SerialLink.hpp`, `core/Serial/SerialPortCapability.hpp`; the host side is the library's `PtyHostLink`
 
 The register model follows Toshiba's TC8576AF data sheet
-([Ref/Serial-Parallel/PC-1600-CPC-TC8576.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Serial-Parallel/PC-1600-CPC-TC8576.md)). Remaining gaps:
+([Ref/Serial-Parallel/PC-1600-CPC-TC8576.md](https://github.com/tinue/PC-1600-Ref/blob/main/Serial-Parallel/PC-1600-CPC-TC8576.md)). Remaining gaps:
 
 - **RS-232C / SIO connector mux not modelled** — the chip's PRIME output
   (the gate array's PRIM select) is tracked (`TC8576F::rs232Selected()`),
@@ -139,7 +139,7 @@ The register model follows Toshiba's TC8576AF data sheet
   starts with all inputs on, as in the golden runs. Non-POSIX build: there is no host link;
   the bytes the machine sends are dropped.
 - **Still open** (see `docs/developer/PC1600-Serial-Port.md` and `TODO.md`): an
-  end-to-end round-trip against real SharpDataExchange and the follow-on
+  end-to-end round-trip against real Sharp-Data-Exchange and the follow-on
   localhost-socket transport.
 
 ---
@@ -149,7 +149,7 @@ The register model follows Toshiba's TC8576AF data sheet
 `core/PC1600/PC1600SubCpu.*`
 
 No datasheet and no ROM dump exist; the command set comes from the Z-80 ROM
-([Ref/CPU/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/CPU/PC-1600-SubCPU-LU57813P.md)). Modelled: the
+([Ref/CPU/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/PC-1600-Ref/blob/main/CPU/PC-1600-SubCPU-LU57813P.md)). Modelled: the
 clock, the wake-up and two alarm timers with minute-carry compare and `?`
 wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 / power-on cause, system off/on, and the handshake timing. Remaining gaps:

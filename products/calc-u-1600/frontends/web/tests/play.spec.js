@@ -657,7 +657,7 @@ test('a dropped WAV with several programs asks which one, then loads by its kind
 test('a dropped headerless .bin asks the address', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 'PC-1600');
-  // SharpDataExchange's Z-80 sample, eight times: headerless code by its look.
+  // Sharp-Data-Exchange's Z-80 sample, eight times: headerless code by its look.
   const block = [0x21, 0x00, 0x80, 0x06, 0x10, 0x7E, 0xFE, 0x20, 0x28, 0x01, 0x23, 0x10, 0xF8, 0xCD, 0x00, 0x10, 0xC9];
   const code = Buffer.from(Array(8).fill(block).flat());
   await dropFile(page, 'loop.bin', code);

@@ -112,7 +112,7 @@ docs/developer/PC1600-Core-Limitations.md (LH5803 section).
   SIO; `calcu1600-rs232c.serial` then carries RS-232C only.
 - Capture the exact on-wire `SAVE"COM1:"` framing from a real ROM trace
   (`c1600 serial rs232c capture`, with `trace`), and do one live
-  round-trip against SharpDataExchange over the PTY
+  round-trip against Sharp-Data-Exchange over the PTY
   (`c1600 serial rs232c link`).
 - Follow-on: a localhost-socket transport (`SocketSerialLink`) so
   `OUTSTAT 0-3` and buffer-full RTS become effective end-to-end, for
@@ -121,7 +121,7 @@ docs/developer/PC1600-Core-Limitations.md (LH5803 section).
 ## PC-1600 loading
 
 - **The open questions of the load/save matrix**
-  ([Ref/Storage/PC-1600-Load-Save-Matrix.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Storage/PC-1600-Load-Save-Matrix.md) §6), to be discussed:
+  ([Ref/Storage/PC-1600-Load-Save-Matrix.md](https://github.com/tinue/PC-1600-Ref/blob/main/Storage/PC-1600-Load-Save-Matrix.md) §6), to be discussed:
   `INPUT#-1` in MODE 1 through the CE-1600P (the ROM allows it,
   the TRM doesn't); `SAVE`/`LOAD "CAS:"` in MODE 1; CE-150/CE-158
   `PRINT#`/`INPUT#` in MODE 0.
@@ -359,7 +359,7 @@ See docs/developer/App-Layer.md and Web-Client.md.
   BASIC. Then drive `PiezoSampler` from a modelled F output
   (`PC1600SubCpu`, `PC1600Memory::updateBuzzerLine()`).
 - **Sub-CPU commands still unnamed** (IOCS 0CH–0FH, 1BH, 1FH, 26H, what
-  1CH/1DH mean, the LH-5803's DCH): see [Ref/CPU/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/CPU/PC-1600-SubCPU-LU57813P.md) §8.
+  1CH/1DH mean, the LH-5803's DCH): see [Ref/CPU/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/PC-1600-Ref/blob/main/CPU/PC-1600-SubCPU-LU57813P.md) §8.
   Known from the ROM: 1EH is the port-mode select (F12CH b0 analog input,
   b1 external keyboard; `ON ADIN`, `KEYSTAT`), 16H/17H are the external
   keyboard, 1CH/1DH come from `SINIT`. The rest have no caller in the
@@ -431,7 +431,7 @@ See docs/developer/App-Layer.md and Web-Client.md.
     unload/clear/reload of the floppy place (`core/Machine/SharpMediaPlaces`,
     `FloppyPlace`, with the library's media part), skipped while an
     autosave is pending.
-  - SharpDataExchange (separate repo): `sde put`/`del` set `dirty: true`
+  - Sharp-Data-Exchange (separate repo): `sde put`/`del` set `dirty: true`
     (and refuse a template), and libsharpdx's reader accepts the key.
 
 ## Code cleanup backlog

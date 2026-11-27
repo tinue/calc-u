@@ -8,7 +8,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 # The minimum macOS for the .app is the root project's
 # CMAKE_OSX_DEPLOYMENT_TARGET (15.8, set before its project()): it matches
-# the vendored libsharpdx (SharpDataExchange's .cargo/config.toml) and
+# the vendored libsharpdx (Sharp-Data-Exchange's .cargo/config.toml) and
 # tools/refresh_sharpdx.sh. C++20 and Homebrew's Qt prefix are the root's too.
 if(APPLE)
   # The screenshot scenarios' MacShotSupport.mm needs Objective-C++ (the

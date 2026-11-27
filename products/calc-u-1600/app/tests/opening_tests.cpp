@@ -81,7 +81,7 @@ Bytes pc1600(const Bytes& payload, std::uint8_t type, std::uint32_t load = 0) {
     return f;
 }
 
-Bytes z80Code() {   // SharpDataExchange's Z80 sample (src/cpu_guess.rs)
+Bytes z80Code() {   // Sharp-Data-Exchange's Z80 sample (src/cpu_guess.rs)
     static const std::uint8_t kBlock[] = {0x21, 0x00, 0x80, 0x06, 0x10, 0x7E, 0xFE, 0x20, 0x28,
                                           0x01, 0x23, 0x10, 0xF8, 0xCD, 0x00, 0x10, 0xC9};
     Bytes out;

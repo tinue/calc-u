@@ -15,7 +15,7 @@ _TERM = re.compile(r"^\*\*([^*]+)\*\*:?\s*$")
 # tail of a URL or of a relative link: those are checked as link targets).
 _SOURCE_DIRS = r"(?:frontends|core|app|library|products/[\w.-]+/(?:frontends|core|app))/"
 _SOURCE_PATH = re.compile(r"(?<![\w./:-])" + _SOURCE_DIRS)
-_REPO_URL = re.compile(r"^https://github\.com/tinue/calc-u/(?:tree|blob|raw)/[^/]+/(.*)$")
+_REPO_URL = re.compile(r"^https://github\.com/tinue/(?:Calc-U|calc-u)/(?:tree|blob|raw)/[^/]+/(.*)$")
 _MILESTONE = re.compile(r"(?<![\w-])M-\d+(?![\w-])")
 
 

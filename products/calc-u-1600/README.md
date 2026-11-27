@@ -7,10 +7,10 @@ A preview of a web version runs in the browser at
 
 ## Quick Start
 
-1. From the [Releases page](https://github.com/tinue/calc-u/releases),
+1. From the [Releases page](https://github.com/tinue/Calc-U/releases),
    download the package for your platform. The sample presets and BASIC
    programs used below are in the
-   [examples folder](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/examples)
+   [examples folder](https://github.com/tinue/Calc-U/tree/main/products/calc-u-1600/examples)
    of the source repository.
 2. Launch the app and pick one of the presets under **File ▸ Examples**:
    each builds a machine and runs a program on it.
@@ -89,7 +89,7 @@ PC-1600 drive `S3:`.
 The emulated PC-1600's RS-232C port appears on your computer as a serial
 port file, `calcu1600-rs232c.serial` (the CE-158's as
 `calcu1600-ce158.serial`) — **macOS and Linux only** for now. Point any serial program at it, for example
-[SharpDataExchange](https://github.com/tinue/SharpDataExchange) to copy
+[Sharp-Data-Exchange](https://github.com/tinue/Sharp-Data-Exchange) to copy
 programs to and from the calculator. The help's
 [COM ports](help/09-com-ports.md) chapter has the settings.
 

@@ -317,8 +317,8 @@ test('help and about in the help menu and not in the settings', async ({ page })
   await expect(about).toContainText('Calc-U-59 Calculator Emulation');
   await expect(about).toContainText('presets, and debugger tools.');
   expect(await about.locator('a').evaluateAll((as) => as.map((a) => a.href))).toEqual([
-    'https://github.com/tinue/calc-u', 'https://github.com/tinue/calc-u/issues',
-    'https://github.com/tinue/calc-u/blob/main/products/calc-u-59/PRIVACY.md']);
+    'https://github.com/tinue/Calc-U', 'https://github.com/tinue/Calc-U/issues',
+    'https://github.com/tinue/Calc-U/blob/main/products/calc-u-59/PRIVACY.md']);
   await el(page, 'about-close').click();
   await el(page, 'menu-file').click();
   await el(page, 'item-settings').click();

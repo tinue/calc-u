@@ -53,9 +53,9 @@ TEST(help_address_and_about_texts) {
     CHECK(a.lines.size() == 2 && a.lines[0] == "A Sharp PC-1500/1500A/1600 pocket-computer emulator.");
     CHECK(p.aboutLabel == "About Calc-U-1600…");
     CHECK_EQ(a.links.size(), std::size_t{2});
-    CHECK(a.links.size() == 2 && a.links[0].first == "GitHub" && a.links[0].second == "https://github.com/tinue/calc-u");
+    CHECK(a.links.size() == 2 && a.links[0].first == "GitHub" && a.links[0].second == "https://github.com/tinue/Calc-U");
     CHECK(a.links.size() == 2 && a.links[1].first == "Support" &&
-          a.links[1].second == "https://github.com/tinue/calc-u/issues");
+          a.links[1].second == "https://github.com/tinue/Calc-U/issues");
 }
 
 // The chrome: every colour the GUIs name is in both sets.

@@ -72,7 +72,7 @@ Each year: create new ones in the developer portal with the **G2 Sub-CA**
 `renew-certs apply` in `products/calc-u-1600/`, where its `release.yaml`
 is (the team ID comes from its `certs:` section). It exports the certificates from
 the keychain, checks them, and sets the two `_P12_BASE64` secrets and
-`APPLE_CERT_P12_PASSWORD`. The same certificates sign SharpDataExchange;
+`APPLE_CERT_P12_PASSWORD`. The same certificates sign Sharp-Data-Exchange;
 run `apply` there too. It also records the uploaded certificates as the
 repository variables `APPLE_CERT_{APPLICATION,INSTALLER}_{SHA1,EXPIRES}`;
 `renew-certs status` reports them and their expiry. The `.p12` password is

@@ -76,9 +76,9 @@ TEST(help_address_about_texts_and_links) {
     CHECK(a.lines.size() == 2 && a.lines[0] == "Calc-U-59 Calculator Emulation");
     CHECK(a.lines.size() == 2 && a.lines[1].find("presets") != std::string::npos);
     CHECK_EQ(a.links.size(), std::size_t{3});
-    CHECK(a.links.size() == 3 && a.links[0].second == "https://github.com/tinue/calc-u");
-    CHECK(a.links.size() == 3 && a.links[1].second == "https://github.com/tinue/calc-u/issues");
-    CHECK(a.links.size() == 3 && a.links[2].second == "https://github.com/tinue/calc-u/blob/main/products/calc-u-59/PRIVACY.md");
+    CHECK(a.links.size() == 3 && a.links[0].second == "https://github.com/tinue/Calc-U");
+    CHECK(a.links.size() == 3 && a.links[1].second == "https://github.com/tinue/Calc-U/issues");
+    CHECK(a.links.size() == 3 && a.links[2].second == "https://github.com/tinue/Calc-U/blob/main/products/calc-u-59/PRIVACY.md");
     // The page's form carries the links.
     CHECK(shell::toValue(a).find("links")->elements()->size() == 3);
 }

@@ -1,7 +1,7 @@
 # The help site: calc-u.org
 
 calc-u.org is served from its own repository, calc-u-site
-(`tinue/calc-u-site`, locally `../calc-u-site`). That repository keeps its
+(`tinue/Calc-U-Site`, locally `../Calc-U-Site`). That repository keeps its
 own rules, design, branch model and skills; all site work is done there,
 by them. The help itself is written only in the source repository and is
 never edited in the site.
@@ -39,9 +39,9 @@ and never a pre-release:
 
 | Pin | Records | Example (Calc-U-59 3.0.0) |
 |---|---|---|
-| Help asset | address, version, sha256 | `https://github.com/tinue/calc-u/releases/download/calc-u-59-v3.0.0/Calc-U-59-help.zip` |
+| Help asset | address, version, sha256 | `https://github.com/tinue/Calc-U/releases/download/calc-u-59-v3.0.0/Calc-U-59-help.zip` |
 | Web frontend | address, version, sha256 | `…/calc-u-59-v3.0.0/Calc-U-59-web.zip` |
-| Examples | the release tag in `tinue/calc-u` | `calc-u-59-v3.0.0` |
+| Examples | the release tag in `tinue/Calc-U` | `calc-u-59-v3.0.0` |
 
 A release that has a Web frontend and no help asset cannot be pinned for
 a folder that shows help.
@@ -85,7 +85,7 @@ Formats: the asset's layout and `toc.json` are specified in
 
 ## What exists today
 
-### In the source repository (tinue/calc-u)
+### In the source repository (tinue/Calc-U)
 
 - **Help tool** `tools/help check|build <product>` (`tools/README.md`),
   Python on the standard library, with its tests in
@@ -143,7 +143,7 @@ Formats: the asset's layout and `toc.json` are specified in
   not apply; this document does.
 - **Text to correct:** `README.md` describes a `gh-pages` copy serving
   another domain; `CLAUDE.md` calls `/1600/` a placeholder and points at
-  other repositories than tinue/calc-u.
+  other repositories than tinue/Calc-U.
 
 ### Where the content of the `/59/` pages is in the help
 
@@ -191,7 +191,7 @@ too.
       `#hash` addresses to the chapter that holds its content; a site
       test walks the whole table.
 - [ ] `/59/play/` and `/59/calc/app/` from the pinned 3.0.0 Web frontend
-      of tinue/calc-u; change the embed once from `PlayCalculator` to
+      of tinue/Calc-U; change the embed once from `PlayCalculator` to
       `CalcU59` with the shared props.
 - [ ] Take `59/software-files/` (presets and overlays) from `examples/`
       at the pinned tag, in the current formats, and check them against it;
@@ -199,11 +199,11 @@ too.
 - [ ] Rewrite the navigation tests for the chapters' pages and the
       redirects; the font and play tests pass unchanged.
 - [ ] Make the release links of `59/Pages.jsx` (three found; look for a
-      fourth) exact links to the release in tinue/calc-u.
+      fourth) exact links to the release in tinue/Calc-U.
 
 ### Site knowledge
 - [ ] Site `CLAUDE.md` and `README.md`: remove the `gh-pages` text,
-      describe `/1600/`, the pins, and tinue/calc-u as the source.
+      describe `/1600/`, the pins, and tinue/Calc-U as the source.
 - [ ] Update `site-59` and `site-59-design` for the pinned help; merge
       the `site-59` edit of `59/2.3.0` into `main`; write a skill for
       `/1600/`.

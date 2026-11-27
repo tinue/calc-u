@@ -77,7 +77,7 @@ if(WIN32)
   # automatically; consuming the raw sharpdx.lib from CMake doesn't, so
   # without this the link fails with unresolved externals such as
   # __imp_freeaddrinfo (ws2_32). The authoritative list is the one rustc
-  # reported for that exact build: SharpDataExchange's release packaging
+  # reported for that exact build: Sharp-Data-Exchange's release packaging
   # captures `rustc --print=native-static-libs` into
   # native-libs-windows.txt and tools/fetch_sharpdx.sh vendors it next to
   # sharpdx.lib. Only a hand-placed sharpdx.lib without that file falls

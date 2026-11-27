@@ -19,7 +19,7 @@ library, and each is released on its own.
 ## Getting a product
 
 Releases are on this repository's
-[Releases page](https://github.com/tinue/calc-u/releases): the macOS DMG,
+[Releases page](https://github.com/tinue/Calc-U/releases): the macOS DMG,
 Windows installers (x64, ARM64), Linux AppImages (x86_64, aarch64), the
 Web frontend as a zip, and the user guide as a help zip. Calc-U-59 for
 iPhone and iPad is on the App Store. Calc-U-59 3.0.0 and Calc-U-1600
@@ -84,7 +84,7 @@ apps and web client.
 - **Changes:** each product's `CHANGELOG.md`.
 - **History:** the requirements, plans and design decisions that brought
   both products into this repository are on the branch
-  [`history`](https://github.com/tinue/calc-u/tree/history); the full
+  [`history`](https://github.com/tinue/Calc-U/tree/history); the full
   snapshot at that point is the tag `history-phases-0-6`.
 
 ## License

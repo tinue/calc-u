@@ -1,5 +1,5 @@
 // What a file is: sharp::loaders::fileKind and image over the one classifier
-// (core/ProgramFile, SharpDataExchange's rules), and the empty and damaged
+// (core/ProgramFile, Sharp-Data-Exchange's rules), and the empty and damaged
 // files every loader refuses the same way. The classifier's own cases stay
 // in program_file_tests.cpp.
 
@@ -57,7 +57,7 @@ std::vector<uint8_t> pc1600(const std::vector<uint8_t>& payload, uint8_t type, u
 
 std::vector<uint8_t> text(const std::string& s) { return std::vector<uint8_t>(s.begin(), s.end()); }
 
-std::vector<uint8_t> z80Code() {   // SharpDataExchange's Z80 sample (src/cpu_guess.rs)
+std::vector<uint8_t> z80Code() {   // Sharp-Data-Exchange's Z80 sample (src/cpu_guess.rs)
     static const uint8_t kBlock[] = {0x21, 0x00, 0x80, 0x06, 0x10, 0x7E, 0xFE, 0x20, 0x28,
                                      0x01, 0x23, 0x10, 0xF8, 0xCD, 0x00, 0x10, 0xC9};
     std::vector<uint8_t> out;

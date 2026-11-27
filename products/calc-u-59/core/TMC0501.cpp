@@ -1426,7 +1426,7 @@ CpuFrame TMC0501::snapshotCPU() const {
 // ── disassemble() ─────────────────────────────────────────────────────────────
 //
 // Pure function: converts a 13-bit opcode to a mnemonic string.
-// Mnemonic names follow tools/mnemonics.tsv in the ti59-research project.
+// Mnemonic names follow tools/mnemonics.tsv in the TI-59-Research project.
 // Regenerate the generated tables with: python3 tools/disasm.py --emit-cpp
 
 // ── Generated tables (update via --emit-cpp) ─────────────────────────────────

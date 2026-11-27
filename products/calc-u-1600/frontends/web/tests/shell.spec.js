@@ -255,7 +255,7 @@ test('help and about', async ({ page }) => {
   await expect(about.locator(c('about-name'))).toHaveText('Calc-U-1600');
   await expect(about.locator(c('about-version'))).toContainText('Version 0.');
   expect(await about.locator('a').evaluateAll((as) => as.map((a) => a.href))).toEqual([
-    'https://github.com/tinue/calc-u', 'https://github.com/tinue/calc-u/issues']);
+    'https://github.com/tinue/Calc-U', 'https://github.com/tinue/Calc-U/issues']);
   await expect(about).toContainText('A Sharp PC-1500/1500A/1600 pocket-computer emulator.');
   await about.locator(c('about-close')).click();
   await expect(about).toHaveCount(0);

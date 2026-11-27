@@ -118,8 +118,8 @@ More on machine code is in [Machine-code programs](09-machine-code.md).
 
 A preset that prepares a module and a disk and saves both as templates
 next to itself, and the preset that uses them:
-[make_diskworks_media.pc1600](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/examples/dwx/make_diskworks_media.pc1600)
-and [DiskWorks.pc1600](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/examples/dwx/DiskWorks.pc1600).
+[make_diskworks_media.pc1600](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/examples/dwx/make_diskworks_media.pc1600)
+and [DiskWorks.pc1600](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/examples/dwx/DiskWorks.pc1600).
 
 ## Calc-U-1600's steps
 
@@ -146,7 +146,7 @@ name, in three groups: BASIC (Hanoi, the Towers of Hanoi), Plotter
 Rectangles in four pens, a globe, a biorhythm chart and a character
 chart) and Machine code (a memory test of the PC-1500A). Every
 example, also those not bundled, is in the
-[examples folder](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/examples)
+[examples folder](https://github.com/tinue/Calc-U/tree/main/products/calc-u-1600/examples)
 of the source repository; download it to open the files with **File ▸
 Load Preset…**.
 

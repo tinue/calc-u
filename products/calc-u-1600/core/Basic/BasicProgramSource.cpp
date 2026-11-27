@@ -27,7 +27,7 @@ BasicProgramSource tokenize(const std::vector<uint8_t>& bytes, TransferModel mod
     // other) tokenizes to the bare 0xFF the ROM's serial receiver actually
     // stores in the program area, not the 3-byte 0xFF 0x00 0x00 wire form
     // SAVE "COM1:" transmits (that trailing 0x00 0x00 is a transmission-only
-    // pacing marker -- see SharpDataExchange's sender.rs/scanner.rs).
+    // pacing marker -- see Sharp-Data-Exchange's sender.rs/scanner.rs).
     // This is a direct-poke loader, not a serial transfer, so it wants what
     // actually ends up in RAM.
     const int32_t rc = sde_tokenize(dev, /*with_header=*/0, SDE_SEGMENT_MARKER_MEMORY, /*name=*/nullptr,

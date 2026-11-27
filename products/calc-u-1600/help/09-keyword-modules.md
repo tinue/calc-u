@@ -10,7 +10,7 @@ Everything here is read from the PC-1500 system ROM, except where noted.
 The addresses are the same in revisions A01, A03 and A04, and the RENUM
 template was tested against it in Calc-U-1600. Routine names follow the
 ROM disassembly credited in the
-[acknowledgments](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/THIRD-PARTY-NOTICES.md#acknowledgments).
+[acknowledgments](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/THIRD-PARTY-NOTICES.md#acknowledgments).
 
 ## Where the firmware looks
 
@@ -104,7 +104,7 @@ It works for both, so no other clean-up is needed.
 **Functions** (low byte below `80H`; the evaluator sorts the tokens at
 D8A3–D8CF) are called from the middle of an expression instead. This part
 isn't used by RENUM and isn't checked against the ROM
-([acknowledgments](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/THIRD-PARTY-NOTICES.md#acknowledgments)): the
+([acknowledgments](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/THIRD-PARTY-NOTICES.md#acknowledgments)): the
 argument is already evaluated, in the arithmetic register at 7A00H. The
 routine leaves its result there and returns with `RTN` and UH = 0; a
 non-zero UH is raised as that error.

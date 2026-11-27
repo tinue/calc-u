@@ -20,7 +20,7 @@ the pages below add what is Calc-U-59's own.
 
 The full specification of every format, for those who write tools, is
 in the source repository:
-[docs/formats/](https://github.com/tinue/calc-u/blob/main/docs/formats/README.md).
+[docs/formats/](https://github.com/tinue/Calc-U/blob/main/docs/formats/README.md).
 
 ## The settings file
 

@@ -3,11 +3,11 @@
 # into PC1600-P1-B7-HOSTDRIVE.bin + .lst next to the source. Both outputs are
 # committed; rerun this after editing hostdrive.asm.
 #
-# zasm: $CALCU_ZASM, default ~/Development/sharp/zasm/zasm (as in
+# zasm: $CALCU_ZASM, default ~/Development/3rdparty/sharp/zasm/zasm (as in
 # the VS Code extension, c1600.zasmPath).
 set -eu
 
-ZASM="${CALCU_ZASM:-$HOME/Development/sharp/zasm/zasm}"
+ZASM="${CALCU_ZASM:-$HOME/Development/3rdparty/sharp/zasm/zasm}"
 DIR="$(cd "$(dirname "$0")/../firmware/pc1600-hostdrive" && pwd)"
 
 "$ZASM" -uwy "$DIR/hostdrive.asm" "$DIR/PC1600-P1-B7-HOSTDRIVE.lst" "$DIR/PC1600-P1-B7-HOSTDRIVE.bin"

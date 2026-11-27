@@ -1,5 +1,5 @@
 #!/bin/sh
-# Rebuild the sibling SharpDataExchange checkout and refresh the vendored
+# Rebuild the sibling Sharp-Data-Exchange checkout and refresh the vendored
 # static library + header under core/Basic/vendor/sharpdx/.
 #
 # Usage:
@@ -10,12 +10,12 @@
 set -e
 cd "$(dirname "$0")/.."
 REPO_ROOT=$(pwd)
-SRC=${SHARPDX_SRC:-../SharpDataExchange}
+SRC=${SHARPDX_SRC:-../../../../sharp/common/Sharp-Data-Exchange}
 DST="$REPO_ROOT/core/Basic/vendor/sharpdx"
 
 if [ ! -d "$SRC" ]; then
-  echo "SharpDataExchange checkout not found at $SRC" >&2
-  echo "(set SHARPDX_SRC=/path/to/SharpDataExchange to override)" >&2
+  echo "Sharp-Data-Exchange checkout not found at $SRC" >&2
+  echo "(set SHARPDX_SRC=/path/to/Sharp-Data-Exchange to override)" >&2
   exit 1
 fi
 
@@ -23,7 +23,7 @@ cd "$SRC"
 
 # Match Calc-U-1600's minimum deployment target (frontends/qt6/CMakeLists.txt's
 # CMAKE_OSX_DEPLOYMENT_TARGET) so `ld` doesn't warn about object files built
-# for a newer macOS than the app links against. SharpDataExchange pins the
+# for a newer macOS than the app links against. Sharp-Data-Exchange pins the
 # same value in its .cargo/config.toml; this export just makes it explicit.
 export MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-15.8}
 

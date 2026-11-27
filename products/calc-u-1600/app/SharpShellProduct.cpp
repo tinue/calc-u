@@ -27,7 +27,7 @@ shell::ShellProduct shellProduct(std::string version, std::string build, bool wi
     p.aboutLabel = "About Calc-U-1600…";
     p.aboutLines = {"A Sharp PC-1500/1500A/1600 pocket-computer emulator.",
                     "See LICENSE, NOTICE and THIRD-PARTY-NOTICES.md, shipped alongside this app, for licensing details."};
-    p.aboutLinks = {{"GitHub", "https://github.com/tinue/calc-u"}, {"Support", "https://github.com/tinue/calc-u/issues"}};
+    p.aboutLinks = {{"GitHub", "https://github.com/tinue/Calc-U"}, {"Support", "https://github.com/tinue/Calc-U/issues"}};
     p.variantLabels = {{sharp::kPC1500, "ROM Revision"}, {sharp::kPC1600, "ROM Version"}, {sharp::kCE1600P, "CE-1600P ROM"}};
     p.presetFilter = "Presets (*.pc1500 *.pc1500a *.pc1600)";
     // What a preset can name: programs (.bas, .bbin, .bin, a tape's .wav), ROM

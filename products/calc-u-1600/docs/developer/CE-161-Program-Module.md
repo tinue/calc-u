@@ -175,7 +175,7 @@ program &00C5, RAM &4000–&47FF, `NEW 0` → &4000).
   reserve keys.
 
 The research repository has the same as a reference section:
-[Ref/Memory/PC-1500-RAM-Sizing-and-NEW.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Memory/PC-1500-RAM-Sizing-and-NEW.md)
+[Ref/Memory/PC-1500-RAM-Sizing-and-NEW.md](https://github.com/tinue/PC-1600-Ref/blob/main/Memory/PC-1500-RAM-Sizing-and-NEW.md)
 §5.6. The user-level version, with `MEM` figures for the PC-1500 and PC-1500A,
 is in the help, [Program modules on the PC-1500](../../help/04-media.md#program-modules-on-the-pc-1500).
 

@@ -352,7 +352,7 @@ TEST(about_icon_name_version_summary_links) {
     const QString all = texts.join(QLatin1Char('\n'));
     CHECK(all.contains(QStringLiteral("Calc-U-59 Calculator Emulation")));
     CHECK(all.contains(QStringLiteral("Cycle-accurate TI-59")));
-    CHECK(all.contains(QStringLiteral("https://github.com/tinue/calc-u\"")));
+    CHECK(all.contains(QStringLiteral("https://github.com/tinue/Calc-U\"")));
     CHECK(all.contains(QStringLiteral("issues")) && all.contains(QStringLiteral("PRIVACY.md")));
     CHECK(all.contains(QStringLiteral("Built with Qt (LGPL-3.0).")));
     CHECK(all.contains(QStringLiteral("Package: ")));   // self-built here, the package jobs set theirs

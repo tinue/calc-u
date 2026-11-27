@@ -118,7 +118,7 @@ the size limit (Settings ▸ Tracing ▸ Maximum file size), the trace ends
 and a notice says so.
 
 To read a trace, download or clone the repository
-[tinue/calc-u](https://github.com/tinue/calc-u) on a computer with
+[tinue/Calc-U](https://github.com/tinue/Calc-U) on a computer with
 Python, and in `products/calc-u-59/` run:
 
 ```sh

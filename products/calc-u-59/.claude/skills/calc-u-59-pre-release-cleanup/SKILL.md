@@ -26,7 +26,7 @@ that area.
    release" below means `base..HEAD`.
 3. The user guide is the help in `help/` (and `library/help/`).
    Where this release also changes what stays the site's (the software
-   collection, the articles), in `../calc-u-site` confirm the branch is
+   collection, the articles), in `../Calc-U-Site` confirm the branch is
    `59/X.Y.Z`; its rules are in that repository's `CLAUDE.md`.
 4. Confirm both working trees are clean. If either is dirty or on another
    branch, ask before going on: your commits would mix with the user's work.
@@ -76,7 +76,7 @@ it and continue. On no, the gate stays **open**.
 
 Follow the `calc-u-59-docs` skill's Release Documentation Update Workflow, for
 `docs/developer/` and for the help (`help/`, `tools/help check calc-u-59`), and for
-what stays the site's in `../calc-u-site` (with its `site-59` skill). The workflow's changelog step only needs completeness here, since gate
+what stays the site's in `../Calc-U-Site` (with its `site-59` skill). The workflow's changelog step only needs completeness here, since gate
 5 reworks the text.
 
 Done when each user-visible change and each changed developer fact (file format,

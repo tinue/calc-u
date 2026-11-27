@@ -2,7 +2,7 @@
 
 The emulated PC-1600's RS-232C port (TC8576F) is backed by a host
 pseudo-terminal (macOS and Linux), so any serial application can talk to
-it directly — in particular SharpDataExchange's `sde`. This document is
+it directly — in particular Sharp-Data-Exchange's `sde`. This document is
 about the implementation; for using the port, see the help,
 [COM ports](../../help/09-com-ports.md).
 
@@ -41,7 +41,7 @@ app is concerned. In practice this makes `X` handshake tricky to use;
 see "Calculator-side settings" below for the recommended alternative (no
 handshake, paced with a delay instead). The RS-232C hardware lines are
 modelled inside the TC8576F as the Toshiba data sheet and the ROM describe
-them ([Ref/Serial-Parallel/PC-1600-CPC-TC8576.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Serial-Parallel/PC-1600-CPC-TC8576.md) §9.5): RTS/DTR
+them ([Ref/Serial-Parallel/PC-1600-CPC-TC8576.md](https://github.com/tinue/PC-1600-Ref/blob/main/Serial-Parallel/PC-1600-CPC-TC8576.md) §9.5): RTS/DTR
 from the serial command register are forwarded via
 `SerialLink::setControl()`, and the peer's CS/CD/DR are cached each
 `tick()` into the parallel status register, bits 0/1/2. CS reads 0 when on,
@@ -69,7 +69,7 @@ rest waits in the host link.
 
 ## Calculator-side settings
 
-How to set up the port and exchange programs with SharpDataExchange is in
+How to set up the port and exchange programs with Sharp-Data-Exchange is in
 the help, [COM ports](../../help/09-com-ports.md). Why the guide
 recommends those settings:
 

@@ -16,7 +16,7 @@ why. Every key of the file is in
   ([Worked examples](10-module-definition-format.md#7-worked-examples)
   lists them). `ce155.module.yaml` is a simple one;
   `ce1638.module.yaml` and `ce1601m.module.yaml` are banked. The fictional
-  [pc1500-maxed-out.module.yaml](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/examples/memory/memory-cards/pc1500-maxed-out.module.yaml)
+  [pc1500-maxed-out.module.yaml](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/examples/memory/memory-cards/pc1500-maxed-out.module.yaml)
   shows every PC-1500 expansion pin in use, and its preset plugs it in with
   `slot-1: { file: pc1500-maxed-out.module.yaml }`.
 - **Make it appear in the slot pickers:** put a file with
@@ -31,7 +31,7 @@ why. Every key of the file is in
 ### A module with content already on it
 
 1. Prepare it with a preset (see
-   [examples/setup/](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/examples/setup)).
+   [examples/setup/](https://github.com/tinue/Calc-U/tree/main/products/calc-u-1600/examples/setup)).
 2. Click **Module YAML** in the INSPECTOR ([Debugger](07-debugger.md#the-inspector)).
 3. Paste the printed block into the module definition.
 
@@ -43,7 +43,7 @@ choose it by name.
 The rest of this page is the content model: *what* a module definition must
 express and *why*. The YAML spelling of it is in
 [The module definition format](10-module-definition-format.md), with worked
-examples among the [examples](https://github.com/tinue/calc-u/tree/main/products/calc-u-1600/examples/memory/memory-cards).
+examples among the [examples](https://github.com/tinue/Calc-U/tree/main/products/calc-u-1600/examples/memory/memory-cards).
 Every field exists because some documented mechanism of the PC-1500/PC-1600
 expansion connector or bank switching needs it to be expressible; §9
 cross-checks that row by row against the Technical Reference Manual and the
@@ -77,7 +77,7 @@ numbered terminology instead, at the cost of being harder for a person
 to write and review.
 
 **Every host's expansion connector is physically the same 40-pin port**
-([Ref/Expansion/Software-Defined-Memory-Extension.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Expansion/Software-Defined-Memory-Extension.md) §4) — a module built for one model
+([Ref/Expansion/Software-Defined-Memory-Extension.md](https://github.com/tinue/PC-1600-Ref/blob/main/Expansion/Software-Defined-Memory-Extension.md) §4) — a module built for one model
 physically fits the slot of every other model listed here. Nothing about
 the file format needs to model a plug that won't fit; the load-time gate
 is not a connector/electrical simulation, it's a much simpler thing.
@@ -480,7 +480,7 @@ the sampled lines, and the domain says everything the file needs to.
 The PC-1600 firmware identifies a ROM/RAM-disk module by an **8-byte
 header physically present at the start of the module's own address space**
 (`8000H`, `A000H`, or `B000H` depending on which page the module occupies)
-— [Ref/Firmware/PC-1600-Transparent-Banking.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Firmware/PC-1600-Transparent-Banking.md)'s "ROM Module Detection and Headers":
+— [Ref/Firmware/PC-1600-Transparent-Banking.md](https://github.com/tinue/PC-1600-Ref/blob/main/Firmware/PC-1600-Transparent-Banking.md)'s "ROM Module Detection and Headers":
 ID bytes `43H 16H`, reset-jump/checksum, start/boot fields, module
 length/boot address, BASIC address, end address, and a type byte
 (`80H`/`FFH` = RAM-Disk, `F0H` = Program, `F2H` = System, `01H` =
@@ -567,7 +567,7 @@ region or bank-range at load time:
 
 ### 9. Coverage check against the source module table
 
-Every row of [Ref/Expansion/Software-Defined-Memory-Extension.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Expansion/Software-Defined-Memory-Extension.md) §2–3 must be
+Every row of [Ref/Expansion/Software-Defined-Memory-Extension.md](https://github.com/tinue/PC-1600-Ref/blob/main/Expansion/Software-Defined-Memory-Extension.md) §2–3 must be
 expressible as one or more regions, each fully placed on D1–D4. Working
 through them:
 

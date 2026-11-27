@@ -12,7 +12,7 @@
 // ── CE-1600F floppy-disk file (`<name>.floppy.yaml`) ───────────────────
 //
 // Specification: docs/formats/media.md §2 at the repository root (other tools, e.g.
-// SharpDataExchange, implement that document -- keep the two in step).
+// Sharp-Data-Exchange, implement that document -- keep the two in step).
 //
 // A saved CE-1600F diskette: an explicit `disk-name` (what the GUI picker
 // shows and a preset's `floppy:` key refers to -- the counterpart of a

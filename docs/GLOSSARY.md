@@ -824,7 +824,7 @@ build of a coming release shown next to the released one.
 
 **Source repository**:
 The repository that holds the source of every product and publishes their
-releases: tinue/calc-u.
+releases: tinue/Calc-U.
 _Avoid_: monorepo
 
 **Release**:
@@ -836,8 +836,8 @@ The tag of one release, with the product as prefix, such as
 _Avoid_: version tag (for this)
 
 **Research repository**:
-A repository of hardware and firmware research, such as `ti59-research` or
-`Sharp1500-1600-Ref`.
+A repository of hardware and firmware research, such as `TI-59-Research` or
+`PC-1600-Ref`.
 
 **ROM repository**:
 A repository that holds ROM dumps, from which a product fetches them at

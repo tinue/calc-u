@@ -122,5 +122,5 @@ documents the emulator.
 ## Free software
 
 Calc-U-59 is free software under the GNU GPL version 3; its source is in
-the repository [tinue/calc-u](https://github.com/tinue/calc-u) on
+the repository [tinue/Calc-U](https://github.com/tinue/Calc-U) on
 GitHub.

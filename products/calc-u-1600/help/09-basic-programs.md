@@ -3,7 +3,7 @@
 ## Loading a BASIC program
 
 **File ▸ Load BASIC Program…** opens a plain-text BASIC listing (`.bas`), an
-already tokenized program (`.bbin`, as SharpDataExchange's `sde convert`
+already tokenized program (`.bbin`, as Sharp-Data-Exchange's `sde convert`
 writes it, with a CE-158 or PC-1600 header), or a cassette WAV
 ([below](#fast-loading-a-cassette-wav)), converts a listing to BASIC's
 internal form, and writes the program straight into the program memory. It

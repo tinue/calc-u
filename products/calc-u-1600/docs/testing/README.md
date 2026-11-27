@@ -42,7 +42,7 @@ are many times slower.
 **2. The repository and the ROMs.**
 
 ```sh
-git clone https://github.com/tinue/calc-u.git ~/calc-u
+git clone https://github.com/tinue/Calc-U.git ~/calc-u
 cd ~/calc-u
 products/calc-u-1600/roms/fetch_roms.sh
 (cd products/calc-u-1600 && tools/fetch_sharpdx.sh)     # Linux and WSL only

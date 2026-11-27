@@ -101,7 +101,7 @@ In BASIC:
 - `OUTSTAT 0` switches the DTR and RTS lines on.
 
 The full command set is in the
-[CE-158 reference](https://github.com/tinue/SharpBasicReference/blob/main/CE-158-Reference.md).
+[CE-158 reference](https://github.com/tinue/Sharp-BASIC-Ref/blob/main/CE-158-Reference.md).
 
 Known gap: on the PC-1600, `SETDEV KI` with `INPUT` doesn't work yet;
 `RINKEY$` does.

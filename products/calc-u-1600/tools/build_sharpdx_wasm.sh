@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds libsharpdx (SharpDataExchange's C ABI) for WebAssembly into
+# Builds libsharpdx (Sharp-Data-Exchange's C ABI) for WebAssembly into
 # core/Basic/vendor/sharpdx/libsharpdx-wasm.a, from a local checkout, for
 # the Emscripten build of Core + Shared (tools/build_wasm_check.sh).
 #
@@ -12,12 +12,12 @@
 set -e
 cd "$(dirname "$0")/.."
 REPO_ROOT=$(pwd)
-SRC=${SHARPDX_SRC:-../SharpDataExchange}
+SRC=${SHARPDX_SRC:-../../../../sharp/common/Sharp-Data-Exchange}
 DST="$REPO_ROOT/core/Basic/vendor/sharpdx"
 
 if [ ! -d "$SRC" ]; then
-  echo "SharpDataExchange checkout not found at $SRC" >&2
-  echo "(set SHARPDX_SRC=/path/to/SharpDataExchange to override)" >&2
+  echo "Sharp-Data-Exchange checkout not found at $SRC" >&2
+  echo "(set SHARPDX_SRC=/path/to/Sharp-Data-Exchange to override)" >&2
   exit 1
 fi
 

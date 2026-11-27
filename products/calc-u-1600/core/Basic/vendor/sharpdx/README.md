@@ -1,7 +1,7 @@
-# Vendored `libsharpdx` (SharpDataExchange C ABI)
+# Vendored `libsharpdx` (Sharp-Data-Exchange C ABI)
 
 `libsharpdx.a` + `sharpdx.h` are the prebuilt static library and generated C
-header of [`SharpDataExchange`](https://github.com/tinue/SharpDataExchange) (crate `sharpdx`,
+header of [`Sharp-Data-Exchange`](https://github.com/tinue/Sharp-Data-Exchange) (crate `sharpdx`,
 version 0.3.5). Every program loader uses it: `sde_file_info` tells what a
 file is (BASIC listing, tokenized BASIC, machine code with or without a
 header, cassette WAV) and where its payload is (`core/ProgramFile.cpp`,
@@ -33,13 +33,13 @@ version (26.0) than being linked` warnings: those are the Rust toolchain's
 own min-OS and are not recompiled by `MACOSX_DEPLOYMENT_TARGET`. Harmless;
 our own crate objects are built at 15.8 by `refresh_sharpdx.sh`
 (= `CMAKE_OSX_DEPLOYMENT_TARGET` in the repository's root `CMakeLists.txt`). A rustup toolchain's
-`std` is built for macOS 11, so a lib taken from a SharpDataExchange release
+`std` is built for macOS 11, so a lib taken from a Sharp-Data-Exchange release
 (CI-built with rustup) links without these warnings.
 
 ## Refreshing
 
 Run `tools/refresh_sharpdx.sh` from the product folder after the sibling
-`SharpDataExchange` checkout changes. It runs
+`Sharp-Data-Exchange` checkout changes. It runs
 `cargo build --release --lib --no-default-features` there and copies
 `target/release/libsharpdx.a` + `include/sharpdx.h` over these files. Commit the result.
 

@@ -93,7 +93,7 @@ it tells what a file is and tokenizes BASIC listings.
 
 - On **macOS** it is committed: nothing to do.
 - On **Linux and Windows** fetch it before configuring, from a
-  SharpDataExchange GitHub release:
+  Sharp-Data-Exchange GitHub release:
   `products/calc-u-1600/tools/fetch_sharpdx.sh`.
 - Under **Emscripten** the committed `libsharpdx-wasm.a` is used; it was
   built with Emscripten 6.0.13 (`core/Basic/vendor/sharpdx/README.md`), the

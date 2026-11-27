@@ -2,7 +2,7 @@
 
 Calc-U-59 is free on every system. The Mac, Windows and Linux builds
 are the files of a release of the repository
-[tinue/calc-u on GitHub](https://github.com/tinue/calc-u/releases) (the
+[tinue/Calc-U on GitHub](https://github.com/tinue/Calc-U/releases) (the
 releases of Calc-U-59 are tagged `calc-u-59-v…`); the iPhone and iPad
 build is on the App Store; on Android the browser installs the web app.
 
@@ -33,7 +33,7 @@ writing and keeping programs.
 **Mac**
 
 1. Download `Calc-U-59-mac-aarch64.dmg` from the latest Calc-U-59 release
-   on [GitHub](https://github.com/tinue/calc-u/releases).
+   on [GitHub](https://github.com/tinue/Calc-U/releases).
 2. Open the DMG and drag Calc-U-59.app to the Applications folder.
 3. Eject the disk image and start the app from Applications.
 
@@ -43,7 +43,7 @@ other program. It needs a Mac with Apple silicon and macOS 15.8 or later.
 **Windows**
 
 1. From the latest Calc-U-59 release on
-   [GitHub](https://github.com/tinue/calc-u/releases), download
+   [GitHub](https://github.com/tinue/Calc-U/releases), download
    `Calc-U-59-windows-x86_64.exe` (most PCs) or
    `Calc-U-59-windows-arm64.exe` (Windows on ARM).
 2. Run it. The installer is not signed, so Windows SmartScreen may warn

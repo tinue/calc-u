@@ -44,7 +44,7 @@ test suite checks it).
 |---|---|---|
 | `ce158_demo.pc1500a` | PC-1500A + CE-158 | Prints on the parallel port, sends a line out of the serial port and echoes one back |
 | `ce158_demo.pc1600` | PC-1600 + CE-158 | The same on the PC-1600 |
-| `setcom1600.pc1600` | PC-1600 | Serial setup for exchanging files with SharpDataExchange over `COM1:` |
+| `setcom1600.pc1600` | PC-1600 | Serial setup for exchanging files with Sharp-Data-Exchange over `COM1:` |
 
 ## machine-code/ — machine-code programs
 

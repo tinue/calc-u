@@ -23,7 +23,7 @@ render rule, styling, `MANIFEST.json`): `docs/formats/web-embed.md`
 drawing: `docs/developer/App-Layer.md`. Feature placement:
 `docs/developer/Frontend-Parity.md` (the Web column).
 
-The website (https://calc-u.org/59/, repository `calc-u-site`) only
+The website (https://calc-u.org/59/, repository `Calc-U-Site`) only
 *embeds* a built `dist/`, imported from a release's `Calc-U-59-web.zip`.
 Never edit the calculator there — that copy is generated.
 

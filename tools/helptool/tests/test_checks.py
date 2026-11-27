@@ -74,7 +74,7 @@ class CheckTests(HelpTestCase):
         cases = [
             ("The cards are in frontends/qt6/resources/cards.\n", "'frontends/'"),
             ("See `products/demo/app/Thing.cpp`.\n", "'products/demo/app/'"),
-            ("The [templates](https://github.com/tinue/calc-u/tree/main/products/demo/frontends/qt6/x).\n",
+            ("The [templates](https://github.com/tinue/Calc-U/tree/main/products/demo/frontends/qt6/x).\n",
              "links into the source code"),
             ("Read `library/sessions/AppSession.cpp`.\n", "'library/'"),
             ("[core/Machine](https://example.org/x)\n", "'core/'"),
@@ -96,8 +96,8 @@ class CheckTests(HelpTestCase):
         self.append(self.product / "09-models.md",
                     "\nIn `products/demo/` run `tools/read_trace.py`; open"
                     " [calc-u.org/59/calc/app/](https://calc-u.org/59/calc/app/), the"
-                    " [examples](https://github.com/tinue/calc-u/tree/main/products/demo/examples) and the"
-                    " [notes](https://github.com/tinue/calc-u/blob/main/products/demo/docs/notes.md)."
+                    " [examples](https://github.com/tinue/Calc-U/tree/main/products/demo/examples) and the"
+                    " [notes](https://github.com/tinue/Calc-U/blob/main/products/demo/docs/notes.md)."
                     " A CE-1600M-1 and DM-10 are fine.\n"
                     "\n```\ncmake --build build --target frontends/qt6/app\n```\n")
         self.assertPasses(self.tool("check", "demo"))

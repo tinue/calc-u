@@ -28,7 +28,7 @@ modelled on the MEP rev3 module, a USB drive for the PC-1600's 60-pin
 connector. To software it looks like a MEP rev3 USB drive: the same device
 names, subdirectories through `CDIR` / `LDIR`, and the MEP's fixed entries,
 so MEP programs such as FILEX work on it. The MEP is credited in
-[THIRD-PARTY-NOTICES.md](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/THIRD-PARTY-NOTICES.md#acknowledgments).
+[THIRD-PARTY-NOTICES.md](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/THIRD-PARTY-NOTICES.md#acknowledgments).
 
 ## What works
 
@@ -106,4 +106,4 @@ letters, digits and ``` `@#$%^&()-_{}' ```.
 | INIT | Not handled | Refused |
 
 How the drive is built (driver ROM, I/O protocol, FILE functions) is in
-[PC1600-Host-Drive-Internals.md](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/PC1600-Host-Drive-Internals.md).
+[PC1600-Host-Drive-Internals.md](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/docs/developer/PC1600-Host-Drive-Internals.md).

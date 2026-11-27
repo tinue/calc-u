@@ -7,7 +7,7 @@ and `docs/Process.md` until the closing check at its end has passed.
 
 ## Where things stand
 
-- **Published pre-releases** on tinue/calc-u, both marked pre-release,
+- **Published pre-releases** on tinue/Calc-U, both marked pre-release,
   never "Latest":
   - `calc-u-1600-v0.9.0-pre`: seven assets (Linux x86_64 and aarch64
     AppImages, macOS DMG, Windows x86_64 and arm64 installers, the Web
@@ -73,7 +73,7 @@ and `docs/Process.md` until the closing check at its end has passed.
 - **Other checkouts** need the ROM file rename `roms/CE-502B.module.yaml`
   (`fetch_roms.sh` stores it so).
 - **Outside this repository**, edited but not committed: the
-  `Sharp1500-1600-Ref` skill (a line still names the old CLI) and the
+  `PC-1600-Ref` skill (a line still names the old CLI) and the
   calc-u-site skill `site-59` (a line names `StateFileFormat.md`). VS Code
   users of Calc-U-1600 re-create `launch.json`/`tasks.json` for the debug
   type `c1600`.
@@ -162,7 +162,7 @@ repository.
 
 ### Archive the old Calc-U-1600 repository
 
-- [ ] tinue/Calc-U-1600 gets a README pointing to tinue/calc-u and is
+- [ ] tinue/Calc-U-1600 gets a README pointing to tinue/Calc-U and is
       archived on GitHub (read only; its history stays).
 - [ ] Its old memory directory (`sharp/Calc-U-1600`) is deleted; what is
       still valid is already in this repository's memory.
@@ -171,7 +171,7 @@ repository.
 
 - [x] App Store metadata: the orphan branch `appstore` of tinue/Calc-U-59
       (description, keywords, screenshots, `whatsnew.txt`) pushed to
-      tinue/calc-u and checked out as the worktree
+      tinue/Calc-U and checked out as the worktree
       `products/calc-u-59/appstore`.
 - [ ] Screenshots: the App Store and help screenshots retaken where
       something visible changed (`bin/run-screenshots`).
@@ -193,7 +193,7 @@ repository.
 
 ### Archive the old Calc-U-59 repository
 
-- [ ] tinue/Calc-U-59 gets a README pointing to tinue/calc-u and is
+- [ ] tinue/Calc-U-59 gets a README pointing to tinue/Calc-U and is
       archived on GitHub.
 - [ ] Its old memory directory is deleted.
 

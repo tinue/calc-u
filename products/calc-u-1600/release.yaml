@@ -7,7 +7,7 @@
 # the artifacts and publishes them. The Windows installer is unsigned.
 
 name: Calc-U-1600
-# One of the products of tinue/calc-u: prefixed tags, releases
+# One of the products of tinue/Calc-U: prefixed tags, releases
 # from main, never GitHub's "Latest".
 tag_prefix: calc-u-1600-
 branching: trunk

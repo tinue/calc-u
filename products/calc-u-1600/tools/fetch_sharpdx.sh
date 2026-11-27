@@ -1,12 +1,12 @@
 #!/bin/sh
-# Downloads a prebuilt libsharpdx (+ header) from a SharpDataExchange
+# Downloads a prebuilt libsharpdx (+ header) from a Sharp-Data-Exchange
 # GitHub release and vendors it under core/Basic/vendor/sharpdx/, so BASIC
 # program loading (core/Basic/BasicProgramSource.cpp, and everything that
 # depends on it -- see frontends/qt6/CMakeLists.txt) can build on platforms other
 # than macOS without a local Rust toolchain.
 #
 # Counterpart to tools/refresh_sharpdx.sh, which instead builds from a
-# local SharpDataExchange source checkout -- use that one on macOS if
+# local Sharp-Data-Exchange source checkout -- use that one on macOS if
 # you're developing sharpdx itself, or to refresh the committed macOS
 # binary. This script is for Linux/Windows, where there's no vendored
 # binary to refresh: it just downloads one. Unlike the macOS binary, the
@@ -94,7 +94,7 @@ case "$PLATFORM" in
 esac
 
 ARCHIVE="sharpdx-${PLATFORM}.${EXT}"
-URL="https://github.com/tinue/SharpDataExchange/releases/download/${TAG}/${ARCHIVE}"
+URL="https://github.com/tinue/Sharp-Data-Exchange/releases/download/${TAG}/${ARCHIVE}"
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

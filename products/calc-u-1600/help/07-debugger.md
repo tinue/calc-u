@@ -60,7 +60,7 @@ settings alone. A port outside 1024 to 65535 is reported, and the server
 stays off for that run.
 
 **Without a window.** The harness `calcu`, which you build from the source
-repository ([Building](https://github.com/tinue/calc-u/blob/main/docs/Building.md)),
+repository ([Building](https://github.com/tinue/Calc-U/blob/main/docs/Building.md)),
 serves a debugger too: `calcu --product c1600 serve --dap 32168`. It has no
 wall clock: while VS Code has the machine running, emulated time passes as
 fast as the computer allows. A session that stops at breakpoints repeats
@@ -84,7 +84,7 @@ Then reload the VS Code window. Run the script again after updating
 Calc-U-1600. The extension is installed for your user, so it works in every
 folder; you don't copy anything into your projects. The extension's own
 description is in its
-[README](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/vscode/calcu1600-debug/README.md).
+[README](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/vscode/calcu1600-debug/README.md).
 
 **4. Optionally, install a language extension** for LH5801 or Z80 assembly.
 It adds syntax colouring and lets you set breakpoints by clicking next to a
@@ -130,7 +130,7 @@ example) is reported and not used, so a listing for the other model does no
 harm.
 
 The PC-1500 ROM disassembly (see the
-[acknowledgments](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/THIRD-PARTY-NOTICES.md#acknowledgments))
+[acknowledgments](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/THIRD-PARTY-NOTICES.md#acknowledgments))
 is written for TASM, whose listings the debugger can't read yet.
 
 ---
@@ -418,7 +418,7 @@ yet.
 
 A PC-1500 *BASIC* program module (header, reserve area, program, &FF fill,
 closing `65279 END` line) follows Sharp's layout in
-[CE-161-Program-Module.md](https://github.com/tinue/calc-u/blob/main/products/calc-u-1600/docs/developer/CE-161-Program-Module.md#program-modules-in-general);
+[CE-161-Program-Module.md](https://github.com/tinue/Calc-U/blob/main/products/calc-u-1600/docs/developer/CE-161-Program-Module.md#program-modules-in-general);
 the system ROM finds it by its &55 header at power-on.
 
 ---

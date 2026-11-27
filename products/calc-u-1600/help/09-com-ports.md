@@ -12,7 +12,7 @@ flowchart LR
     end
     U16 --> L1["calcu1600-rs232c.serial"]
     U158 --> L2["calcu1600-ce158.serial"]
-    L1 --> SDE["SharpDataExchange (sde)"]
+    L1 --> SDE["Sharp-Data-Exchange (sde)"]
     L1 --> T["any terminal program"]
     L2 --> SCR["e.g. screen … 300"]
 ```
@@ -45,8 +45,8 @@ XON/XOFF (`…,X,N`) doesn't work well here: the control characters simply
 become part of the data, because no driver on the computer side reacts to
 them. `28` switches the handshake-line checks off.
 
-**Exchanging programs with SharpDataExchange**
-([github.com/tinue/SharpDataExchange](https://github.com/tinue/SharpDataExchange)):
+**Exchanging programs with Sharp-Data-Exchange**
+([github.com/tinue/Sharp-Data-Exchange](https://github.com/tinue/Sharp-Data-Exchange)):
 
 ```sh
 # computer → PC-1600: start LOAD "COM1:" on the calculator, then
@@ -81,7 +81,7 @@ In BASIC:
 - `OUTSTAT 0` switches the DTR/RTS lines on.
 
 The full command set is in the
-[CE-158 reference](https://github.com/tinue/SharpBasicReference/blob/main/CE-158-Reference.md).
+[CE-158 reference](https://github.com/tinue/Sharp-BASIC-Ref/blob/main/CE-158-Reference.md).
 
 Known gap: on the PC-1600, `SETDEV KI` + `INPUT` doesn't work yet.
 `RINKEY$` does.
@@ -93,4 +93,4 @@ a serial port file unless you ask for one:
 `calcu --product c1600 c1600 serial ce158|rs232c feed <file>`,
 `capture <file>`, `link` (makes the serial port file) and `report`. It is
 built from the source repository
-([Building](https://github.com/tinue/calc-u/blob/main/docs/Building.md)).
+([Building](https://github.com/tinue/Calc-U/blob/main/docs/Building.md)).

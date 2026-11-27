@@ -21,7 +21,7 @@
 # MANIFEST.json names the version and commit.
 
 name: Calc-U-59
-# One of the products of tinue/calc-u: prefixed tags, releases
+# One of the products of tinue/Calc-U: prefixed tags, releases
 # from main, never GitHub's "Latest".
 tag_prefix: calc-u-59-
 branching: trunk

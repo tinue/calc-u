@@ -24,7 +24,7 @@
 AppName={#AppName}
 AppVersion={#APP_VERSION}
 AppPublisher=Martin Erzberger
-AppPublisherURL=https://github.com/tinue/calc-u
+AppPublisherURL=https://github.com/tinue/Calc-U
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 UninstallDisplayIcon={app}\{#AppName}.exe

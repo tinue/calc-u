@@ -168,7 +168,7 @@ Calc-U-1600 reads none of the files 0.8 wrote; they stay where they are,
 and you convert them by hand:
 
 - a preset of version 1: as the
-  [preset format, §9.2](https://github.com/tinue/calc-u/blob/main/docs/formats/preset.md#92-calc-u-1600-preset-version-1)
+  [preset format, §9.2](https://github.com/tinue/Calc-U/blob/main/docs/formats/preset.md#92-calc-u-1600-preset-version-1)
   lists;
 - a floppy disk (version 1): set `format-version: 2` and rename the
   sides `a:` and `b:` to `0:` and `1:`;

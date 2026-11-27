@@ -20,7 +20,7 @@ Whether you want a classic calculator that just works, or you want to run progra
 
 The user guide is the help in [`help/`](help/) (Calc-U-59's chapters) and [`library/help/`](../../library/help/) (the chapters both Calc-U products share), Markdown that each release carries as `Calc-U-59-help.zip` and calc-u.org/59 renders. Everything else here is developer documentation: architecture and APIs for people building or extending the emulator (including AI agents doing so).
 
-Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_64, aarch64) are on the [Releases page](https://github.com/tinue/calc-u/releases); the iPhone and iPad app is on the App Store.
+Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_64, aarch64) are on the [Releases page](https://github.com/tinue/Calc-U/releases); the iPhone and iPad app is on the App Store.
 
 ## Features
 
@@ -63,7 +63,7 @@ The file [`prompt/ti59-agent-prompt.md`](prompt/ti59-agent-prompt.md) is a syste
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for version history and release notes. This covers the apps and the web client (`core/`, `app/`, `frontends/swift/App/`, `frontends/swift/Bridge/`, `frontends/qt6/`, `frontends/web/`); the website is a separate repository, [`calc-u-site`](https://github.com/tinue/calc-u-site), with its own git history and no version numbers of its own, so website-only changes aren't logged here.
+See [CHANGELOG.md](CHANGELOG.md) for version history and release notes. This covers the apps and the web client (`core/`, `app/`, `frontends/swift/App/`, `frontends/swift/Bridge/`, `frontends/qt6/`, `frontends/web/`); the website is a separate repository, [`Calc-U-Site`](https://github.com/tinue/Calc-U-Site), with its own git history and no version numbers of its own, so website-only changes aren't logged here.
 
 ## License
 
@@ -153,4 +153,4 @@ Trigger conditions and workflows for Claude Code when working in specific areas 
 
 ### The user guide (not indexed here)
 
-The help (`help/`, `help/help.yaml` lists its files chapter by chapter; checked and built by `tools/help` at the repository root, `tools/README.md`) is not enumerated here. The website that renders it lives in its own repository, [`calc-u-site`](https://github.com/tinue/calc-u-site), with its own internal (build/design-system) documentation.
+The help (`help/`, `help/help.yaml` lists its files chapter by chapter; checked and built by `tools/help` at the repository root, `tools/README.md`) is not enumerated here. The website that renders it lives in its own repository, [`Calc-U-Site`](https://github.com/tinue/Calc-U-Site), with its own internal (build/design-system) documentation.

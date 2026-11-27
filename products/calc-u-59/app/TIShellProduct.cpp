@@ -22,9 +22,9 @@ shell::ShellProduct shellProduct(std::string version, std::string build) {
     p.aboutLines = {"Calc-U-59 Calculator Emulation",
                     "Cycle-accurate TI-59, TI-58, and TI-58C emulation with magnetic cards, paper tape printer, "
                     "presets, and debugger tools."};
-    p.aboutLinks = {{"GitHub", "https://github.com/tinue/calc-u"},
-                    {"Support", "https://github.com/tinue/calc-u/issues"},
-                    {"Privacy", "https://github.com/tinue/calc-u/blob/main/products/calc-u-59/PRIVACY.md"}};
+    p.aboutLinks = {{"GitHub", "https://github.com/tinue/Calc-U"},
+                    {"Support", "https://github.com/tinue/Calc-U/issues"},
+                    {"Privacy", "https://github.com/tinue/Calc-U/blob/main/products/calc-u-59/PRIVACY.md"}};
     p.barModelLabels = {{"TI-59", "59"}, {"TI-58", "58"}, {"TI-58C", "58C"}};
     p.barSpread = true;          // model and module left, the cards in the middle, the rest right
     p.barShortPickers = true;    // "59", "ML": the bar fits beside the faceplate

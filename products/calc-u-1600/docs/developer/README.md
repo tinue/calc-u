@@ -65,7 +65,7 @@ Comments and docs cite the original sources: the Technical Reference
 Manual (TRM), the Service Manuals, data sheets and the ROMs (by bank and
 address). Hardware facts collected from these sources are written up in
 the research repository
-[Sharp1500-1600-Ref](https://github.com/tinue/Sharp1500-1600-Ref). Comments
+[PC-1600-Ref](https://github.com/tinue/PC-1600-Ref). Comments
 cite it as `Ref/<path>`, a path inside that repository, e.g.
 `Ref/Keyboard/PC-1600-Keyboard.md §5`.
 

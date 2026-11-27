@@ -151,7 +151,7 @@ TEST(test_pc1600_end_marker_ignored) {
     CHECK(classify(f).kind == Kind::CodeZ80);
 }
 
-// SharpDataExchange's own Z80 sample (src/cpu_guess.rs Z80_BLOCK): a loop
+// Sharp-Data-Exchange's own Z80 sample (src/cpu_guess.rs Z80_BLOCK): a loop
 // with JR/DJNZ targets inside it, a CALL and a RET.
 std::vector<uint8_t> z80Code() {
     static const uint8_t kBlock[] = {0x21, 0x00, 0x80, 0x06, 0x10, 0x7E, 0xFE, 0x20, 0x28,
@@ -189,7 +189,7 @@ std::vector<uint8_t> readFixture(const char* path, bool* ok) {
 
 // What a dropped or opened file is: app/tests/opening_tests.cpp.
 
-// Real SharpDataExchange output. Skipped (not failed) when absent.
+// Real Sharp-Data-Exchange output. Skipped (not failed) when absent.
 TEST(test_real_sample_files) {
     struct Case { const char* path; Kind kind; };
     const Case cases[] = {

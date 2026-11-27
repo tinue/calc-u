@@ -13,7 +13,7 @@
 //     (notably the PC-1500 7-bit-ASCII check, which refuses a listing with
 //     a non-ASCII character);
 //   * tokenized BASIC behind a CE-158 (PC-1500) or PC-1600 header (.bbin,
-//     as SharpDataExchange writes it) -- the header is stripped.
+//     as Sharp-Data-Exchange writes it) -- the header is stripped.
 //
 // Either way the result is the run of in-RAM line records the loaders poke
 // into the program area:

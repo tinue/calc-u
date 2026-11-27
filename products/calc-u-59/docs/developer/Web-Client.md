@@ -43,7 +43,7 @@ the PC-100C connected.
 
 It is built into a self-contained folder, `frontends/web/dist/`, that does not know
 where it is hosted. The website (https://calc-u.org/59/, repository
-`calc-u-site`) embeds that folder as `59/calc/` (a release asset of this
+`Calc-U-Site`) embeds that folder as `59/calc/` (a release asset of this
 repository, or a local `frontends/web/dist/` for testing) and mounts the calculator
 from it. This document is the contract between the two.
 

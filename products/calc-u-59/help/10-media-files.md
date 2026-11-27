@@ -268,6 +268,6 @@ becomes, in `sides:` of the new card:
 ```
 
 The full rules of every format are in the source repository:
-[media.md](https://github.com/tinue/calc-u/blob/main/docs/formats/media.md),
-[modules.md](https://github.com/tinue/calc-u/blob/main/docs/formats/modules.md),
-[cue-card.md](https://github.com/tinue/calc-u/blob/main/docs/formats/cue-card.md).
+[media.md](https://github.com/tinue/Calc-U/blob/main/docs/formats/media.md),
+[modules.md](https://github.com/tinue/Calc-U/blob/main/docs/formats/modules.md),
+[cue-card.md](https://github.com/tinue/Calc-U/blob/main/docs/formats/cue-card.md).

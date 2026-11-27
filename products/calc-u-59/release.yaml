@@ -57,6 +57,9 @@ build:
 
 appstore:
   worktree: appstore
+  # The Mac app comes from CI, so there is no xcode-dmg step to take these from.
+  project: frontends/swift/Calc-U-59.xcodeproj
+  scheme: Calc-U-59
   bundle_id: ch.erzberger.calcu59
   export_options: bin/AppStoreExportOptions.plist
   # The App Store notes are for the iOS app: CHANGELOG lines about the other

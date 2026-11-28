@@ -106,10 +106,9 @@ Formats: the asset's layout and `toc.json` are specified in
 - **Builds and CI:** each product's tests build its asset; each product
   workflow has a job `help` (the local Linux CI has none: the help
   builds the same on the Mac); each `release.yaml` attaches the help zip.
-- **Releases:** the pre-releases `calc-u-59-v3.0.0-pre` and
-  `calc-u-1600-v0.9.0-pre` carry `Calc-U-59-help.zip` /
-  `Calc-U-1600-help.zip` and the `-web.zip` files. The final releases
-  `calc-u-59-v3.0.0` and `calc-u-1600-v0.9.0` are not published yet.
+- **Releases:** `calc-u-59-v3.0.0` and `calc-u-1600-v0.9.0` (2026-11-28)
+  carry `Calc-U-59-help.zip` / `Calc-U-1600-help.zip` and the `-web.zip`
+  files; these are the assets the site pins.
 - **Embedding:** the Web frontends expose `CalcU59` and `CalcU1600` with
   the shared props `width`, `height`, `keyboard`, `layout`, `model`,
   `preset`, `workerUrl`, `paperWindow` (Calc-U-59 adds `settings`).
@@ -168,7 +167,7 @@ too.
 
 ## To do
 
-### `/1600/` (when Calc-U-1600 0.9.0 is released)
+### `/1600/` (Calc-U-1600 0.9.0)
 - [ ] Decide the design of `/1600/` with the site's skills, before any page.
 - [ ] Write the site's renderer for a pinned help asset (shared by both
       folders) and its checks; build and keep the small test asset.
@@ -184,7 +183,7 @@ too.
       a start test (the play page's display shows what the model shows
       after a start).
 
-### `/59/` (when Calc-U-59 3.0.0 is released; until then `/59/` stays as it is)
+### `/59/` (Calc-U-59 3.0.0)
 - [ ] Give each chapter an address; replace the JSX help pages with the
       pages built from the pinned 3.0.0 help asset.
 - [ ] Redirect every address of the table above, the deep links and the
@@ -207,31 +206,3 @@ too.
 - [ ] Update `site-59` and `site-59-design` for the pinned help; merge
       the `site-59` edit of `59/2.3.0` into `main`; write a skill for
       `/1600/`.
-
-### Help content (source repository)
-- [ ] Calc-U-59: retake from the Swift app of the main checkout the four
-      pictures with the 2.3.0 control bar (no module picker, PC-100C
-      button or More: `app-screenshot.png`, `ipad-13-2752x2064.png`,
-      `ipad-2752x2064-asm.png`, `iphone-duo-2852x2006.png`) and the two cue
-      card pictures that show a magnetic card's side badges on a preset's
-      plain card (`cuecard-key-grid.png`, `cuecard-single-label.png`); take
-      the two missing ones (the Mac window with its menus, from the Qt app; the iPhone's
-      bar with the More menu open). Every picture with the calculator shows
-      the new faceplate and cue cards then (also `iphone-debug.png`).
-- [ ] Calc-U-1600: retake with `tools/make_screenshots.sh <chapter>` from a
-      terminal with the screen-recording and Automation rights (iTerm2):
-      "Tape:" on the bar (`01-app-overview.png`, `04-tape-recording.png`,
-      `04-tape-loading.png`, `05-floppy-picker.png`, `05-slot-picker.png`),
-      "Tape name:" (`04-tape-save.png`), "Card YAML" (`01-app-overview.png`,
-      `09-debug-panel.png`), the INSPECTOR's one row of pills without TRACE
-      and LOG (`01-app-overview.png`, `09-debug-panel.png`), Machine ▸ Trace
-      and Log Level ▸ (`02-machine-menu.png`), "Reset All" and no Resume
-      (`02-machine-menu.png`, `02-rom-menu-pc1500.png`), "Tapes", "Examples
-      folder", "Basic folder" (`09-settings.png`).
-- [ ] Glossary warnings: the help tool lists the places in each
-      product's help of words under "Avoid", most of them common words
-      in another sense; narrow the glossary's lists or fix
-      the text.
-- [ ] The help of each product counts as finished when its final release
-      carries the help asset (Calc-U-1600 0.9.0, Calc-U-59 3.0.0).
-- [ ] Later: make Calc-U-59's pictures by scenarios, as Calc-U-1600 does.

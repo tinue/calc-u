@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.9.0] - work in progress
+## [0.9.0] - 2026-11-28
 - **One code base.** Calc-U-1600 is rebuilt on a library it shares with Calc-U-59, so menus, Settings, the control bar, presets, the debugger and the media follow one structure on the desktop and the Web. Presets are format 2 (a preset of version 1 is refused), floppy disks are version 2 with the sides 0 and 1 (were A and B), module definitions are `.module.yaml` files, a cassette is a definition that names its WAV, and the settings start at their defaults; the help's "Media files", "From 0.8" shows how to convert your files. The command-line tools (`pc1500_cli`, `pc1600_cli`, the probes) are replaced by the harness `calcu --product c1600`, and the VS Code extension's debug type is `c1600` (was `calcu1600`): re-create or edit a project's `launch.json` and `tasks.json`.
 
 ### New and changed

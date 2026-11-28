@@ -335,6 +335,9 @@ See docs/developer/App-Layer.md and Web-Client.md.
 
 ## Feature ideas
 
+- **The ROM version of a run in the test driver** (OLD/NEW, A01-A04),
+  chosen by version rather than by path, for the external tester's suite.
+
 - **PC-1500 RAM disk on a CE-1638 / CE-163F card**, software only (a
   driver loaded once over the CE-158).
 

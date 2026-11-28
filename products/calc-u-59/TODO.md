@@ -28,6 +28,7 @@ Unsorted collection of ideas, bugs, observations etc.
 - **Card stacking in the GUI** — presets feed cards (`card:`, `arm:`; `docs/formats/preset.md` §5.2); what remains is letting a user queue a stack by hand.
 - **Card sound** — play a recorded card pass, with the emulator's pass timed to match (a real pull-through takes 1.155 s, the emulator's 0.43 s).
 - **REST API** — scripted control of a running app. Headless runs (the harness `calcu --product c59`, `docs/developer/Harness.md`) and GUI decoupling (`app/`, `docs/developer/New-GUI-Guide.md`) are done.
+- **Help pictures by scenarios** — make the help's pictures by scripted scenarios, as Calc-U-1600 does.
 - **Frozen** - Visually indicate when the calculator is frozen in one of the debuggers (mostly useful on iPhone, where only one panel is visible at a time)
 
 ## Far out (if ever)

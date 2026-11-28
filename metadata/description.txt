@@ -7,16 +7,16 @@ INTEGRATED DEBUGGER
 Inspect program memory, data registers, CPU state, and internal SCOM registers live as the machine runs. Step through instructions one at a time, or let the emulator run and freeze it at any point. You can even run your own assembly programs! On iPad in landscape it sits beside the calculator; on iPhone and in portrait, turn on the debugger page in Settings.
 
 PAPER TAPE PRINTER
-A functional recreation of the PC-100C thermal printer with dot-matrix font rendering. Trace exactly what programs print and why. Copy output as plain text or as a high-resolution bitmap.
+A functional recreation of the PC-100C thermal printer with dot-matrix font rendering. Trace exactly what programs print and why. Copy the paper as text or as a picture.
 
 MAGNETIC CARD READER
 Load and save programs and data registers as card files, stored on your device and synced via iCloud. Bring old listings back to life and run them under the debugger.
 
-STATE FILES
-Load .ti59 and .ti58(c) state files to instantly configure the machine with a program, registers, and flags — ideal for sharing reproducible scenarios or revisiting known machine states.
+PRESETS
+Load a .ti59, .ti58 or .ti58c preset to set the machine up with a program, registers, flags and cue card — ideal for sharing reproducible scenarios or revisiting known machine states. A preset can also check what the calculator shows, and Settings can start each model with a preset of your own.
 
 SOLID STATE MODULES
-Select a Solid State Module and run programs from there.
+Choose a Solid State Module on the control bar and run its programs.
 
 QUIRKS
 The calculator reproduces every quirk you've heard of: Fast mode, printer interrupt, display corruption — you name it.

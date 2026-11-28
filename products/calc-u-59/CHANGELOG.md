@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.0.0] - work in progress
+## [3.0.0] - 2026-11-28
 - **One code base** Calc-U-59 is rebuilt on a library it shares with Calc-U-1600, so menus, Settings, presets, the debugger and the saved files follow one structure on every platform. This release reads nothing 2.3.0 wrote: presets, ASM overlays, magnetic cards and the TI-58C's constant memory have new formats, and the settings start at their defaults; the help's "Media files", "From 2.3.0" shows how to convert your files.
 - **Mac** The Mac app is the desktop app of Windows and Linux (Qt, Apple silicon, macOS 15.8 or later) instead of the Swift app of the iPhone and iPad. It no longer syncs through iCloud by itself: cards and the TI-58C's memory are kept in `Calc-U-59` in your home folder, or in an iCloud Drive folder you choose as the save folder in Settings. <!-- appstore: skip -->
 

@@ -91,7 +91,7 @@ Never edit the calculator there — that copy is generated.
    `bindings.cpp` is only the factory of the session; the components send
    commands and requests by name and read the topics with `useTopic`
    (`src/page.jsx`: the host services that keep the traces handed over
-   (`createC59Traces`, for `useShell`), the LOG view). No message of a protocol of its own,
+   (`createC59Traces`, for `useShell`), the RUN LOG view). No message of a protocol of its own,
    no `localStorage`.
 2. **Parity** (CLAUDE.md § "Frontend Parity"): a user-visible change to a
    feature the web has needs the matching change in the apps, or a

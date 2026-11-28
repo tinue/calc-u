@@ -26,9 +26,11 @@ opens the settings dialog; a change applies at once.
   ([COM ports](09-com-ports.md)). Not on Windows.
 - **Debugger:** the debug server for VS Code, its port, its status, and
   **Disconnect** ([Debugger](07-debugger.md)).
+- **App log ▸ App log level:** how much the app log keeps
+  ([The app log](../../../library/help/08-settings.md#the-app-log)).
 
-The Web frontend shows the startup model, the startup presets and, under
-Storage, a note that it keeps your modules, disks and cassettes in the
+The Web frontend shows the startup model, the startup presets, the app
+log level and, under Storage, a note that it keeps your modules, disks and cassettes in the
 browser's storage for the page.
 
 ## Startup presets

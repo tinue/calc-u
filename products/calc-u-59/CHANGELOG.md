@@ -1,7 +1,7 @@
 # Changelog
 
 ## [3.0.0] - work in progress
-- **One code base** Calc-U-59 is rebuilt on a library it shares with Calc-U-1600 (one repository, tinue/calc-u), so menus, Settings, presets, the debugger and the saved files follow one structure on every platform. The consequence: this release reads nothing 2.3.0 wrote. Presets, ASM overlays, magnetic cards and the TI-58C's constant memory have new formats, and the settings start at their defaults; the help's "Media files", "From 2.3.0" shows how to convert your files.
+- **One code base** Calc-U-59 is rebuilt on a library it shares with Calc-U-1600 (one repository, tinue/Calc-U), so menus, Settings, presets, the debugger and the saved files follow one structure on every platform. The consequence: this release reads nothing 2.3.0 wrote. Presets, ASM overlays, magnetic cards and the TI-58C's constant memory have new formats, and the settings start at their defaults; the help's "Media files", "From 2.3.0" shows how to convert your files.
 - **Mac** The Mac app is the desktop app of Windows and Linux (Qt, `Calc-U-59-mac-aarch64.dmg`, Apple silicon, macOS 15.8 or later) instead of the iPad app, and it no longer syncs through iCloud by itself: cards and the TI-58C's memory are kept in `Calc-U-59` in your home folder, and you can choose the Calc-U-59 folder in iCloud Drive as the save folder in Settings. <!-- appstore: skip -->
 
 ### New and changed
@@ -22,6 +22,7 @@
 - **Accuracy** At regular speed the TI-59 and the TI-58C ran 0.13 % and 0.10 % slow.
 - **Keyboard** At full speed one press of Adv fed many lines, and a second key pressed while another was held released the first.
 - **Calculator** A Reset set the partition back to the ROM's default; the PC-100C's TRACE switch went off at each disconnect and model switch; an armed CPU FREEZE ON START did not fire on a Reset.
+- **Debugger** The program steps showed keycode 65 as |x|; it is ×.
 - **Presets** A `card:` or `arm:` naming a card that did not exist put a blank card in and saved it under that name.
 - **Settings** A changed save folder was used only after a restart.
 

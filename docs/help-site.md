@@ -112,7 +112,7 @@ Formats: the asset's layout and `toc.json` are specified in
   `calc-u-59-v3.0.0` and `calc-u-1600-v0.9.0` are not published yet.
 - **Embedding:** the Web frontends expose `CalcU59` and `CalcU1600` with
   the shared props `width`, `height`, `keyboard`, `layout`, `model`,
-  `preset`, `workerUrl` (Calc-U-59 adds `settings`).
+  `preset`, `workerUrl`, `paperWindow` (Calc-U-59 adds `settings`).
 
 ### In calc-u-site
 

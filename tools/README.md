@@ -107,3 +107,29 @@ CI's `EMSDK_VERSION` and the release `libsharpdx-wasm.a` was built with
 (its README, `docs/Building.md`); Node's major version in both `web` jobs'
 setup-node and the local CI's `NODE_VERSION`. Reads files only. CTest
 `LibraryToolchainVersions` (Frequent; not on Windows).
+
+## check_chrome_colours.sh: no colour literal in a frontend
+
+```sh
+tools/check_chrome_colours.sh <product folder | library folder>
+```
+
+The chrome's colours live in the product's `app/` (`TIChrome`,
+`SharpChrome`) and the library's `shell/Chrome`, and every GUI reads them:
+the script fails on a colour literal in a frontend's code or the library's
+component sets, but where the folder's allow-list says why. CTests
+`LibraryChromeColours`, `CalcU59ChromeColours`, `CalcU1600ChromeColours`
+(Frequent).
+
+## build-id.cmake: the build ID, the package and the build time
+
+```sh
+cmake -DPRODUCT=<product directory> -P tools/build-id.cmake   # prints the ID
+```
+
+The ID that About and the Settings' version line show after the version
+(`<hash>`, `pre-<hash>`, `-dirty`; docs/Process.md, "What a build shows").
+The builds call it with `HEADER` (`APP_BUILD_ID`, `APP_PACKAGE`: DMG,
+AppImage, Windows installer, else self-built) and `TIME_SOURCE` (the
+build's time in UTC, `calcuAppBuildTime()`), which About's Support
+Information shows.

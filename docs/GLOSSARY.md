@@ -740,7 +740,8 @@ _Avoid_: log (for this), trace dump
 **Log** (of the session):
 What the calculator ran, as lines of the session's topic `log` at the
 **log level** off, info or debug: how a preset was carried out, the
-elapsed time, Calc-U-59's register writes. Shown in Calc-U-59's RUN LOG tab.
+elapsed time, Calc-U-59's register writes. Shown in Calc-U-59's RUN LOG tab and in Calc-U-1600's INSPECTOR (its
+level under Machine ▸ Run Log ▸).
 _Avoid_: app log (for this)
 
 **App log**:

@@ -156,7 +156,7 @@ After each host call (`TIAppPart::afterCall`):
    ring is on while the CPU tab shows, the machine is paused or a start is
    armed. (The trace is pumped by the library's trace session inside the
    gate.)
-3. **Slower checks**: the cue card's library program (2 Hz), the LOG text
+3. **Slower checks**: the cue card's library program (2 Hz), the RUN LOG text
    (1 Hz); the TI-58C's constant memory file (`ConstantMemoryKeeper`, at
    the latest 0.5 s after a change).
 
@@ -607,7 +607,7 @@ CalcU59App                    (Calc-U-59App.swift: scene, background/active)
     ├─ DebugView              (CALCULATOR / CPU / RUN LOG tabs)
     │   ├─ LiveDebugView      (CALCULATOR)
     │   ├─ CPUInspectorView   (CPU, with the ROM heatmap) + ASMDebugContent
-    │   └─ StaticDebugContent (LOG)
+    │   └─ StaticDebugContent (RUN LOG)
     └─ SettingsView
 
 EmulatorViewModel (@Observable, main thread)

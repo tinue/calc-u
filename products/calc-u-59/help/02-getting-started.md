@@ -66,7 +66,7 @@ computer) the window has a menu bar:
 |---|---|
 | File | Load Preset…; Examples ▸; on the TI-59 Arm Card… and Arm Fresh Card…; in the browser Import Media… and Saved Media…; Settings…; Quit |
 | Machine | Model ▸; Peripherals ▸; Reset; Cold boot; Resume |
-| Help | Calc-U-59 Help; About Calc-U-59 |
+| Help | Calc-U-59 Help; Show App Log; About Calc-U-59 |
 
 Calc-U-59 has no Edit menu: it has neither Copy Screen nor Paste Text.
 On macOS, Settings…, About and Quit are in the application menu. The

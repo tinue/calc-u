@@ -58,7 +58,7 @@ The commands below run from the repository root and put their trees under
 
 ```sh
 git clone <this repository's URL>
-cd calc-u
+cd Calc-U
 products/calc-u-59/roms/fetch_roms.sh
 products/calc-u-1600/roms/fetch_roms.sh
 ```

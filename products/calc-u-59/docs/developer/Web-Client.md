@@ -29,7 +29,7 @@ it keeps are in the browser's IndexedDB, the persistent file system of the
 library's shell (database `/persist-calc-u-59`): the
 settings file `settings/Calc-U-59/Calc-U-59.ini` and the save
 folder `Calc-U-59/` with the magnetic cards (`<name>.magnetcard.yaml`, the
-library's media part: Arm Card ▸ Import… brings a card file in,
+library's media part: File ▸ Import Media… (also in More) brings a card file in,
 Saved Media… downloads or deletes one) and
 `ti58c.memory.yaml`; nothing is in `localStorage`. Only the
 first copy of the client in a browser writes them; a second tab (or a

@@ -189,7 +189,7 @@ End with this report, every gate included:
 | GUI parity | | |
 | Simplification age | | |
 | Docs of this release: this repository | | |
-| Docs of this release: the help (and calc-u-site where it changed) | | |
+| Docs of this release: the help (and Calc-U-Site where it changed) | | |
 | Docs consistency | | |
 | Changelog | | |
 | Screenshots | | |

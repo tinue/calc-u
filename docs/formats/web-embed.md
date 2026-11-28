@@ -17,6 +17,7 @@ service, Save folder, Bundle file).
 | The sentences of the start and the storage | `library/web/src/sentences.js` |
 | The worker: files, storage, the call loop | `library/web/src/worker.js` |
 | The persistent file system | `library/web/src/storage.js` |
+| The page's app log: the console, the last 2000 lines for Show App Log, `?app-log-level=` | `library/web/src/appLog.js` |
 | The wire form of the messages | `library/web/glue/MessageCodec.hpp` |
 | The worker's host of the session; `web.start`, `web.storage`, `web.shell` | `library/web/glue/WorkerHost.hpp`, `.cpp` |
 | A product's registration | `library/web/glue/Bind.hpp` (`CALCU_WEB_PRODUCT`) |
@@ -335,7 +336,9 @@ The Web has three kinds of page, each drawn by the same component:
 |---|---|---|---|
 | Full app | `dist/app/` in a desktop browser's tab | desktop (menu bar) | yes: the paper panel's button opens a popup window |
 | Demo | the component embedded in another page (the website, `dist/index.html`) | desktop (menu bar) | no: an embed opens no windows of its own |
-| Mobile | the installed app, or a browser asking for the mobile site (`?mobile=1` to try it) | mobile (no menu bar) | no | Its service worker (`app/sw.js`, scope `app/`)
+| Mobile | the installed app, or a browser asking for the mobile site (`?mobile=1` to try it) | mobile (no menu bar) | no |
+
+Its service worker (`app/sw.js`, scope `app/`)
 precaches the app page, `calc.js`, `calc.css`, the workers, the engine,
 the images and every file of `files.json`. Its cache is named
 `<id>-app <scope> <hash>` (`<id>`: `calcu59`, `calc-u-1600`); a new

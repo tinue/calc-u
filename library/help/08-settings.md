@@ -8,7 +8,9 @@ which modules, peripherals or media a machine has; a preset does that
 ## The Settings dialog
 
 **File ▸ Settings…** opens the dialog (More ▸ Settings… on every bar, the only way on mobile; on macOS it is in the
-application menu). A change applies at once and is kept; the only
+application menu). A change applies at once and is kept; where the
+settings file cannot be written, a notice says so and the change holds
+until you quit. The only
 button is Close (Done on iOS). The dialog can be used while an operation runs. Its
 sections, each shown when the frontend has one of its settings:
 

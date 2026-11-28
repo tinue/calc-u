@@ -2,10 +2,14 @@
 
 The browser frontend: the same `core/` + `app/` as the desktop app,
 compiled to WebAssembly, with a React page that looks like the Qt window.
-One build (`frontends/web/dist/`) serves two uses:
+One build (`frontends/web/dist/`) serves the library's three kinds of page
+(`docs/formats/web-embed.md` §6):
 
-- **embedded** in a web page, as a component;
-- **installed** as an offline app (`dist/app/`, a PWA), for a tablet.
+- the **full app** (`dist/app/` in a desktop browser's tab, with the paper
+  in a window of its own);
+- the **demo**, embedded in a web page as a component;
+- **mobile**: the installed offline app (`dist/app/`, a PWA) and the
+  mobile site.
 
 It is made for landscape screens and tablets; a phone works (touch takes
 the nearest key, the menus are taller on touch screens) but gets the
@@ -39,9 +43,9 @@ is fitted under the faceplate by the library's rule (`useShellBarFit`,
 `calcuShellBarFit`, as on Calc-U-59): the labels "Cassette:" and "Disk:"
 only where the whole bar fits the faceplate's width with them; as wide as
 the faceplate, wider where the controls need more, never wider than the
-window. Where the
-room is below the faceplate on mobile (a phone in portrait), the panels
-alone are shown, without the faceplate.
+window. Upright, where the faceplate would be narrower than
+`faceplateUsableWidth` (a phone in portrait), the panels alone are shown,
+without the faceplate.
 
 ```mermaid
 flowchart LR

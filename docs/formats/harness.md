@@ -490,6 +490,11 @@ machine on `calcu serve` for pytest suites of any product, whose steps
 It is the product-neutral layer the Calc-U-1600 driver
 (`products/calc-u-1600/tools/machine/`) builds on.
 
+`library/harness/python/report.py` is the run's Markdown report of a
+product's pytest plugin: switched on with `calcu_report = <folder>` in
+`pytest.ini` (`calcu_report_title` names it); a test project adds facts of
+its own with the hook `pytest_calcu_report_facts(config)`, returning a dict.
+
 ## 8. `serve --dap <port>` (Calc-U-1600)
 
 A product's option of `serve`. Calc-U-1600's `--dap <port>` accepts a

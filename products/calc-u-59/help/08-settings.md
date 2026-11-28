@@ -25,6 +25,7 @@ preset sets them at a start.
 | Display | **Segment Style**: "Modernized" or "Classic" | macOS, iPhone, iPad, Windows, Linux |
 | Keyboard | **Keyboard Feedback**: "Off", "Haptic" (iPhone, iPad), "Click Sound" | iPhone, iPad; the browser's portrait layout |
 | Layout | **Debug Page in Portrait** | iPhone, iPad |
+| App log | **App log level**: Default, Error, Warning, Info, Debug ([The app log](../../../library/help/08-settings.md#the-app-log)) | everywhere |
 
 On the iPhone and the iPad the settings are a sheet whose button is
 Done. On iOS there is no About; the version is in General.

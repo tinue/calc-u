@@ -101,8 +101,10 @@ On the desktop:
 | Load Preset… | Ctrl+O | ⌘O |
 | Reset | Ctrl+R | ⌘R |
 | Cold boot | Ctrl+Shift+R | ⇧⌘R |
+| Copy Screen | Ctrl+C | ⌘C |
+| Paste Text | Ctrl+V | ⌘V |
 
-A shortcut is taken before the key reaches the machine. In the browser
+Settings… and Quit have the system's own keys (on macOS ⌘, and ⌘Q). A shortcut is taken before the key reaches the machine. In the browser
 the menu items have no shortcuts, because these keys are the browser's
 own.
 

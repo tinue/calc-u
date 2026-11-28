@@ -34,10 +34,11 @@ tools/  ci/  .github/workflows/
   1. `applog`, `files`, `formats`, `machine`: the standard library only
   2. `settings` (on `files`); `pacing`, `roms` (on `machine`)
   3. `sessions`
-  4. `typing`, `peripherals`, `shell` (its `SessionThread` uses `parts`
-     and `harness` only for attach, in `CALCU_ATTACH` builds), `testing`
+  4. `typing`, `peripherals`, `shell` (its `SessionThread` uses `harness`
+     only for attach, in `CALCU_ATTACH` builds), `testing`
      (the tests' runner and rigs, used only by tests)
-  5. `startup`, `control`, `web` (only `sessions`, `settings` and `shell`)
+  5. `startup`, `control`, `web` (only `applog`, `files`, `sessions`,
+     `settings` and `shell`)
   6. `presets`
   7. `paper`, `debugger`, `media`: each adds its steps to the presets'
      vocabulary
@@ -49,8 +50,9 @@ tools/  ci/  .github/workflows/
   no threads and no locks; failures are return values. Sessions are
   single-threaded. The one exception are the host adapters at a
   session's edge, which may hold threads and locks and say so in their
-  header: `shell/SessionThread`, `shell/HostAppLog`, `harness/attach/`, the pseudo-terminal
-  link of `peripherals`, and `qt6`.
+  header: `shell/SessionThread`, `shell/HostAppLog`, `harness/attach/`, the harness's
+  `serve` with add-ons (`harness/Run`), the pseudo-terminal link of
+  `peripherals`, and `qt6`.
 - A product's code that implements a library interface stays in the
   product (`core/`, `app/`), in the product's style.
 - Two logs, never mixed: the session's `log` says what the calculator
@@ -90,7 +92,8 @@ The rules live in `library/shell/BarModel`, `library/shell/MenuModel` and
 `library/shell/View`; the code is the rule. The Web page draws the models
 its worker serves (`shell::ModelHost`); `library/web/components/shellModel.js`
 mirrors only the rules that run on the page's clock and measurements (the
-view, `barFit`, "Loading…", notices, the pointer).
+view, `barFit`, the paper row's compact rule, "Loading…", notices, the
+pointer, About's page and display rows).
 
 - Every window is desktop or mobile (`shell::Traits::mobile`). Desktop:
   Qt always, a Web page in a desktop browser's tab; it has a menu bar.

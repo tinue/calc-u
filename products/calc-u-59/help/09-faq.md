@@ -75,8 +75,7 @@ when you switch to it; it also starts over at a Reset and a model switch.
 ## How can I step through the reset routine?
 
 In the CPU tab press FREEZE ON START, then **Machine ▸ Cold boot** or
-Reset (on the iPhone and the iPad: Cold boot behind the More button, or
-the Reset button). The calculator pauses at the first instruction of the
+Reset (on the iPhone and the iPad: More ▸ Cold boot or More ▸ Reset). The calculator pauses at the first instruction of the
 ROM's start-up; STEP walks through it.
 
 ## After FREEZE ON START in the CPU tab the key seems lost. Why?

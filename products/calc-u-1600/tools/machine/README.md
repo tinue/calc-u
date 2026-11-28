@@ -10,6 +10,7 @@ your own, worked examples, paths, the reference, how it works.
 | `cardimage.py` | Parser for saved module files and the RAM disk on them (no machine needed) |
 | `test_driver.py`, `test_plugin.py` | Tests of the driver, the parser and the plugin |
 | `../../../../library/harness/python/calcu_machine.py` | Class `Session`, the product-neutral part |
+| `../../../../library/harness/python/report.py` | The run's Markdown report (`calcu_report`) |
 
 The driver's own tests (CTest `CalcU1600MachineDriver`, Longer), from `products/calc-u-1600/`:
 

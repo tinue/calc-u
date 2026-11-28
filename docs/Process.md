@@ -52,7 +52,10 @@ The About and the version line of the Settings show
 `Version <version>[-<build number>] (<build ID>)`, in every frontend of
 both products. The build number is the iOS app's
 (`CURRENT_PROJECT_VERSION`; 3.0.0-0); Qt and the web have none. The build
-ID comes from `tools/build-id.cmake`, at each build:
+ID comes from `tools/build-id.cmake`, at each build, as do About's
+Support Information rows **Package** (DMG, AppImage, Windows installer
+from the package jobs, else self-built) and **Built** (the build's time
+in UTC):
 
 | Build | Build ID |
 |---|---|

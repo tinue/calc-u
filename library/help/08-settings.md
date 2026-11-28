@@ -79,7 +79,7 @@ product itself.
 | `[app-log] level` | `default` | How much the app log keeps: `default` (`warn`; `info` in a development build), `error`, `warn`, `info` or `debug`; applied at once ([The app log](#the-app-log)) |
 | `[serial] link-folder` | empty | The folder for the files of serial links. Empty: the save folder |
 | `[folders] <kind>` | empty | One key per kind of file the product opens: the folder its file dialog starts in. Written by the product: the folder last used, or `fixed:<folder>` for a folder set in the Settings dialog, which later picks do not change |
-| `[window] <key>` | the product's | The size of the main window and the split between its panels, as plain numbers; written by the product |
+| `[window] <key>` | the product's | The place and size of the main window and the split between its panels, as plain numbers; written by the product |
 | `[window] paper-own-window` | `false` | The paper in a window of its own, `true` or `false`; written by the product ([The paper in its own window](05-peripherals-and-paper.md#the-paper-in-its-own-window)) |
 | `[window] paper-x`, `[window] paper-y`, `[window] paper-width`, `[window] paper-height` | empty, empty, `400`, `640` | That window's left and top edge and its size, as plain numbers; written by the product |
 

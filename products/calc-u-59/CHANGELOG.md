@@ -1,30 +1,24 @@
 # Changelog
 
 ## [3.0.0] - work in progress
-- **One code base** Calc-U-59 is rebuilt on a library it shares with Calc-U-1600 (one repository, tinue/Calc-U), so menus, Settings, presets, the debugger and the saved files follow one structure on every platform. The consequence: this release reads nothing 2.3.0 wrote. Presets, ASM overlays, magnetic cards and the TI-58C's constant memory have new formats, and the settings start at their defaults; the help's "Media files", "From 2.3.0" shows how to convert your files.
-- **Mac** The Mac app is the desktop app of Windows and Linux (Qt, `Calc-U-59-mac-aarch64.dmg`, Apple silicon, macOS 15.8 or later) instead of the iPad app, and it no longer syncs through iCloud by itself: cards and the TI-58C's memory are kept in `Calc-U-59` in your home folder, and you can choose the Calc-U-59 folder in iCloud Drive as the save folder in Settings. <!-- appstore: skip -->
+- **One code base** Calc-U-59 is rebuilt on a library it shares with Calc-U-1600, so menus, Settings, presets, the debugger and the saved files follow one structure on every platform. This release reads nothing 2.3.0 wrote: presets, ASM overlays, magnetic cards and the TI-58C's constant memory have new formats, and the settings start at their defaults; the help's "Media files", "From 2.3.0" shows how to convert your files.
+- **Mac** The Mac app is the desktop app of Windows and Linux (Qt, Apple silicon, macOS 15.8 or later) instead of the Swift app of the iPhone and iPad. It no longer syncs through iCloud by itself: cards and the TI-58C's memory are kept in `Calc-U-59` in your home folder, or in an iCloud Drive folder you choose as the save folder in Settings. <!-- appstore: skip -->
 
 ### New and changed
-- **Presets** A new format (YAML, key IDs such as `- key: Pgm`). A preset builds its calculator from a cold boot, runs at full speed, waits after each item until the calculator is idle and is refused whole on an error; new steps `expect:`, `not-expect:`, `screenshot:`, `cut-paper:` and `copy-paper:` (in the apps the paper goes to the clipboard as with the paper panel's Copy and Cut; in the browser a preset does not copy). Settings has a startup preset per model.
-- **Startup presets** "Choose…" in Settings takes a preset file of your own on every platform, the iPhone, the iPad and the browser too; the preset is checked before it is set. In the browser, choose it with the files it names, or alone when they were opened there before: the browser keeps every file you open.
-- **About** Support Information (the package or "self-built", build time, operating system, computer; in the browser the page's address and the browser), Display (the screen's reported size, scale, the pixels drawn, a Mac panel's own pixels, the window's size; Wayland or X11 where the desktop has either) and a Copy button that puts the About texts on the clipboard for a bug report.
-- **Examples** New under Programs: Life, Conway's Game of Life of CHIP 9/1980 on the PC-100C; a glider runs into an eater, which eats it.
-- **Magnetic cards** A card is a file named after the card, with its own cue card; its sides are 0 and 1, and "Fit Card" is "Arm Card". A library program's cue card and a fitted card show the one put there last on top, so a card armed while a program is selected is seen.
-- **Calculator** Changing the module or the printer power-cycles the calculator, as on the real one; the TI-58C's constant memory brings back its partition and display format at a start. A key is held long enough for the ROM to read it, so Adv and R/S behave the same at every speed. The faceplate and the cue cards are drawn anew.
-- **Control bar** Every bar ends with More, which holds every menu item; the module is chosen with a picker on the bar. The card buttons are the same in every app: disabled while they cannot be used, the reason as their tooltip; More reads "⋯ More" where the bar has room. On iOS, traces go to Application Support by default instead of iCloud.
-- **Printer** The row below the paper is the same in every app: PRINT, T with the dot of the TRACE switch, ADV, and Copy and Cut as icons; in a narrow panel PRINT reads PRN.
-- **Printer window** On the desktop and in the Web app on a computer, the button at the right of the paper's header moves the paper into a window of its own and back; the debug panel takes the room, and the window comes back where you left it. <!-- appstore: skip -->
-- **Linux** The AppImage and an install bring the presets' file type (MIME), so a desktop that integrates the app opens them with Calc-U-59. <!-- appstore: skip -->
-- **App log** The app keeps a log of how it ran, every failure with its cause, for a problem report: Help ▸ Show App Log shows it, Settings has its level. The debug panel's LOG tab is called RUN LOG, as it shows what the calculator ran.
-- **Web calculator** Menus in the wide layout, Import Media… and Saved Media… for the cards, and every model and module works offline. Menus and dialogs are in the calculator's colours, light or dark as the system is set. Site authors: the component is `CalcU59` (was `PlayCalculator`). <!-- appstore: skip -->
+- **Presets** A new format (YAML, key IDs such as `- key: Pgm`): a preset builds its calculator from a cold boot, runs at full speed, waits after each item until the calculator is idle and is refused whole on an error; new steps `expect:`, `not-expect:`, `screenshot:` and `copy-paper:`. Settings has a startup preset per model, and "Choose…" takes a preset file of your own on every platform.
+- **Magnetic cards** A card is a file named after the card, with its own cue card; its sides are 0 and 1, and "Fit Card" is "Arm Card".
+- **Calculator** Changing the module or the printer power-cycles the calculator, as on the real one; the TI-58C's constant memory brings back its partition and display format; a key is held until the ROM has read it, so Adv and R/S behave the same at every speed. The faceplate and the cue cards are drawn anew.
+- **Controls** Every bar ends with More, which holds every menu item; the module is chosen on the bar; the card and printer controls are the same in every app, and a control that cannot be used right now is disabled, with the reason as its tooltip.
+- **About and app log** About shows support and display information, with a Copy button for a bug report; the app keeps a log of how it ran (Help ▸ Show App Log, its level in Settings). The debug panel's LOG tab is called RUN LOG.
+- **Examples** New under Programs: Life, Conway's Game of Life on the PC-100C.
+- **Printer window** On the desktop, and in the Web app on a computer, the paper moves into a window of its own and back. <!-- appstore: skip -->
+- **Web calculator** Menus in the wide layout, the cards through Import Media… and Saved Media…, every model and module offline, and menus and dialogs in the calculator's colours, light or dark. <!-- appstore: skip -->
 
 ### Fixed
 - **Accuracy** At regular speed the TI-59 and the TI-58C ran 0.13 % and 0.10 % slow.
 - **Keyboard** At full speed one press of Adv fed many lines, and a second key pressed while another was held released the first.
-- **Calculator** A Reset set the partition back to the ROM's default; the PC-100C's TRACE switch went off at each disconnect and model switch; an armed CPU FREEZE ON START did not fire on a Reset.
-- **Debugger** The program steps showed keycode 65 as |x|; it is ×.
-- **Presets** A `card:` or `arm:` naming a card that did not exist put a blank card in and saved it under that name.
-- **Settings** A changed save folder was used only after a restart.
+- **Calculator** On the TI-59 and the TI-58 a Reset set the partition back to the ROM's default and ignored an armed CPU FREEZE ON START; the PC-100C's TRACE switch went off at each disconnect and model switch; the program steps showed keycode 65 as |x| instead of ×.
+- **Presets** A step naming a card that did not exist put a blank card in and saved it under that name.
 
 ## [2.3.0] - 2026-11-07
 - **Web calculator** The installed web app now follows the device's rotation, like the iOS app. Held upright it shows the calculator and printer pages. In landscape, tablets, an opened iPhone Duo and large desktop windows show the calculator, the printer and the debugger side by side, and a phone shows the calculator and the printer. Settings then also offers the Maximum Trace File Size. <!-- appstore: skip -->

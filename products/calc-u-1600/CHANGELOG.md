@@ -1,31 +1,27 @@
 # Changelog
 
 ## [0.9.0] - work in progress
-- **One code base.** Calc-U-1600 is rebuilt on a library it shares with Calc-U-59 (one repository, tinue/calc-u), so menus, Settings, the control bar, presets, the debugger and the media follow one structure on the desktop and the Web. The consequences: presets are format 2 (a preset of version 1 is refused), floppy disks are version 2 with the sides 0 and 1 (were A and B), module definitions are `.module.yaml` files, a cassette is a definition that names its WAV, and the settings start at their defaults; the help's "Media files", "From 0.8" shows how to convert your files. The command-line tools (`pc1500_cli`, `pc1600_cli` and the probes) are replaced by the harness `calcu --product c1600`. The VS Code extension's debug type is `c1600` (was `calcu1600`): re-create a project's `launch.json` and `tasks.json`, or edit them to the new names.
+- **One code base.** Calc-U-1600 is rebuilt on a library it shares with Calc-U-59, so menus, Settings, the control bar, presets, the debugger and the media follow one structure on the desktop and the Web. Presets are format 2 (a preset of version 1 is refused), floppy disks are version 2 with the sides 0 and 1 (were A and B), module definitions are `.module.yaml` files, a cassette is a definition that names its WAV, and the settings start at their defaults; the help's "Media files", "From 0.8" shows how to convert your files. The command-line tools (`pc1500_cli`, `pc1600_cli`, the probes) are replaced by the harness `calcu --product c1600`, and the VS Code extension's debug type is `c1600` (was `calcu1600`): re-create or edit a project's `launch.json` and `tasks.json`.
 
 ### New and changed
 
-- **The help is the user guide,** shared with Calc-U-59 where the two work alike, and shown on calc-u.org/1600.
-- **Presets** wait after each item until the machine is idle, are checked before the running machine is given up, and gain `expect:` and `not-expect:` (with regular expressions), `screenshot:`, `cut-paper:` and `copy-paper:` (on the desktop the paper goes to the clipboard as with the paper panel's Copy and Cut; in the browser a preset does not copy). Settings has a startup preset per model, and a fresh install starts each model with its bundled one.
-- **Startup presets:** "Choose…" in Settings takes a preset file of your own in the browser too, and the preset is checked before it is set. In the browser, choose it with the files it names, or alone when they were opened there before: the browser keeps every file you open.
-- **About** shows Support Information (the package or "self-built", build time, operating system, computer; in the browser the page's address and the browser) and Display (the screen's reported size, scale, the pixels drawn, a Mac panel's own pixels, the window's size; on Linux Wayland or X11), and has a Copy button that puts its texts on the clipboard for a bug report.
+- **Help:** the user guide, shared with Calc-U-59 where the two work alike, on calc-u.org/1600.
+- **Presets** wait after each item until the machine is idle and gain `not-expect:`, regular expressions in `expect:` and `not-expect:`, `cut-paper:` and `copy-paper:`. A fresh install starts each model with its bundled startup preset, and "Choose…" in Settings takes a preset file of your own in the browser too.
 - **New hardware:** the CE-150's cassette works on the PC-1600 (MODE 1, PC-1500 tapes); two large Slot 2 modules, the 256K custom (256 KB, initialised) and the superRAM r4 by spellbound (1 MB, blank; its initialisation program SRAMINIT.BIN comes with the module, not with Calc-U-1600).
-- **Modules and media:** choosing a module power-cycles the machine, as on the real device; modules, disks and cassettes have Name & Save and the same pickers on the desktop and the Web; a dropped or opened file goes where it belongs (program to its loader, module, disk or cassette into its place); a module definition can carry an `insert-notice`, shown when you plug the template in by hand (the superRAM r4's names SRAMINIT.BIN).
-- **App log:** the app keeps a log of how it ran, every failure with its cause, for a problem report: Help ▸ Show App Log shows it, Settings has its level, `--app-log-level` sets it for one run. On Windows it replaces `Calc-U-1600.log` in the save folder, on Linux the syslog lines.
-- **Machine:** Pause and Resume; Machine ▸ Run Log ▸ sets what the RUN LOG tab tells about the machine's run; full speed runs a waiting machine at real time, so the prompt no longer spins; a held key stays down, so the ROM's own auto-repeat works. The paper panel is always shown and keeps its paper through detaching and model switches until Cut. Copy and Cut are icons at the right of the row below the paper.
-- **Printer window:** on the desktop and in the Web app on a computer, the button at the right of the paper's header moves the paper into a window of its own and back; the INSPECTOR takes the room, and the window comes back where you left it. The main window also comes back at its place, not only its size.
-- **Control bar and menus:** on the PC-1600 a printer picker and a CE-158 button; every bar ends with More (⋯), which holds every menu item; Reset All is Cold boot. On a phone the installed Web app shows the paper in portrait and the calculator in landscape.
-- **Windows and Linux:** the installer shows the licence and offers to start Calc-U-1600 when it is done; on Linux the AppImage and an install bring the presets' file type (MIME), so a desktop that integrates the app opens them with Calc-U-1600.
-- **Host drive `S3:`:** behaves like the MEP r4 where the two differed: the prompt is `S3:>` at the top folder and `...` with the end of a long path, `CDIR ".."` at the top is error 152, `\` separates folders like `/`, directory mode ends after a listing, file dates carry their real year, and renaming a file to its own name or to a folder's is error 151.
+- **Modules and media:** choosing a module power-cycles the machine, as on the real device; modules, disks and cassettes have Name & Save and the same pickers on the desktop and the Web; a dropped or opened file goes where it belongs.
+- **Machine:** full speed runs a waiting machine at real time, so the prompt no longer spins; a held key stays down, so the ROM's own auto-repeat works; Machine ▸ Run Log ▸ sets what the RUN LOG tab tells; Reset All is Cold boot.
+- **Paper:** the paper panel is always shown and keeps its paper through detaching and model switches until Cut; on the desktop, and in the Web app on a computer, the paper moves into a window of its own and back. The main window comes back at its place, not only its size.
+- **Control bar:** on the PC-1600 a printer picker and a CE-158 button; every bar ends with More (⋯), which holds every menu item. On a phone (the installed Web app or the mobile site) portrait shows the panels alone.
+- **About and app log:** About shows support and display information, with a Copy button for a bug report; the app keeps a log of how it ran (Help ▸ Show App Log, its level in Settings, `--app-log-level` for one run), which replaces `Calc-U-1600.log` on Windows and the syslog lines on Linux.
+- **Installers:** the Windows installer shows the licence and offers to start Calc-U-1600; on Linux the AppImage and an install bring the presets' file type (MIME).
+- **Host drive `S3:`:** behaves like the MEP r4 where the two differed: the prompt, `CDIR ".."` at the top folder, `\` as a separator, the end of directory mode, file dates and RENAME's errors.
 - **For developers:** automated tests with pytest (`tools/machine/`, `docs/testing/README.md`), developed together with spellbound.
 
 ### Fixed
 
 - **macOS:** the desktop app fell behind real time while its window was not in front (App Nap).
-- **After a Reset or a Cold boot** a plotter started again at the top of the paper, over the earlier plot.
+- **After a Reset** a plotter started again at the top of the paper, over the earlier plot.
 - **A PC-1500 machine-code load** that met a byte that is not RAM wrote the rest and then failed; it now writes nothing.
-- **A cassette or disk name with a `"`** was written, and the file could not be read again; it is now refused.
-- **Desktop:** a disk, cassette or module the machine refused was left without a word; the reason is now shown.
 
 ## [0.8.1] - 2026-11-14
 
